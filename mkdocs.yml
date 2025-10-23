@@ -1,0 +1,39 @@
+site_name: Omega_KG Documentation
+repo_url: https://github.com/your-org/omega-kg
+repo_name: your-org/omega-kg
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.annotate
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            show_source: true
+            docstring_style: google
+nav:
+  - Home: index.md
+  - API Reference: reference.md
+markdown_extensions:
+  - admonition
+  - codehilite
+  - pymdownx.superfences
+  - pymdownx.tabbed
+  - pymdownx.details
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.emoji
+  - pymdownx.magiclink
+  - pymdownx.tasklist
+  - pymdownx.tilde
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/your-org/omega-kg
