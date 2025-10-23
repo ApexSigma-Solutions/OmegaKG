@@ -1,0 +1,67 @@
+repos:
+  - repo: https://github.com/psf/black
+    rev: 25.9.0
+    hooks:
+      - id: black
+  - repo: https://github.com/charliermarsh/ruff-pre-commit
+    rev: v0.4.4
+    hooks:
+      - id: ruff
+  - repo: https://github.com/pycqa/flake8
+    rev: 7.0.0
+    hooks:
+      - id: flake8
+#  - repo: https://github.com/returntocorp/semgrep
+#    rev: v1.67.0
+#    hooks:
+#      - id: semgrep
+  - repo: https://github.com/aquasecurity/trivy
+    rev: v0.50.0
+    hooks:
+      - id: trivy
+  - repo: https://github.com/snyk/snyk
+    rev: v1.1292.0
+    hooks:
+      - id: snyk
+  - repo: https://github.com/zaproxy/zap-api-scan
+    rev: v2.14.0
+    hooks:
+      - id: zap-api-scan
+  - repo: https://github.com/pytest-dev/pytest
+    rev: 8.4.2
+    hooks:
+      - id: pytest
+      - id: pytest-cov
+  - repo: https://github.com/psf/black
+    rev: 25.9.0
+    hooks:
+      - id: black
+  - repo: https://github.com/charliermarsh/ruff-pre-commit
+    rev: v0.4.4
+    hooks:
+      - id: ruff
+  - repo: https://github.com/pycqa/flake8
+    rev: 7.0.0
+    hooks:
+      - id: flake8
+#  - repo: https://github.com/returntocorp/semgrep
+#    rev: v1.67.0
+#    hooks:
+#      - id: semgrep
+  - repo: https://github.com/aquasecurity/trivy
+    rev: v0.50.0
+    hooks:
+      - id: trivy
+  - repo: https://github.com/snyk/snyk
+    rev: v1.1292.0
+    hooks:
+      - id: snyk
+  - repo: https://github.com/zaproxy/zap-api-scan
+    rev: v2.14.0
+    hooks:
+      - id: zap-api-scan
+  - repo: https://github.com/pytest-dev/pytest
+    rev: 8.4.2
+    hooks:
+      - id: pytest
+      - id: pytest-cov
