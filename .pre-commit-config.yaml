@@ -1,67 +1,62 @@
+# .pre-commit-config.yaml
+# Windows-compatible Python checks only
+# Full infra checks run in CI/CD or via scripts/pre-commit-full.ps1
+
 repos:
-  - repo: https://github.com/psf/black
-    rev: 25.9.0
-    hooks:
-      - id: black
-  - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: v0.4.4
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.4
     hooks:
       - id: ruff
-  - repo: https://github.com/pycqa/flake8
-    rev: 7.0.0
+        args: [--fix, --exit-non-zero-on-fix]
+      - id: ruff-format
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.14.0
     hooks:
-      - id: flake8
-#  - repo: https://github.com/returntocorp/semgrep
-#    rev: v1.67.0
-#    hooks:
-#      - id: semgrep
-  - repo: https://github.com/aquasecurity/trivy
-    rev: v0.50.0
+      - id: mypy
+        args: [--ignore-missing-imports, --python-version=3.14]
+        # Removed `types-all` to avoid massive, sometimes-unavailable bundles on Windows.
+        # If you need specific types, add them explicitly, e.g.:
+        # additional_dependencies: ["types-requests", "types-PyYAML"]
+
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.8.0
     hooks:
-      - id: trivy
-  - repo: https://github.com/snyk/snyk
-    rev: v1.1292.0
+      - id: bandit
+        args: [-c, pyproject.toml, -ll, -r, .]
+        files: \.py$
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
     hooks:
-      - id: snyk
-  - repo: https://github.com/zaproxy/zap-api-scan
-    rev: v2.14.0
+      - id: check-yaml
+        exclude: ^(.*\.github/.*|templates/.*\.ya?ml)$
+      - id: check-added-large-files
+        args: [--maxkb=1024]
+      - id: end-of-file-fixer
+        exclude: \.lock$
+      - id: trailing-whitespace
+      - id: check-merge-conflict
+      - id: detect-private-key
+
+  # Custom ApexSigma hooks
+  - repo: local
     hooks:
-      - id: zap-api-scan
-  - repo: https://github.com/pytest-dev/pytest
-    rev: 8.4.2
-    hooks:
-      - id: pytest
-      - id: pytest-cov
-  - repo: https://github.com/psf/black
-    rev: 25.9.0
-    hooks:
-      - id: black
-  - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: v0.4.4
-    hooks:
-      - id: ruff
-  - repo: https://github.com/pycqa/flake8
-    rev: 7.0.0
-    hooks:
-      - id: flake8
-#  - repo: https://github.com/returntocorp/semgrep
-#    rev: v1.67.0
-#    hooks:
-#      - id: semgrep
-  - repo: https://github.com/aquasecurity/trivy
-    rev: v0.50.0
-    hooks:
-      - id: trivy
-  - repo: https://github.com/snyk/snyk
-    rev: v1.1292.0
-    hooks:
-      - id: snyk
-  - repo: https://github.com/zaproxy/zap-api-scan
-    rev: v2.14.0
-    hooks:
-      - id: zap-api-scan
-  - repo: https://github.com/pytest-dev/pytest
-    rev: 8.4.2
-    hooks:
-      - id: pytest
-      - id: pytest-cov
+      - id: no-root-test-scripts
+        name: Prevent root-level test scripts
+        entry: Root test scripts forbidden (use tests/ directory)
+        language: fail
+        files: ^test_.*\.py$
+        exclude: ^tests/
+
+      - id: no-bytecode
+        name: Prevent Python bytecode
+        entry: Python bytecode forbidden
+        language: fail
+        files: \.pyc$
+
+      - id: no-temp-dagster
+        name: Prevent temp Dagster artifacts
+        entry: Temp Dagster artifacts forbidden
+        language: fail
+        files: ^tmpir.*
