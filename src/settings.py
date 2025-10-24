@@ -1,5 +1,5 @@
 from pydantic import BaseSettings
-from typing import Optional
+
 
 class Settings(BaseSettings):
     app_env: str = "development"
@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
+
 
 # Usage example:
 # settings = Settings()
