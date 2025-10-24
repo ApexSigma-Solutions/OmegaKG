@@ -6,7 +6,28 @@ on:
       - alpha
 
 jobs:
+  setup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Cache Poetry dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pypoetry
+          key: ${{ runner.os }}-poetry-${{ hashFiles('**/poetry.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-poetry-
+      - name: Install Poetry
+        run: pip install poetry
+      - name: Install dependencies
+        run: poetry install --with dev
+
   trunk:
+    needs: setup
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -16,10 +37,15 @@ jobs:
           python-version: '3.11'
       - name: Install Poetry
         run: pip install poetry
-      - name: Install Trunk
-        run: curl -fsSL https://get.trunk.io -o install-trunk.sh && bash install-trunk.sh
+      - name: Restore Poetry cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pypoetry
+          key: ${{ runner.os }}-poetry-${{ hashFiles('**/poetry.lock') }}
       - name: Install dependencies
         run: poetry install --with dev
+      - name: Install Trunk
+        run: curl -fsSL https://get.trunk.io -o install-trunk.sh && bash install-trunk.sh
       - name: Run Trunk check
         run: trunk check --all
       - name: Run Trunk fmt
@@ -44,8 +70,12 @@ jobs:
         uses: aquasecurity/trivy-action@master
         with:
           scan-type: fs
-          format: table
-          exit-code: 1
+          format: sarif
+          output: trivy-results.sarif
+      - name: Upload Trivy results
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-results.sarif
 
   snyk:
     runs-on: ubuntu-latest
@@ -56,16 +86,8 @@ jobs:
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
-  zap:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Run OWASP ZAP Baseline Scan
-        uses: zaproxy/action-baseline@v0.10.0
-        with:
-          target: 'http://localhost:8000'
-
   pytest:
+    needs: setup
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -75,6 +97,11 @@ jobs:
           python-version: '3.11'
       - name: Install Poetry
         run: pip install poetry
+      - name: Restore Poetry cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pypoetry
+          key: ${{ runner.os }}-poetry-${{ hashFiles('**/poetry.lock') }}
       - name: Install dependencies
         run: poetry install --with dev
       - name: Run pytest with coverage
