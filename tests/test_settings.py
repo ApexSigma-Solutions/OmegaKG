@@ -3,6 +3,7 @@ Unit tests for omega_kg.settings module
 """
 
 from unittest.mock import patch
+from omega_kg.settings import Settings
 
 
 def test_settings_load_from_env(monkeypatch):
@@ -41,3 +42,16 @@ def test_settings_singleton():
     from omega_kg.settings import settings as settings2
 
     assert settings1 is settings2
+
+
+def test_settings_creates_valid_driver_config():
+    """Test that settings provide valid Neo4j driver configuration"""
+    settings = Settings()
+
+    # Verify settings has required Neo4j connection parameters
+    assert hasattr(settings, 'neo4j_uri')
+    assert hasattr(settings, 'neo4j_user')
+    assert hasattr(settings, 'neo4j_password')
+    assert settings.neo4j_uri
+    assert settings.neo4j_user
+    assert settings.neo4j_password
