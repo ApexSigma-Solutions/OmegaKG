@@ -3,6 +3,7 @@ Unit tests for check_nodes.py
 """
 
 import importlib
+import os
 import subprocess
 import sys
 from unittest.mock import Mock, patch
@@ -15,10 +16,11 @@ class TestCheckNodes:
     @patch('builtins.print')
     def test_check_nodes_with_tasks(self, mock_print, mock_driver):
         """Test check_nodes script driver creation."""
-        # Mock the driver and session
+        # Mock the driver instance and session
+        mock_driver_instance = Mock()
         mock_session = Mock()
-        mock_driver.return_value = mock_session
-        mock_driver.return_value.session.return_value = mock_session
+        mock_driver.return_value = mock_driver_instance
+        mock_driver_instance.session.return_value = mock_session
 
         # Mock session.run to return mock results
         mock_result = Mock()
@@ -42,14 +44,22 @@ class TestCheckNodes:
 
     def test_check_nodes_script_execution(self):
         """Test that check_nodes.py can be executed as a script."""
-        # Run the script as a subprocess
+        # Create a safe environment to prevent real DB connections
+        env = os.environ.copy()
+        env['NEO4J_URI'] = 'bolt://invalid-host:9999'  # Invalid URI to prevent connection
+        env['NEO4J_USER'] = 'test'
+        env['NEO4J_PASSWORD'] = 'test'
+
+        # Run the script as a subprocess with timeout and safe environment
         result = subprocess.run(
             [sys.executable, 'omega_kg/check_nodes.py'],
             capture_output=True,
             text=True,
-            cwd='.'
+            cwd='.',
+            env=env,
+            timeout=10  # Prevent hanging
         )
 
-        # The script should run without errors (even if Neo4j is not available)
+        # The script should run without syntax errors (connection errors are expected)
         # It will fail with connection errors, but should not have syntax errors
         assert result.returncode != 2  # Not a syntax error

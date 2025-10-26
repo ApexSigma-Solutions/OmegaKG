@@ -107,9 +107,12 @@ jobs:
       - name: Run pytest with coverage
         run: poetry run pytest --cov=omega_kg --cov-report=xml --cov-report=term --junitxml=junit.xml
       - name: Upload test results to Trunk
+        if: always()
         run: |
           curl -fsSL https://get.trunk.io -o install-trunk.sh && bash install-trunk.sh
-          trunk upload-test-results junit.xml
+          if ! trunk upload-test-results junit.xml; then
+            echo "Warning: Failed to upload test results to Trunk, but continuing workflow"
+          fi
       - name: Upload coverage to PR
         uses: actions/upload-artifact@v4
         with:

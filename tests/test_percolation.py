@@ -25,8 +25,7 @@ class TestPercolationEngine:
         """Test PercolationEngine initialization."""
         assert self.engine.driver == self.mock_driver
 
-    @patch('omega_kg.percolation.Path')
-    def test_percolate_from_vault(self, mock_path_class):
+    def test_percolate_from_vault(self):
         """Test percolating from a vault with multiple files."""
         # Mock Path and file operations
         mock_vault_path = Mock(spec=Path)
