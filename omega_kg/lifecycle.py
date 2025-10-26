@@ -87,12 +87,12 @@ class TaskLifecycle:
 
     def __init__(self, mock_mode: bool = False):
         """
-        Create a TaskLifecycle manager and initialize its persistence and vault settings.
+        Initialize the TaskLifecycle manager and configure persistence and vault settings.
         
-        Initializes instance attributes (Neo4j driver, vault path, and mock mode). If mock_mode is False, attempts to connect to the configured Neo4j instance and will switch the instance to mock mode and clear the driver if the connection cannot be established.
+        Sets the Obsidian vault path and, unless mock_mode is True, attempts to establish a Neo4j driver; on connection failure the instance is switched to mock mode and the driver is cleared.
         
         Parameters:
-            mock_mode (bool): If True, skip Neo4j connection and operate in mock mode.
+            mock_mode (bool): If True, skip connecting to Neo4j and operate using mock data.
         """
         self.driver = None
         self.vault_path = Path(settings.obsidian_vault_path)
@@ -221,10 +221,10 @@ class TaskLifecycle:
 
     def _get_mock_results(self) -> Dict[str, List[Dict[str, Any]]]:
         """
-        Generate mock results for testing when database is unavailable.
-
+        Return a predefined mock lifecycle results dictionary used when a real database connection is not available.
+        
         Returns:
-            Sample lifecycle report data
+            mock_results (Dict[str, List[Dict[str, Any]]]): Mapping with keys 'archived', 'warned', 'blocked', 'failed', and 'skipped'. Each value is a list of task records; task records contain the keys 't.uid', 't.title', 't.filepath', 't.status', and 'days_old'.
         """
         return {
             "archived": [
@@ -254,13 +254,13 @@ class TaskLifecycle:
         self, session: Any, rule: LifecycleRule
     ) -> List[Dict[str, Any]]:
         """
-        Find tasks that meet the time-based criteria of a lifecycle rule.
+        Find tasks that match a lifecycle rule's status and age criteria.
         
         Parameters:
-            rule (LifecycleRule): The lifecycle transition rule whose conditions (from_status, days_threshold, and optional condition) are used to locate violating tasks.
+            rule (LifecycleRule): Rule whose from_status, days_threshold, and optional condition determine matching tasks.
         
         Returns:
-            violations (List[Dict[str, Any]]): List of task records matching the rule. Each dict contains keys `t.uid`, `t.title`, `t.filepath`, `t.status`, and `days_old` (number of days since task creation). Results are ordered by `days_old` descending.
+            List[Dict[str, Any]]: List of task records ordered by `days_old` descending. Each dict contains the keys `'t.uid'`, `'t.title'`, `'t.filepath'`, `'t.status'`, and `days_old` (number of days since task creation).
         """
 
         # Build Cypher query
@@ -284,9 +284,9 @@ class TaskLifecycle:
 
     def _transition_task(self, session: Any, uid: str, rule: LifecycleRule) -> None:
         """
-        Perform the lifecycle transition for a single task and persist the change to both the database and the Obsidian vault.
+        Apply a lifecycle rule to a task and persist the transition to both Neo4j and its Obsidian note.
         
-        Updates the task's status and transition metadata in Neo4j, updates the corresponding Obsidian note's frontmatter and adds a transition notice to the note content, and prints a confirmation message.
+        Sets the task's status and transition metadata in the database, updates the task's markdown frontmatter and appends a human-readable transition notice to the file, and prints a confirmation message.
         """
 
         # Update Neo4j
@@ -479,9 +479,12 @@ class TaskLifecycle:
 
     def send_email_report(self, report: str) -> None:
         """
-        Send the provided lifecycle report to the configured SMTP recipient.
+        Send the lifecycle report via SMTP to the configured recipient.
         
-        If SMTP settings (smtp_host, smtp_user, and email_to) are not all configured, the function does nothing. When configured, it composes a plain-text email with a subject that includes the current date, connects to the SMTP server using STARTTLS, authenticates with the configured user and password, and sends the message. Prints a success message on successful send or an error message if sending fails.
+        If SMTP host, user, or recipient are not configured, the call does nothing. When configured, this composes a plain-text message whose subject includes the current date, connects to the SMTP server with STARTTLS, authenticates with the configured credentials, and sends the message. Prints a confirmation on success or an error message on failure.
+        
+        Parameters:
+            report (str): Plain-text report body to include in the email.
         """
 
         # Check if email is configured
@@ -522,13 +525,13 @@ class TaskLifecycle:
 
 def main() -> None:
     """
-    Command-line entry point to run task lifecycle enforcement.
+    Command-line entry point that runs the TaskLifecycle enforcement flow.
     
     Parses CLI flags:
-      --dry-run: preview changes without applying them.
-      --no-email: skip sending the email report.
+      --dry-run: preview lifecycle actions without applying changes.
+      --no-email: do not send the generated report via email.
     
-    Runs the lifecycle enforcement process, prints connection status and a human-readable report, optionally sends the report by email, and ensures the lifecycle resources are closed on exit.
+    Executes enforcement, prints connection status and the generated human-readable report, optionally sends the report by email, and ensures lifecycle resources are closed on exit.
     """
     import argparse
 
