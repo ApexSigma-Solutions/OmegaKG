@@ -9,10 +9,10 @@ from unittest.mock import MagicMock, patch
 @pytest.fixture
 def mock_env_vars(monkeypatch):
     """
-    Prepare a predefined set of environment variables for tests and apply them using the provided monkeypatch fixture.
-
+    Apply a predefined set of environment variables for tests using the provided monkeypatch fixture.
+    
     Returns:
-        env_vars (dict): Mapping of environment variable names to values. Keys with value `None` indicate the variable was removed from the environment; other values were set.
+        env_vars (dict): Mapping of environment variable names to their applied values. A value of `None` indicates the variable was removed from the environment.
     """
     env_vars = {
         "APP_ENV": "test",
@@ -39,10 +39,10 @@ def mock_env_vars(monkeypatch):
 @pytest.fixture
 def test_vault_path(tmp_path):
     """
-    Creates a temporary "test_vault" directory under the provided tmp_path for use in tests.
-
+    Create a temporary "test_vault" directory under the provided tmp_path for use in tests.
+    
     Returns:
-        pathlib.Path: Path to the created temporary vault directory (tmp_path / "test_vault").
+        pathlib.Path: Path to the created directory (tmp_path / "test_vault").
     """
     vault = tmp_path / "test_vault"
     vault.mkdir(exist_ok=True)
@@ -52,10 +52,10 @@ def test_vault_path(tmp_path):
 @pytest.fixture
 def mock_neo4j_driver():
     """
-    Create a mock Neo4j driver that yields a mock session when used as a context manager.
-
+    Create a MagicMock that emulates a Neo4j driver whose session() context manager yields a mock session.
+    
     Returns:
-        MagicMock: A mock driver whose session() returns a context manager that yields a mock session.
+        MagicMock: Mock Neo4j driver whose session() context manager yields a MagicMock representing the session.
     """
     driver = MagicMock()
     session = MagicMock()
@@ -67,10 +67,10 @@ def mock_neo4j_driver():
 @pytest.fixture
 def mock_neo4j_session():
     """
-    Provide a MagicMock that simulates a Neo4j session for tests.
-
+    Create a MagicMock that simulates a Neo4j session for tests.
+    
     Returns:
-        MagicMock: A mock object representing a Neo4j session, suitable for use wherever a session is expected in tests.
+        MagicMock: A mock object configured to act as a Neo4j session for use in tests.
     """
     session = MagicMock()
     return session
@@ -133,16 +133,16 @@ def sample_lifecycle_rule_data():
 @pytest.fixture
 def sample_linear_webhook_payload():
     """
-    Provide a representative Linear webhook payload for tests.
-
+    Return a representative Linear webhook payload used in tests.
+    
     Returns:
-        payload (dict): A dictionary simulating a Linear webhook update event with keys:
-            - "action": event action string ("update").
+        payload (dict): Dictionary representing a Linear webhook update event with keys:
+            - "action": string, event action (e.g., "update").
             - "data": dict containing:
-                - "identifier": issue identifier string.
-                - "state": dict with "name" (status string).
-                - "priority": integer priority.
-                - "updatedAt": ISO 8601 timestamp string.
+                - "identifier": string, issue identifier.
+                - "state": dict with "name": string status.
+                - "priority": int priority value.
+                - "updatedAt": string, ISO 8601 timestamp.
     """
     return {
         "action": "update",
@@ -158,13 +158,13 @@ def sample_linear_webhook_payload():
 @pytest.fixture
 def sample_chat_session_data():
     """
-    Provide a sample chat session payload for tests.
-
+    Sample chat session payload for tests.
+    
     Returns:
-        dict: A chat session dictionary containing:
-            - date (str): ISO date string of the session (e.g., "2025-10-25").
+        dict: A dictionary with:
+            - date (str): ISO 8601 date string of the session.
             - topic (str): Topic discussed in the session.
-            - decisions (list[str]): List of decisions or action items agreed during the session.
+            - decisions (list[str]): Decisions or action items agreed during the session.
     """
     return {
         "date": "2025-10-25",
@@ -179,12 +179,12 @@ def sample_chat_session_data():
 @pytest.fixture
 def task_lifecycle_mock(mock_env_vars):
     """
-    Provide a TaskLifecycle configured in mock mode for tests.
-
-    Yields a TaskLifecycle instance created with mock_mode=True and ensures lifecycle.close() is called after use.
-
+    Create a TaskLifecycle instance configured for mock mode for use in tests.
+    
+    The fixture yields a TaskLifecycle instantiated with mock_mode=True and ensures lifecycle.close() is called after the fixture is torn down.
+    
     Returns:
-        TaskLifecycle: A lifecycle instance suitable for unit tests (mock mode).
+        TaskLifecycle: Instance configured with mock_mode=True.
     """
     from omega_kg.lifecycle import TaskLifecycle
 
@@ -197,11 +197,14 @@ def task_lifecycle_mock(mock_env_vars):
 def task_lifecycle_with_driver(mock_env_vars, mock_neo4j_driver):
     """
     Provide a TaskLifecycle instance configured to use a mocked Neo4j driver.
-
-    Yields a TaskLifecycle created with mock_mode=False whose .driver is replaced by the provided mock_neo4j_driver, allowing tests to exercise lifecycle logic without a real Neo4j connection. Ensures lifecycle.close() is called after the fixture is torn down.
-
+    
+    Yields a TaskLifecycle created with mock_mode=False whose `driver` attribute is replaced by the provided mock; ensures `lifecycle.close()` is called after the fixture is torn down.
+    
+    Parameters:
+        mock_neo4j_driver (unittest.mock.MagicMock): Mock Neo4j driver to assign to the lifecycle to prevent real DB connections.
+    
     Returns:
-        TaskLifecycle: A lifecycle instance with its driver overridden by the mock.
+        TaskLifecycle: Lifecycle instance with its driver overridden by the mock.
     """
     from omega_kg.lifecycle import TaskLifecycle
 
