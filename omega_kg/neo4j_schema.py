@@ -45,10 +45,10 @@ class KnowledgeGraphSchema:
     def _check_connection(self) -> bool:
         """
         Check that the configured Neo4j driver can execute a simple test query.
-        
+
         Returns:
             True if the driver can execute a test query.
-        
+
         Raises:
             ConnectionError: If no driver is initialized or the test query fails, with underlying error details.
         """
@@ -66,7 +66,7 @@ class KnowledgeGraphSchema:
     def get_connection_status(self) -> dict[str, bool | str]:
         """
         Report the current Neo4j connection state and related metadata.
-        
+
         Returns:
             dict: Mapping with connection details:
                 - "connected": `True` if a live driver exists and mock mode is not active, `False` otherwise.
@@ -82,7 +82,7 @@ class KnowledgeGraphSchema:
     def initialize_schema(self) -> None:
         """
         Create the required Neo4j constraints and indexes for the knowledge graph.
-        
+
         If mock mode is enabled or no database driver is available, the method exits without making changes and reports the situation via printed messages. On success it prints a confirmation; on failure it prints an error and a tip when the connection was lost.
         """
         if self.mock_mode:
@@ -136,7 +136,7 @@ class KnowledgeGraphSchema:
     def close(self) -> None:
         """
         Close the Neo4j driver if one is open.
-        
+
         Does nothing when running in mock mode or if the driver is already None/closed.
         """
         if self.driver:
@@ -146,7 +146,7 @@ class KnowledgeGraphSchema:
 def main() -> None:
     """
     CLI entry point that initializes the Neo4j schema and reports connection status.
-    
+
     Parses command-line arguments, constructs a KnowledgeGraphSchema, prints whether it is connected or running in mock mode, invokes schema initialization, and ensures the underlying driver is closed when finished.
     """
     import argparse

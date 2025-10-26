@@ -12,9 +12,9 @@ class LinearSync:
     def __init__(self):
         """
         Initialize the LinearSync instance.
-        
+
         Creates a Neo4j driver using credentials from settings and stores the Obsidian vault path as a Path object.
-        
+
         Attributes:
             driver: Neo4j driver connected using settings.neo4j_uri and credentials from settings.
             vault: Path object for the Obsidian vault from settings.obsidian_vault_path.
@@ -27,16 +27,16 @@ class LinearSync:
     def handle_linear_webhook(self, payload: dict):
         """
         Route and handle a Linear webhook payload by dispatching supported actions.
-        
+
         Processes the incoming `payload` dictionary, reading the `action` key to determine the operation and the `data` key for the issue payload. Supported actions:
         - "update": synchronize the provided issue into Neo4j and the Obsidian vault.
         - "remove": mark the corresponding issue as archived in Neo4j.
-        
+
         Parameters:
             payload (dict): Webhook payload expected to contain:
                 - "action" (str): the webhook event type ("update" or "remove").
                 - "data" (dict): the Linear issue object for the event.
-        
+
         """
         action = payload.get("action")
         issue = payload.get("data")
@@ -49,9 +49,9 @@ class LinearSync:
     def _sync_issue_update(self, issue: dict):
         """
         Synchronize a Linear issue update into Neo4j and the corresponding Obsidian task file.
-        
+
         Updates the matching Task node's Linear metadata in the Neo4j graph and then updates the Obsidian file's frontmatter for that task. If no matching Task node is found, no file updates are performed.
-        
+
         Parameters:
             issue (dict): Linear issue payload; must include 'identifier', 'state' (with 'name'), and 'updatedAt'. May include 'priority'.
         """
@@ -84,11 +84,11 @@ class LinearSync:
     def _update_task_file(self, path: Path, issue: dict):
         """
         Update an Obsidian task file's frontmatter with fields from a Linear issue.
-        
+
         Reads the file at `path`, sets frontmatter keys `linear_status`, `linear_priority`, and
         `linear_updated` from the provided `issue`, maps the Linear state to an Obsidian
         `status` value, and writes the updated frontmatter back to disk.
-        
+
         Parameters:
             path (Path): Filesystem path to the Obsidian note to update.
             issue (dict): Linear issue payload containing at least `state["name"]` and
@@ -121,9 +121,9 @@ class LinearSync:
     def _handle_issue_deletion(self, issue: dict):
         """
         Mark the corresponding Neo4j Task node as archived for a deleted Linear issue.
-        
+
         Updates the Task node with the matching Linear identifier by setting its status to 'archived', linear_status to 'Canceled', and transitioned_at to the current datetime.
-        
+
         Parameters:
             issue (dict): Linear issue payload; must contain the "identifier" key with the Linear issue ID.
         """
