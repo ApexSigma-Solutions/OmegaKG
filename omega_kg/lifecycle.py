@@ -155,10 +155,10 @@ class TaskLifecycle:
     ) -> Dict[str, List[Dict[str, Any]]]:
         """
         Enforces configured lifecycle rules, applying transitions or warnings to matching tasks.
-        
+
         Parameters:
             dry_run (bool): If True, simulate actions without modifying the database or files.
-        
+
         Returns:
             results (Dict[str, List[Dict[str, Any]]]): Mapping of result categories to lists of task records or error entries.
                 - "archived": tasks that were auto-transitioned to ARCHIVED.
@@ -316,7 +316,7 @@ class TaskLifecycle:
     def _warn_task(self, session: Any, uid: str, rule: LifecycleRule) -> None:
         """
         Record that a task has been warned to avoid duplicate warnings.
-        
+
         Sets the Task node's `warned` flag to true and `warned_at` to the current datetime in the database; used when a lifecycle rule issues a warning (e.g., an approaching automatic transition).
         """
 
@@ -382,7 +382,7 @@ class TaskLifecycle:
     def generate_report(self, results: Dict[str, List[Dict[str, Any]]]) -> str:
         """
         Create a human-readable lifecycle report summarizing actions taken and current stale tasks.
-        
+
         Parameters:
             results (Dict[str, List[Dict[str, Any]]]): Mapping of lifecycle outcome categories to lists of task records.
                 Expected keys include:
@@ -390,7 +390,7 @@ class TaskLifecycle:
                 - "warned": list of tasks that were warned (each record contains 't.uid', 't.title', 'days_old', etc.)
                 - "failed": list of task records that failed processing
                 - other keys are permitted but ignored by this function.
-        
+
         Returns:
             str: A multi-line text report containing sections for auto-archived tasks, warnings, stale active tasks, and a summary with counts.
         """
@@ -522,7 +522,7 @@ class TaskLifecycle:
     def close(self) -> None:
         """
         Close the Neo4j driver if one is initialized.
-        
+
         Does nothing if no driver is configured.
         """
         if self.driver:
