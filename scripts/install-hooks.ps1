@@ -80,12 +80,7 @@ function Install-Hook {
             $content = Get-Content $hookDest -Raw
             if ($content -match "Omega_KG") {
                 # Optional: If you need to extract a group, check $matches
-                if ($content -match "Omega_KG") {
-                    if ($matches.Count -gt 1 -and $matches[1]) {
-                        # Safe to use $matches[1] here
-                        # (Insert logic using $matches[1] if needed)
-                    }
-                }
+                # (No group extraction needed; redundant inner match removed)
                 Remove-Item $hookDest -Force
                 Write-Host "  ✓ Uninstalled from: $repoName" -ForegroundColor Yellow
                 return $true
