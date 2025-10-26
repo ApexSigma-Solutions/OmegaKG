@@ -22,9 +22,9 @@ def cli():
 @cli.command()
 def init():
     """
-    Initialize the application's Neo4j schema and populate sample relationships.
+    Initialize the Neo4j schema and populate example relationships.
     
-    Creates the schema, inserts sample relationships for demonstration, and closes the schema connection.
+    Sets up the required schema (nodes, constraints) and creates sample relationships for demonstration. Ensures the schema connection is closed when finished.
     """
     click.echo("🔧 Initializing Neo4j schema...")
     schema = KnowledgeGraphSchema()
@@ -42,8 +42,8 @@ def lifecycle(dry_run, no_email):
     Run task lifecycle enforcement, print a human-readable report, and optionally send it by email.
     
     Parameters:
-        dry_run (bool): If True, simulate changes without applying them.
-        no_email (bool): If True, skip sending the email report.
+        dry_run (bool): Simulate lifecycle changes without applying them.
+        no_email (bool): Do not send the generated email report.
     """
     lc = TaskLifecycle()
 
@@ -64,12 +64,9 @@ def lifecycle(dry_run, no_email):
 @cli.command()
 def stats():
     """
-    Display task counts and per-status statistics from the Neo4j knowledge graph.
+    Show aggregated counts of Task nodes in the knowledge graph and print them to the console.
     
-    Prints a connection header and aggregated counts for total tasks and each status
-    (draft, active, completed, archived) to the console. If no Neo4j connection is
-    available, prints a mock-mode warning and returns. Always closes the underlying
-    ObsidianNeo4jSync client before returning.
+    Connects to the configured Neo4j instance (or uses mock mode if no connection) and prints counts for total, draft, active, completed, and archived tasks. Ensures opened sync client and database driver are closed before returning.
     """
     from omega_kg.obsidian_sync import ObsidianNeo4jSync
 
@@ -126,9 +123,9 @@ def stats():
 @cli.command()
 def stale():
     """
-    Prints tasks older than seven days with their UID, title, and creation date.
+    Print tasks older than 7 days to the console, showing each task's UID, title, and creation date.
     
-    Fetches stale tasks from ObsidianNeo4jSync using a 7-day threshold, prints a header and one line per task in the format "uid: title (created: date)", prints "(none)" if no stale tasks are found, and closes the sync client.
+    If stale tasks exist, prints a header and one line per task in the format "uid: title (created: date)". If no stale tasks are found, prints "(none)". The function closes the sync client before returning.
     """
     from omega_kg.obsidian_sync import ObsidianNeo4jSync
 

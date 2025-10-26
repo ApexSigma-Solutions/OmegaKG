@@ -23,7 +23,7 @@ class PercolationEngine:
         Create a PercolationEngine bound to the provided Neo4j driver.
         
         Parameters:
-            driver (neo4j.Driver): Neo4j driver used for executing queries and transactions.
+            driver (neo4j.Driver): Neo4j driver used for database operations by the engine.
         """
         self.driver = driver
 
@@ -139,10 +139,12 @@ class PercolationEngine:
 
     def _percolate_commits(self, path: Path, metadata: Dict, content: str) -> int:
         """
-        Create or update Commit nodes from markdown commit blocks and link them to Task nodes when a linear id is present.
+        Create or update Commit nodes from markdown commit blocks and link them to Task nodes when a Linear ID is present.
+        
+        Links each discovered commit (by hash) to an existing Task using the Linear ID when available.
         
         Returns:
-            commit_count (int): Number of commit entries processed.
+            int: Number of commit entries processed.
         """
         commit_count = 0
 
@@ -252,15 +254,13 @@ class PercolationEngine:
     @staticmethod
     def _generate_decision_id(content: str) -> str:
         """
-        Generate a compact, deterministic identifier for a decision based on its text.
-        
-        The identifier has the form "DEC-XXXX", where "XXXX" is a zero-padded, deterministic 4-digit numeric code derived from the first three words of the provided content.
+        Generate a compact decision identifier from decision text.
         
         Parameters:
-        	content (str): Decision text used to derive the identifier.
+            content (str): Decision text used to derive the identifier; the function uses the first three words to compute the suffix.
         
         Returns:
-        	str: The generated decision identifier, e.g. "DEC-0427".
+            str: Identifier in the form "DEC-XXXX" where "XXXX" is a zero-padded 4-digit numeric suffix derived deterministically from the initial words of the content.
         """
         # Create a simple hash from the first words
         words = content.split()[:3]
@@ -309,15 +309,15 @@ class PercolationEngine:
 
 def create_percolation_engine(uri: str, user: str, password: str) -> PercolationEngine:
     """
-    Factory function to create a PercolationEngine with a Neo4j connection.
-
-    Args:
-        uri: Neo4j connection URI
-        user: Neo4j username
-        password: Neo4j password
-
+    Create a PercolationEngine configured with a Neo4j driver.
+    
+    Parameters:
+        uri (str): Neo4j connection URI.
+        user (str): Neo4j username.
+        password (str): Neo4j password.
+    
     Returns:
-        Configured PercolationEngine instance
+        PercolationEngine: Engine instance initialized with a Neo4j driver.
     """
     driver = GraphDatabase.driver(uri, auth=(user, password))
     return PercolationEngine(driver)
