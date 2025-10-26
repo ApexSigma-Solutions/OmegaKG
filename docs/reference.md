@@ -1,3 +1,3 @@
 # API Reference
 
-::: src.settings
+::: omega_kg.settings

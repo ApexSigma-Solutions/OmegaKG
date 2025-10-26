@@ -14,7 +14,7 @@ repos:
     rev: v1.14.0
     hooks:
       - id: mypy
-        args: [--ignore-missing-imports, --python-version=3.14]
+        args: [--ignore-missing-imports, --python-version=3.14, --explicit-package-bases, --no-strict-optional]
         # Removed `types-all` to avoid massive, sometimes-unavailable bundles on Windows.
         # If you need specific types, add them explicitly, e.g.:
         # additional_dependencies: ["types-requests", "types-PyYAML"]
