@@ -107,15 +107,6 @@ class TestObsidianSyncOperations:
         captured = capsys.readouterr()
         assert "mock mode" in captured.out
 
-    def test_sync_all_tasks_no_driver(self, capsys):
-        """Should skip sync in mock mode."""
-        sync = ObsidianNeo4jSync(mock_mode=True)
-        result = sync.sync_all_tasks()
-
-        assert result == 0
-        captured = capsys.readouterr()
-        assert "mock mode" in captured.out
-
     def test_sync_task_note_mock_mode(self, capsys):
         """Should skip single task sync when in mock mode."""
         sync = ObsidianNeo4jSync(mock_mode=True)
@@ -168,13 +159,13 @@ class TestObsidianSyncOperations:
 
                 def run_side_effect(query, **kwargs):
                     """
-                    Simulates a session.run side effect that returns a successful health-check result once, then raises a connection error on subsequent calls.
+                    Simulate a session.run behavior that returns a successful health-check result once, then raises ServiceUnavailable on subsequent calls.
                     
                     Returns:
-                        mock_result: The mock query result returned on the first invocation.
+                        mock_result: The successful result returned on the first invocation.
                     
                     Raises:
-                        ServiceUnavailable: On the second and subsequent invocations to simulate a lost connection.
+                        ServiceUnavailable: On the second and any later invocation to simulate a lost connection.
                     """
                     call_count[0] += 1
                     if call_count[0] == 1:  # Health check
@@ -258,7 +249,9 @@ class TestObsidianSyncCleanup:
 
     @patch("omega_kg.obsidian_sync.settings")
     def test_close_with_driver(self, mock_settings):
-        """Should close driver when it exists."""
+        """
+        Verify that when a Neo4j driver is available, ObsidianNeo4jSync.close() calls the driver's close method once.
+        """
         mock_settings.neo4j_uri = "bolt://localhost:7688"
         mock_settings.neo4j_user = "neo4j"
         mock_settings.neo4j_password = "password"
