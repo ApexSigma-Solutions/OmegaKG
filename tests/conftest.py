@@ -9,10 +9,10 @@ from unittest.mock import MagicMock, patch
 @pytest.fixture
 def mock_env_vars(monkeypatch):
     """
-    Prepare and apply a predefined set of environment variables for tests using the provided pytest monkeypatch fixture.
+    Apply a predefined set of environment variables for tests using the provided monkeypatch fixture.
     
     Returns:
-        env_vars (dict): Mapping of environment variable names to values; entries with value `None` indicate the variable was removed from the environment, other values were set.
+        env_vars (dict): Mapping of environment variable names to their applied values. A value of `None` indicates the variable was removed from the environment.
     """
     env_vars = {
         "APP_ENV": "test",
@@ -133,16 +133,16 @@ def sample_lifecycle_rule_data():
 @pytest.fixture
 def sample_linear_webhook_payload():
     """
-    Provide a representative Linear webhook payload for tests.
+    Return a representative Linear webhook payload used in tests.
     
     Returns:
-        payload (dict): A dictionary simulating a Linear webhook update event with keys:
-            - "action": event action string ("update").
+        payload (dict): Dictionary representing a Linear webhook update event with keys:
+            - "action": string, event action (e.g., "update").
             - "data": dict containing:
-                - "identifier": issue identifier string.
-                - "state": dict with "name" (status string).
-                - "priority": integer priority.
-                - "updatedAt": ISO 8601 timestamp string.
+                - "identifier": string, issue identifier.
+                - "state": dict with "name": string status.
+                - "priority": int priority value.
+                - "updatedAt": string, ISO 8601 timestamp.
     """
     return {
         "action": "update",
@@ -158,13 +158,13 @@ def sample_linear_webhook_payload():
 @pytest.fixture
 def sample_chat_session_data():
     """
-    Provide a sample chat session payload for tests.
+    Sample chat session payload for tests.
     
     Returns:
-        dict: A chat session dictionary containing:
-            - date (str): ISO date string of the session (e.g., "2025-10-25").
+        dict: A dictionary with:
+            - date (str): ISO 8601 date string of the session.
             - topic (str): Topic discussed in the session.
-            - decisions (list[str]): List of decisions or action items agreed during the session.
+            - decisions (list[str]): Decisions or action items agreed during the session.
     """
     return {
         "date": "2025-10-25",
@@ -179,12 +179,12 @@ def sample_chat_session_data():
 @pytest.fixture
 def task_lifecycle_mock(mock_env_vars):
     """
-    Provide a TaskLifecycle instance configured in mock mode for tests.
+    Create a TaskLifecycle instance configured for mock mode for use in tests.
     
-    Yields a TaskLifecycle created with mock_mode=True and closes the lifecycle after the test completes.
+    The fixture yields a TaskLifecycle instantiated with mock_mode=True and ensures lifecycle.close() is called after the fixture is torn down.
     
     Returns:
-        TaskLifecycle: A lifecycle instance configured for mock mode.
+        TaskLifecycle: Instance configured with mock_mode=True.
     """
     from omega_kg.lifecycle import TaskLifecycle
 
