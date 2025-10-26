@@ -1,7 +1,9 @@
 from neo4j import GraphDatabase
+from src.settings import Settings
 
+settings = Settings()
 driver = GraphDatabase.driver(
-    "bolt://localhost:7687", auth=("neo4j", "please-change-this-password")
+    settings.neo4j_uri, auth=(settings.neo4j_user, settings.neo4j_password)
 )
 session = driver.session()
 
