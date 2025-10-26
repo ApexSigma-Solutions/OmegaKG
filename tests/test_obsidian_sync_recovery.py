@@ -107,15 +107,6 @@ class TestObsidianSyncOperations:
         captured = capsys.readouterr()
         assert "mock mode" in captured.out
 
-    def test_sync_all_tasks_no_driver(self, capsys):
-        """Should skip sync in mock mode."""
-        sync = ObsidianNeo4jSync(mock_mode=True)
-        result = sync.sync_all_tasks()
-
-        assert result == 0
-        captured = capsys.readouterr()
-        assert "mock mode" in captured.out
-
     def test_sync_task_note_mock_mode(self, capsys):
         """Should skip single task sync when in mock mode."""
         sync = ObsidianNeo4jSync(mock_mode=True)
