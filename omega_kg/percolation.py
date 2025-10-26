@@ -20,22 +20,21 @@ class PercolationEngine:
 
     def __init__(self, driver: Driver):
         """
-        Initialize the percolation engine.
-
-        Args:
-            driver: Neo4j driver instance for database operations
+        Initialize PercolationEngine with a Neo4j driver.
         """
         self.driver = driver
 
     def percolate_from_vault(self, vault_path: Path) -> Dict[str, int]:
         """
-        Extract and percolate all tasks and commits from an Obsidian vault.
-
-        Args:
-            vault_path: Path to the Obsidian vault root directory
-
+        Percolates tasks, commits, and session/decision links from all Markdown files in an Obsidian vault.
+        
+        Scans the given vault directory recursively for `.md` files, extracts frontmatter and content, and delegates per-file processing to the engine's task, commit, and session percolation routines. Errors reading or processing individual files are caught and do not halt the overall run.
+        
+        Parameters:
+            vault_path (Path): Root directory of the Obsidian vault to scan.
+        
         Returns:
-            Dictionary with counts of extracted items (tasks, commits, links)
+            dict: Counts of processed items with keys `"tasks"`, `"commits"`, and `"links"`.
         """
         stats = {"tasks": 0, "commits": 0, "links": 0}
 
@@ -65,13 +64,15 @@ class PercolationEngine:
 
     def _extract_frontmatter(self, content: str) -> Optional[Dict]:
         """
-        Extract YAML frontmatter from markdown content.
-
-        Args:
-            content: Markdown file content
-
+        Extract YAML frontmatter from a Markdown string.
+        
+        Parses the leading YAML frontmatter block delimited by '---' and returns a mapping of top-level keys to their string values; lines without ':' are ignored.
+        
+        Parameters:
+            content (str): Markdown content to inspect.
+        
         Returns:
-            Dictionary of frontmatter metadata or None if not found
+            dict: Mapping of frontmatter keys to values, or None if no valid frontmatter is present.
         """
         if not content.startswith("---"):
             return None
@@ -91,15 +92,15 @@ class PercolationEngine:
 
     def _percolate_task(self, path: Path, metadata: Dict, content: str) -> int:
         """
-        Extract task information and link to decisions.
-
-        Args:
-            path: Path to the markdown file
-            metadata: Extracted metadata from frontmatter
-            content: Full content of the markdown file
-
+        Find task UIDs in the given Markdown content, ensure corresponding Task nodes exist in the graph, and optionally link them to a Decision.
+        
+        Parameters:
+            path (Path): Filesystem path of the Markdown file where tasks were found.
+            metadata (Dict): Parsed frontmatter metadata; may contain "date" for created timestamp and "decision_id" to link tasks to a Decision node.
+            content (str): Full Markdown file content to search for task references (e.g., [[PROJ-123]]).
+        
         Returns:
-            Number of tasks extracted
+            int: Number of task references processed.
         """
         task_count = 0
 
@@ -141,15 +142,10 @@ class PercolationEngine:
 
     def _percolate_commits(self, path: Path, metadata: Dict, content: str) -> int:
         """
-        Extract commit information from markdown content.
-
-        Args:
-            path: Path to the markdown file
-            metadata: Extracted metadata from frontmatter
-            content: Full content of the markdown file
-
+        Create or update Commit nodes from markdown commit blocks and link them to Task nodes when a linear id is present.
+        
         Returns:
-            Number of commits extracted
+            commit_count (int): Number of commit entries processed.
         """
         commit_count = 0
 
@@ -193,15 +189,15 @@ class PercolationEngine:
 
     def _percolate_session(self, path: Path, metadata: Dict, content: str) -> int:
         """
-        Extract session and decision information from markdown.
-
-        Args:
-            path: Path to the markdown file
-            metadata: Extracted metadata from frontmatter
-            content: Full content of the markdown file
-
+        Create or link a chat session from the file's metadata and extract Decision sections from the content, creating Decision nodes and CONTAINS relationships to the session.
+        
+        Parameters:
+            path (Path): Path to the markdown file (used for context).
+            metadata (Dict): Frontmatter metadata. Must include a 'date' value and may include 'topic'.
+            content (str): Full markdown content to scan for decision sections beginning with "## Decision".
+        
         Returns:
-            Number of session/decision links created
+            int: Number of Decision-to-ChatSession links created.
         """
         link_count = 0
         session_date = metadata.get("date")
@@ -259,13 +255,13 @@ class PercolationEngine:
     @staticmethod
     def _generate_decision_id(content: str) -> str:
         """
-        Generate a unique ID for a decision based on its content.
-
-        Args:
-            content: Decision content text
-
+        Create a compact decision identifier derived from the decision text.
+        
+        Parameters:
+            content (str): Decision content used to derive the identifier.
+        
         Returns:
-            Generated decision ID
+            str: Identifier in the form "DEC-XXXX" where "XXXX" is a zero-padded 4-digit numeric suffix derived from the initial words of the content.
         """
         # Create a simple hash from the first words
         words = content.split()[:3]
@@ -274,13 +270,13 @@ class PercolationEngine:
 
     def detect_stale_tasks(self, days_threshold: int = 30) -> List[Dict]:
         """
-        Find tasks that haven't been updated in a specified number of days.
-
-        Args:
-            days_threshold: Number of days to consider a task stale
-
+        List tasks with status 'active' or 'ready' whose creation date is older than the given threshold in days.
+        
+        Parameters:
+            days_threshold (int): Number of days since creation after which a task is considered stale. Defaults to 30.
+        
         Returns:
-            List of stale task information
+            List[Dict]: A list of dictionaries for each stale task containing the keys 'uid', 'title', 'status', and 'created'.
         """
         stale_tasks = []
 
