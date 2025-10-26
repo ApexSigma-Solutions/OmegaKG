@@ -8,7 +8,12 @@ from unittest.mock import MagicMock, patch
 
 @pytest.fixture
 def mock_env_vars(monkeypatch):
-    """Set up mock environment variables for testing"""
+    """
+    Prepare a predefined set of environment variables for tests and apply them using the provided monkeypatch fixture.
+    
+    Returns:
+    	env_vars (dict): Mapping of environment variable names to values. Keys with value `None` indicate the variable was removed from the environment; other values were set.
+    """
     env_vars = {
         "APP_ENV": "test",
         "NEO4J_URI": "bolt://localhost:7687",
@@ -33,7 +38,12 @@ def mock_env_vars(monkeypatch):
 
 @pytest.fixture
 def test_vault_path(tmp_path):
-    """Create a temporary vault directory for testing"""
+    """
+    Creates a temporary "test_vault" directory under the provided tmp_path for use in tests.
+    
+    Returns:
+        pathlib.Path: Path to the created temporary vault directory (tmp_path / "test_vault").
+    """
     vault = tmp_path / "test_vault"
     vault.mkdir(exist_ok=True)
     return vault
@@ -41,7 +51,12 @@ def test_vault_path(tmp_path):
 
 @pytest.fixture
 def mock_neo4j_driver():
-    """Create a mock Neo4j driver for testing"""
+    """
+    Create a mock Neo4j driver that yields a mock session when used as a context manager.
+    
+    Returns:
+        MagicMock: A mock driver whose session() returns a context manager that yields a mock session.
+    """
     driver = MagicMock()
     session = MagicMock()
     driver.session.return_value.__enter__.return_value = session
@@ -51,14 +66,34 @@ def mock_neo4j_driver():
 
 @pytest.fixture
 def mock_neo4j_session():
-    """Create a mock Neo4j session"""
+    """
+    Provide a MagicMock that simulates a Neo4j session for tests.
+    
+    Returns:
+        MagicMock: A mock object representing a Neo4j session, suitable for use wherever a session is expected in tests.
+    """
     session = MagicMock()
     return session
 
 
 @pytest.fixture
 def sample_task_data():
-    """Sample task data for testing"""
+    """
+    Provide sample task data for tests.
+    
+    Returns:
+        dict: A mapping representing a task with the following keys:
+            uid (str): Unique task identifier.
+            title (str): Task title.
+            filepath (str): Relative path to the task file.
+            status (str): Local workflow status.
+            linear_id (str): External Linear issue identifier.
+            linear_status (str): Status name from Linear.
+            linear_priority (int): Priority value from Linear.
+            created (str): ISO 8601 UTC creation timestamp.
+            pinned (bool): Whether the task is pinned.
+            warned (bool): Whether the task has been warned.
+    """
     return {
         "uid": "task-001",
         "title": "Test Task",
@@ -75,7 +110,17 @@ def sample_task_data():
 
 @pytest.fixture
 def sample_lifecycle_rule_data():
-    """Sample lifecycle rule for testing"""
+    """
+    Provide a sample lifecycle rule dictionary used in tests.
+    
+    Returns:
+        dict: A lifecycle rule with the following keys:
+            - from_status (str): Source task status (e.g., "draft").
+            - to_status (str): Target task status (e.g., "archived").
+            - days_threshold (int): Number of days before the transition should occur.
+            - condition (str): Condition expression applied to tasks (e.g., "NOT t.pinned = true").
+            - action (str): Action to perform when the rule matches (e.g., "auto").
+    """
     return {
         "from_status": "draft",
         "to_status": "archived",
@@ -87,7 +132,18 @@ def sample_lifecycle_rule_data():
 
 @pytest.fixture
 def sample_linear_webhook_payload():
-    """Sample Linear webhook payload for testing"""
+    """
+    Provide a representative Linear webhook payload for tests.
+    
+    Returns:
+        payload (dict): A dictionary simulating a Linear webhook update event with keys:
+            - "action": event action string ("update").
+            - "data": dict containing:
+                - "identifier": issue identifier string.
+                - "state": dict with "name" (status string).
+                - "priority": integer priority.
+                - "updatedAt": ISO 8601 timestamp string.
+    """
     return {
         "action": "update",
         "data": {
@@ -101,7 +157,15 @@ def sample_linear_webhook_payload():
 
 @pytest.fixture
 def sample_chat_session_data():
-    """Sample chat session data for testing"""
+    """
+    Provide a sample chat session payload for tests.
+    
+    Returns:
+        dict: A chat session dictionary containing:
+            - date (str): ISO date string of the session (e.g., "2025-10-25").
+            - topic (str): Topic discussed in the session.
+            - decisions (list[str]): List of decisions or action items agreed during the session.
+    """
     return {
         "date": "2025-10-25",
         "topic": "Initial Setup",
@@ -115,10 +179,12 @@ def sample_chat_session_data():
 @pytest.fixture
 def task_lifecycle_mock(mock_env_vars):
     """
-    Create a TaskLifecycle instance in mock mode for testing.
-
-    This fixture is useful for testing lifecycle logic without requiring
-    a live Neo4j connection.
+    Provide a TaskLifecycle configured in mock mode for tests.
+    
+    Yields a TaskLifecycle instance created with mock_mode=True and ensures lifecycle.close() is called after use.
+    
+    Returns:
+        TaskLifecycle: A lifecycle instance suitable for unit tests (mock mode).
     """
     from omega_kg.lifecycle import TaskLifecycle
 
@@ -130,10 +196,12 @@ def task_lifecycle_mock(mock_env_vars):
 @pytest.fixture
 def task_lifecycle_with_driver(mock_env_vars, mock_neo4j_driver):
     """
-    Create a TaskLifecycle instance with mocked Neo4j driver.
-
-    This fixture allows testing lifecycle logic that interacts with
-    the database without requiring a live Neo4j connection.
+    Provide a TaskLifecycle instance configured to use a mocked Neo4j driver.
+    
+    Yields a TaskLifecycle created with mock_mode=False whose .driver is replaced by the provided mock_neo4j_driver, allowing tests to exercise lifecycle logic without a real Neo4j connection. Ensures lifecycle.close() is called after the fixture is torn down.
+    
+    Returns:
+        TaskLifecycle: A lifecycle instance with its driver overridden by the mock.
     """
     from omega_kg.lifecycle import TaskLifecycle
 

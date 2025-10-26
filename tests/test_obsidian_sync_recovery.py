@@ -167,6 +167,15 @@ class TestObsidianSyncOperations:
                 call_count = [0]
 
                 def run_side_effect(query, **kwargs):
+                    """
+                    Simulates a session.run side effect that succeeds once (health check) and then fails with a connection error.
+                    
+                    Returns:
+                        mock_result on the first invocation.
+                    
+                    Raises:
+                        ServiceUnavailable: on the second and subsequent invocations to simulate a lost connection.
+                    """
                     call_count[0] += 1
                     if call_count[0] == 1:  # Health check
                         return mock_result
@@ -217,7 +226,11 @@ class TestObsidianSyncConnectionCheck:
 
     @patch("omega_kg.obsidian_sync.settings")
     def test_check_connection_query_fails(self, mock_settings):
-        """Should raise ConnectionError if query fails."""
+        """
+        Verify that a failed health-check query causes the sync instance to revert to mock mode.
+        
+        Sets up a mocked Neo4j driver/session whose health-check query raises an exception and asserts the ObsidianNeo4jSync instance falls back to mock mode.
+        """
         mock_settings.neo4j_uri = "bolt://localhost:7688"
         mock_settings.neo4j_user = "neo4j"
         mock_settings.neo4j_password = "password"
