@@ -2,11 +2,11 @@
 
 ## Project Overview
 
-This is a general-purpose Python project managed with Poetry. The main application logic resides in the `src/` directory.
+This is a general-purpose Python project managed with Poetry. The main application logic resides in the `omega_kg/` directory.
 
 ## Project Architecture & Conventions
 
-- **Single Python package**: All code is under `src/`. Main config is in `src/settings.py` using Pydantic `BaseSettings` for all environment/config management.
+- **Single Python package**: All code is under `omega_kg/`. Main config is in `omega_kg/settings.py` using Pydantic `BaseSettings` for all environment/config management.
 - **Environment variables**: Reference `.env.example` for required variables. Keep it in sync with `Settings` fields.
 - **Dependency management**: Use Poetry (`pyproject.toml`).
   - For development: `poetry install --with dev`
@@ -31,20 +31,20 @@ This is a general-purpose Python project managed with Poetry. The main applicati
 
 ## Patterns & Examples
 
-- **Settings pattern**: All config must extend `src/settings.py:Settings` (Pydantic). Example usage:
+- **Settings pattern**: All config must extend `omega_kg/settings.py:Settings` (Pydantic). Example usage:
   ```python
-  from src.settings import Settings
+  from omega_kg.settings import Settings
   settings = Settings()
   print(settings.database_url)
   ```
 - **Adding dependencies**: Use `poetry add <package>` and update `pyproject.toml`.
-- **Adding environment variables**: Update both `src/settings.py` and `.env.example`.
+- **Adding environment variables**: Update both `omega_kg/settings.py` and `.env.example`.
 - **Adding Tests**: Add new tests to the `tests/` directory.
 - **Adding Docs**: Add docstrings to all public classes/functions for `mkdocstrings`.
 
 ## Key Files
 
-- `src/settings.py`: Central config (Pydantic BaseSettings)
+- `omega_kg/settings.py`: Central config (Pydantic BaseSettings)
 - `.env.example`: Reference for all required env vars
 - `pyproject.toml`: Poetry config
 - `.pre-commit-config.yaml`: Lint/test hooks

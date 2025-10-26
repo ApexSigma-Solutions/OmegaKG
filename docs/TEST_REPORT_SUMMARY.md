@@ -19,8 +19,8 @@
 - File integrity checks: PASSED
 
 #### 3. Import Paths ✅
-- Fixed: `src.settings` → `omega_kg.settings` in linear_sync.py
-- Verified: No remaining src imports in codebase
+- Fixed: `omega_kg.settings` → `omega_kg.settings` in linear_sync.py
+- Verified: No remaining omega_kg imports in codebase
 - Status: All imports correct
 
 #### 4. Configuration ✅
