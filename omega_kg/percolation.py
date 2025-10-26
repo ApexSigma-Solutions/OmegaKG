@@ -20,7 +20,10 @@ class PercolationEngine:
 
     def __init__(self, driver: Driver):
         """
-        Initialize PercolationEngine with a Neo4j driver.
+        Create a PercolationEngine bound to the provided Neo4j driver.
+        
+        Parameters:
+            driver (neo4j.Driver): Neo4j driver used for executing queries and transactions.
         """
         self.driver = driver
 
@@ -64,15 +67,9 @@ class PercolationEngine:
 
     def _extract_frontmatter(self, content: str) -> Optional[Dict]:
         """
-        Extract YAML frontmatter from a Markdown string.
+        Extract top-level YAML frontmatter keys and values from the start of a Markdown string.
         
-        Parses the leading YAML frontmatter block delimited by '---' and returns a mapping of top-level keys to their string values; lines without ':' are ignored.
-        
-        Parameters:
-            content (str): Markdown content to inspect.
-        
-        Returns:
-            dict: Mapping of frontmatter keys to values, or None if no valid frontmatter is present.
+        Returns a dictionary of key-value pairs if frontmatter is present and well-formed, or None otherwise.
         """
         if not content.startswith("---"):
             return None
@@ -255,13 +252,15 @@ class PercolationEngine:
     @staticmethod
     def _generate_decision_id(content: str) -> str:
         """
-        Create a compact decision identifier derived from the decision text.
+        Generate a compact, deterministic identifier for a decision based on its text.
+        
+        The identifier has the form "DEC-XXXX", where "XXXX" is a zero-padded, deterministic 4-digit numeric code derived from the first three words of the provided content.
         
         Parameters:
-            content (str): Decision content used to derive the identifier.
+        	content (str): Decision text used to derive the identifier.
         
         Returns:
-            str: Identifier in the form "DEC-XXXX" where "XXXX" is a zero-padded 4-digit numeric suffix derived from the initial words of the content.
+        	str: The generated decision identifier, e.g. "DEC-0427".
         """
         # Create a simple hash from the first words
         words = content.split()[:3]
@@ -270,13 +269,13 @@ class PercolationEngine:
 
     def detect_stale_tasks(self, days_threshold: int = 30) -> List[Dict]:
         """
-        List tasks with status 'active' or 'ready' whose creation date is older than the given threshold in days.
+        Finds tasks with status 'active' or 'ready' created more than a given number of days ago.
         
         Parameters:
             days_threshold (int): Number of days since creation after which a task is considered stale. Defaults to 30.
         
         Returns:
-            List[Dict]: A list of dictionaries for each stale task containing the keys 'uid', 'title', 'status', and 'created'.
+            List[Dict]: A list of dictionaries for each stale task containing the keys 'uid', 'title', 'status', and 'created'. Results are ordered by 'created' in ascending order.
         """
         stale_tasks = []
 

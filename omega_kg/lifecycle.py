@@ -87,12 +87,12 @@ class TaskLifecycle:
 
     def __init__(self, mock_mode: bool = False):
         """
-        Create a TaskLifecycle manager and initialize its persistence and vault settings.
+        Create a TaskLifecycle manager and configure persistence and vault settings.
         
-        Initializes instance attributes (Neo4j driver, vault path, and mock mode). If mock_mode is False, attempts to connect to the configured Neo4j instance and will switch the instance to mock mode and clear the driver if the connection cannot be established.
+        Attempts to initialize a Neo4j driver and set the Obsidian vault path. If `mock_mode` is False the constructor will try to connect to the configured Neo4j instance; on connection failure the instance is switched to mock mode and the driver is cleared.
         
         Parameters:
-            mock_mode (bool): If True, skip Neo4j connection and operate in mock mode.
+            mock_mode (bool): If True, skip Neo4j connection and operate in mock (dry-run) mode.
         """
         self.driver = None
         self.vault_path = Path(settings.obsidian_vault_path)
@@ -115,10 +115,10 @@ class TaskLifecycle:
 
     def _check_connection(self) -> bool:
         """
-        Check that the configured Neo4j driver can execute a simple query.
+        Validate that the configured Neo4j driver can execute a simple health query.
         
         Returns:
-            True if the connection is healthy.
+            True if the driver responded to the health check query.
         
         Raises:
             ConnectionError: If the driver is not initialized or the health check fails.
@@ -136,13 +136,13 @@ class TaskLifecycle:
 
     def get_connection_status(self) -> Dict[str, Any]:
         """
-        Report the current Neo4j connection and mock-mode state.
+        Return current Neo4j connection and mock-mode status.
         
         Returns:
             dict: Mapping with connection information:
-                - connected (bool): `true` if a real Neo4j driver is configured and mock mode is not active, `false` otherwise.
-                - mock_mode (bool): `true` if the lifecycle is operating in mock mode, `false` otherwise.
-                - uri (str): the active Neo4j URI when connected, or "mock://local" when in mock mode.
+                connected: `true` if a Neo4j driver is configured and mock mode is not active, `false` otherwise.
+                mock_mode: `true` if operating in mock mode, `false` otherwise.
+                uri: the active Neo4j URI when connected, or `"mock://local"` when in mock mode.
         """
         return {
             "connected": self.driver is not None and not self.mock_mode,
@@ -221,10 +221,17 @@ class TaskLifecycle:
 
     def _get_mock_results(self) -> Dict[str, List[Dict[str, Any]]]:
         """
-        Generate mock results for testing when database is unavailable.
-
+        Return mock lifecycle enforcement results used when Neo4j is unavailable.
+        
         Returns:
-            Sample lifecycle report data
+            results (Dict[str, List[Dict[str, Any]]]): Mapping with keys
+                'archived', 'warned', 'blocked', 'failed', and 'skipped'. Each value
+                is a list of task dictionaries containing:
+                    - 't.uid' (str): task UID
+                    - 't.title' (str): task title
+                    - 't.filepath' (str): path to the Obsidian note
+                    - 't.status' (str): current task status
+                    - 'days_old' (int): age of the task in days
         """
         return {
             "archived": [
@@ -254,13 +261,14 @@ class TaskLifecycle:
         self, session: Any, rule: LifecycleRule
     ) -> List[Dict[str, Any]]:
         """
-        Find tasks that meet the time-based criteria of a lifecycle rule.
+        Locate Task nodes that satisfy the lifecycle rule's status, age threshold, and optional condition.
         
         Parameters:
-            rule (LifecycleRule): The lifecycle transition rule whose conditions (from_status, days_threshold, and optional condition) are used to locate violating tasks.
+            rule (LifecycleRule): Rule with `from_status`, `days_threshold`, and optional `condition` used to select tasks.
         
         Returns:
-            violations (List[Dict[str, Any]]): List of task records matching the rule. Each dict contains keys `t.uid`, `t.title`, `t.filepath`, `t.status`, and `days_old` (number of days since task creation). Results are ordered by `days_old` descending.
+            violations (List[Dict[str, Any]]): List of matching task records ordered by `days_old` descending.
+                Each dict contains keys: `t.uid`, `t.title`, `t.filepath`, `t.status`, and `days_old` (days since creation).
         """
 
         # Build Cypher query
@@ -284,9 +292,9 @@ class TaskLifecycle:
 
     def _transition_task(self, session: Any, uid: str, rule: LifecycleRule) -> None:
         """
-        Perform the lifecycle transition for a single task and persist the change to both the database and the Obsidian vault.
+        Apply a lifecycle transition to the task identified by `uid`, persisting the status change to Neo4j and updating the corresponding Obsidian note.
         
-        Updates the task's status and transition metadata in Neo4j, updates the corresponding Obsidian note's frontmatter and adds a transition notice to the note content, and prints a confirmation message.
+        Updates the task's status and transition metadata in the database, updates the note's frontmatter with the new status and lifecycle_transition details, and appends a human-readable transition notice to the note content.
         """
 
         # Update Neo4j
@@ -333,14 +341,14 @@ class TaskLifecycle:
 
     def _update_task_file(self, uid: str, new_status: str, rule: LifecycleRule) -> None:
         """
-        Update the Obsidian note for a task to reflect an automatic lifecycle transition.
+        Update an Obsidian note's frontmatter and content to record a lifecycle transition.
         
-        Finds the note file matching the given UID, sets the frontmatter "status" to new_status, adds a "lifecycle_transition" metadata entry (from, to, reason, date) derived from the provided rule, appends a human-readable transition notice to the note body, and writes the updated file back to the vault. If no matching file is found, logs a warning and returns without making changes.
+        Sets the note's frontmatter "status" to new_status, adds a "lifecycle_transition" metadata object containing from/to/reason/date, and appends a human-readable transition notice to the note body. If no matching note file for the given UID is found, the function logs a warning and returns without making changes.
         
         Parameters:
-            uid (str): Unique identifier of the task used to locate the note file.
-            new_status (str): New task status to write into the frontmatter.
-            rule (LifecycleRule): Rule that triggered the transition; used to populate transition metadata (from, to, days threshold, and reason).
+            uid (str): Unique task identifier used to locate the note file in the vault.
+            new_status (str): Status value to set in the note frontmatter.
+            rule (LifecycleRule): LifecycleRule that triggered the transition; used to populate transition metadata.
         """
 
         # Find task file
@@ -449,10 +457,16 @@ class TaskLifecycle:
 
     def _get_stale_active_tasks(self) -> List[Dict[str, Any]]:
         """
-        Finds active tasks older than 30 days that have had no commits in the last 7 days.
+        Find active tasks older than 30 days with no commits in the last 7 days.
         
         Returns:
-            List[Dict[str, Any]]: A list of task dictionaries with keys 'uid', 'title', 'linear_id', and 'stale' (days since creation). Returns an empty list if no database driver is available.
+            A list of dictionaries representing stale active tasks. Each dictionary contains:
+            - `uid`: task unique identifier
+            - `title`: task title
+            - `linear_id`: task linear identifier
+            - `stale`: number of days since task creation
+        
+            Returns an empty list if no database driver is available or no tasks match.
         """
 
         if not self.driver:
@@ -522,13 +536,9 @@ class TaskLifecycle:
 
 def main() -> None:
     """
-    Command-line entry point to run task lifecycle enforcement.
+    Run the command-line task lifecycle enforcement workflow.
     
-    Parses CLI flags:
-      --dry-run: preview changes without applying them.
-      --no-email: skip sending the email report.
-    
-    Runs the lifecycle enforcement process, prints connection status and a human-readable report, optionally sends the report by email, and ensures the lifecycle resources are closed on exit.
+    Parses CLI flags --dry-run (preview changes without applying) and --no-email (skip sending the email report), initializes TaskLifecycle, prints connection status, executes enforcement, prints a generated human-readable report, optionally emails the report, and ensures resources are closed on exit.
     """
     import argparse
 
