@@ -143,7 +143,7 @@ class TestObsidianSyncOperations:
         captured = capsys.readouterr()
         assert "mock mode" in captured.out
 
-    def test_get_stale_tasks_connection_lost(self):
+    def test_get_stale_tasks_connection_lost(self, caplog):
         """Should handle connection loss during query."""
         with patch("omega_kg.obsidian_sync.settings") as mock_settings:
             mock_settings.neo4j_uri = "bolt://localhost:7688"
@@ -188,6 +188,8 @@ class TestObsidianSyncOperations:
                 result = sync.get_stale_tasks(7)
 
                 assert result == []
+                assert ("Could not query stale tasks (connection lost)" in
+                        caplog.text)
 
 
 class TestObsidianSyncConnectionCheck:

@@ -23,13 +23,13 @@ repos:
     hooks:
       - id: trivy-fs
         name: Trivy filesystem scan
-        entry: docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v .:/workspace aquasec/trivy:latest fs --scanners vuln,secret,config /workspace
+        entry: docker run --rm -v .:/workspace aquasec/trivy:latest fs --scanners vuln,secret,config /workspace
         language: system
         pass_filenames: false
 
       - id: docker-compose-validate
         name: Validate docker-compose files
-        entry: docker compose -f docker-compose.yml config --quiet
+        entry: docker compose config
         language: system
         files: docker-compose.*\.ya?ml$
-        pass_filenames: false
+        pass_filenames: true
