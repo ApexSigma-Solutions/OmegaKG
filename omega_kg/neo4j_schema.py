@@ -44,13 +44,13 @@ class KnowledgeGraphSchema:
 
     def _check_connection(self) -> bool:
         """
-        Verify Neo4j connection is working.
-
+        Check that the configured Neo4j driver can execute a simple test query.
+        
         Returns:
-            True if connection is healthy
-
+            True if the driver can execute a test query.
+        
         Raises:
-            ConnectionError: If connection fails
+            ConnectionError: If no driver is initialized or the test query fails, with underlying error details.
         """
         if not self.driver:
             raise ConnectionError("Driver not initialized")
@@ -65,10 +65,13 @@ class KnowledgeGraphSchema:
 
     def get_connection_status(self) -> dict[str, bool | str]:
         """
-        Get current connection status.
-
+        Report the current Neo4j connection state and related metadata.
+        
         Returns:
-            Dictionary with connection info
+            dict: Mapping with connection details:
+                - "connected": `True` if a live driver exists and mock mode is not active, `False` otherwise.
+                - "mock_mode": `True` if the instance is operating in mock mode, `False` otherwise.
+                - "uri": The Neo4j URI when not in mock mode, or the string "mock://local" when in mock mode.
         """
         return {
             "connected": self.driver is not None and not self.mock_mode,
@@ -77,7 +80,11 @@ class KnowledgeGraphSchema:
         }
 
     def initialize_schema(self) -> None:
-        """Create constraints and indexes"""
+        """
+        Create the required Neo4j constraints and indexes for the knowledge graph.
+        
+        If mock mode is enabled or no database driver is available, the method exits without making changes and reports the situation via printed messages. On success it prints a confirmation; on failure it prints an error and a tip when the connection was lost.
+        """
         if self.mock_mode:
             print("⚠ Schema initialization skipped (mock mode)")
             return
@@ -127,13 +134,21 @@ class KnowledgeGraphSchema:
             print(f"✗ Schema initialization failed: {e}")
 
     def close(self) -> None:
-        """Close database connection"""
+        """
+        Close the Neo4j driver if one is open.
+        
+        Does nothing when running in mock mode or if the driver is already None/closed.
+        """
         if self.driver:
             self.driver.close()
 
 
 def main() -> None:
-    """CLI entry point"""
+    """
+    CLI entry point that initializes the Neo4j schema and reports connection status.
+    
+    Parses command-line arguments, constructs a KnowledgeGraphSchema, prints whether it is connected or running in mock mode, invokes schema initialization, and ensures the underlying driver is closed when finished.
+    """
     import argparse
 
     parser = argparse.ArgumentParser(description="Initialize Neo4j schema")
