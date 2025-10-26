@@ -18,7 +18,7 @@ if record:
             print(f"Task: {dict(record['t'])}")
 
 # Check ALL nodes
-query = "MATCH (n) RETURN count(n) as count, labels(n) as labels LIMIT 10"
+query = "MATCH (n) RETURN count(n) as count, labels(n) as labels ORDER BY count DESC LIMIT 10"
 result = session.run(query)
 for record in result:
     print(f"Nodes with labels {record['labels']}: {record['count']}")
