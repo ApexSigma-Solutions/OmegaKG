@@ -1,6 +1,6 @@
 import frontmatter
 from pathlib import Path
-from src.settings import Settings
+from omega_kg.settings import Settings
 
 settings = Settings()
 vault_path = Path(settings.obsidian_vault_path)

@@ -108,7 +108,7 @@ class TestObsidianSyncOperations:
         assert "mock mode" in captured.out
 
     def test_sync_all_tasks_no_driver(self, capsys):
-        """Should skip sync when driver is None."""
+        """Should skip sync in mock mode."""
         sync = ObsidianNeo4jSync(mock_mode=True)
         result = sync.sync_all_tasks()
 
@@ -135,7 +135,7 @@ class TestObsidianSyncOperations:
         assert "mock mode" in captured.out
 
     def test_get_stale_tasks_no_driver(self, capsys):
-        """Should return empty list when driver is None."""
+        """Should return empty list when in mock mode."""
         sync = ObsidianNeo4jSync(mock_mode=True)
         result = sync.get_stale_tasks(7)
 
