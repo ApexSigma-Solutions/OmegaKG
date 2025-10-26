@@ -157,3 +157,145 @@ class TestCLI:
         assert result.exit_code == 0
         assert "(none)" in result.output
         mock_sync.close.assert_called_once()
+
+    @patch('omega_kg.obsidian_sync.ObsidianNeo4jSync')
+    def test_sync_command(self, mock_sync_class):
+        """Test the sync command."""
+        mock_sync = Mock()
+        mock_sync.get_connection_status.return_value = {
+            "connected": True,
+            "uri": "bolt://localhost:7687"
+        }
+        mock_sync.sync_all_tasks.return_value = 5
+        mock_sync_class.return_value = mock_sync
+
+        result = self.runner.invoke(cli, ['sync'])
+
+        assert result.exit_code == 0
+        assert "🔄 Syncing Obsidian vault to Neo4j..." in result.output
+        assert "✓ Connected to Neo4j: bolt://localhost:7687" in result.output
+        assert "✓ Synced 5 tasks" in result.output
+        mock_sync.sync_all_tasks.assert_called_once()
+        mock_sync.close.assert_called_once()
+
+    @patch('omega_kg.obsidian_sync.ObsidianNeo4jSync')
+    def test_sync_command_mock_mode(self, mock_sync_class):
+        """Test the sync command with --mock flag."""
+        mock_sync = Mock()
+        mock_sync.get_connection_status.return_value = {
+            "connected": False,
+            "uri": "mock://local"
+        }
+        mock_sync.sync_all_tasks.return_value = 0
+        mock_sync_class.return_value = mock_sync
+
+        result = self.runner.invoke(cli, ['sync', '--mock'])
+
+        assert result.exit_code == 0
+        assert "⚠ Running in mock mode" in result.output
+        mock_sync_class.assert_called_once_with(mock_mode=True)
+        mock_sync.close.assert_called_once()
+
+    @patch('omega_kg.lifecycle.GraphDatabase.driver')
+    def test_status_command(self, mock_driver_class, monkeypatch):
+        """Test the status command."""
+        # Set environment variables for settings
+        monkeypatch.setenv("NEO4J_URI", "bolt://localhost:7687")
+        monkeypatch.setenv("NEO4J_USER", "neo4j")
+        monkeypatch.setenv("NEO4J_PASSWORD", "password")
+        monkeypatch.setenv("OBSIDIAN_VAULT_PATH", "./vault")
+        monkeypatch.setenv("APP_ENV", "development")
+        monkeypatch.setenv("SMTP_HOST", "smtp.gmail.com")
+        monkeypatch.setenv("SMTP_PORT", "587")
+        monkeypatch.setenv("SMTP_USER", "test@example.com")
+        monkeypatch.setenv("EMAIL_TO", "recipient@example.com")
+        monkeypatch.setenv("LINEAR_API_KEY", "test-api-key")
+        monkeypatch.setenv("LINEAR_TEAM_ID", "team-123")
+        
+        # Mock driver and session for successful connection
+        mock_driver = MagicMock()
+        mock_session = MagicMock()
+        mock_driver.session.return_value.__enter__.return_value = mock_session
+        mock_driver.session.return_value.__exit__.return_value = None
+        mock_session.run.return_value.single.return_value = {"status": 1}
+        mock_driver_class.return_value = mock_driver
+
+        result = self.runner.invoke(cli, ['status'])
+
+        assert result.exit_code == 0
+        assert "🔍 System Status Check" in result.output
+        assert "bolt://localhost:7687" in result.output
+        assert "✓ Yes" in result.output
+        assert "development" in result.output
+
+    def test_status_command_mock_mode(self, monkeypatch):
+        """Test the status command in mock mode."""
+        # Set minimal environment variables
+        monkeypatch.setenv("NEO4J_URI", "bolt://localhost:7687")
+        monkeypatch.setenv("NEO4J_USER", "neo4j")
+        monkeypatch.setenv("NEO4J_PASSWORD", "password")
+        monkeypatch.setenv("OBSIDIAN_VAULT_PATH", "./vault")
+        monkeypatch.setenv("APP_ENV", "test")
+
+        result = self.runner.invoke(cli, ['status'])
+
+        assert result.exit_code == 0
+        assert "mock://local" in result.output
+        assert "✗ No" in result.output
+        assert "✗ Not configured" in result.output
+
+    @patch('omega_kg.cli.TaskLifecycle')
+    def test_report_command_dry_run(self, mock_lifecycle_class):
+        """Test the report command with --dry-run flag."""
+        mock_lc = Mock()
+        mock_lc.get_connection_status.return_value = {
+            "connected": True,
+            "uri": "bolt://localhost:7687"
+        }
+        mock_report = "Test report"
+        mock_lc.generate_report.return_value = mock_report
+        mock_lifecycle_class.return_value = mock_lc
+
+        result = self.runner.invoke(cli, ['report', '--dry-run'])
+
+        assert result.exit_code == 0
+        assert "📊 Generating lifecycle report..." in result.output
+        assert mock_report in result.output
+        mock_lc.enforce_lifecycle.assert_called_once_with(dry_run=True)
+        mock_lc.send_email_report.assert_not_called()
+        mock_lc.close.assert_called_once()
+
+    @patch('omega_kg.cli.TaskLifecycle')
+    def test_report_command_with_email(self, mock_lifecycle_class):
+        """Test the report command with --email flag."""
+        mock_lc = Mock()
+        mock_lc.get_connection_status.return_value = {
+            "connected": True,
+            "uri": "bolt://localhost:7687"
+        }
+        mock_report = "Test report"
+        mock_lc.generate_report.return_value = mock_report
+        mock_lifecycle_class.return_value = mock_lc
+
+        result = self.runner.invoke(cli, ['report', '--email'])
+
+        assert result.exit_code == 0
+        mock_lc.send_email_report.assert_called_once_with(mock_report)
+
+    @patch('omega_kg.cli.TaskLifecycle')
+    def test_report_command_dry_run_no_email(self, mock_lifecycle_class):
+        """Test the report command with both --dry-run and --email (email should be skipped)."""
+        mock_lc = Mock()
+        mock_lc.get_connection_status.return_value = {
+            "connected": True,
+            "uri": "bolt://localhost:7687"
+        }
+        mock_report = "Test report"
+        mock_lc.generate_report.return_value = mock_report
+        mock_lifecycle_class.return_value = mock_lc
+
+        result = self.runner.invoke(cli, ['report', '--dry-run', '--email'])
+
+        assert result.exit_code == 0
+        assert "⚠ Email not sent in dry-run mode" in result.output
+        mock_lc.send_email_report.assert_not_called()

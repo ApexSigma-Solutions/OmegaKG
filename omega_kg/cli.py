@@ -12,9 +12,16 @@ from omega_kg.neo4j_schema import KnowledgeGraphSchema
 @click.group()
 def cli():
     """
-    Top-level Click command group that exposes Omega_KG CLI commands.
+    Omega_KG: Neo4j-powered knowledge management with Obsidian sync and task lifecycle enforcement.
     
-    Provides subcommands to initialize the Neo4j schema (init), enforce task lifecycle rules with optional dry-run and email suppression (lifecycle), display knowledge-graph task statistics (stats), and list stale tasks older than a configurable threshold (stale).
+    Available commands:
+    - init: Initialize Neo4j schema
+    - sync: Sync Obsidian vault to Neo4j
+    - lifecycle: Enforce task lifecycle rules
+    - status: Check connection status
+    - report: Generate lifecycle report
+    - stats: Show task statistics
+    - stale: List stale tasks
     """
     pass
 
@@ -142,6 +149,118 @@ def stale():
         click.echo("(none)")
 
     sync.close()
+
+
+@cli.command()
+@click.option("--mock", is_flag=True, help="Run in mock mode (no database)")
+def sync(mock):
+    """
+    Synchronize all task notes from Obsidian vault to Neo4j.
+    
+    Scans the vault's Tasks directory and creates/updates Task nodes in Neo4j
+    with metadata from frontmatter and content. Supports mock mode for testing.
+    """
+    from omega_kg.obsidian_sync import ObsidianNeo4jSync
+    
+    click.echo("🔄 Syncing Obsidian vault to Neo4j...")
+    
+    syncer = ObsidianNeo4jSync(mock_mode=mock)
+    
+    try:
+        status = syncer.get_connection_status()
+        if status["connected"]:
+            click.echo(f"✓ Connected to Neo4j: {status['uri']}")
+        else:
+            click.echo("⚠ Running in mock mode (no Neo4j connection)")
+        
+        count = syncer.sync_all_tasks()
+        click.echo(f"\n✓ Synced {count} tasks")
+        
+    finally:
+        syncer.close()
+
+
+@cli.command()
+def status():
+    """
+    Check and display connection status for Neo4j and system components.
+    
+    Reports on database connectivity, configuration, and system health.
+    """
+    from omega_kg.lifecycle import TaskLifecycle
+    from omega_kg.settings import settings
+    
+    click.echo("🔍 System Status Check")
+    click.echo("=" * 50)
+    
+    # Check lifecycle connection
+    lc = TaskLifecycle()
+    lc_status = lc.get_connection_status()
+    
+    click.echo("\n📊 Neo4j Connection:")
+    click.echo(f"  URI:         {lc_status['uri']}")
+    click.echo(f"  Connected:   {'✓ Yes' if lc_status['connected'] else '✗ No'}")
+    click.echo(f"  Mock Mode:   {'Yes' if lc_status['mock_mode'] else 'No'}")
+    
+    click.echo("\n📁 Configuration:")
+    click.echo(f"  Environment: {settings.app_env}")
+    click.echo(f"  Vault Path:  {settings.obsidian_vault_path}")
+    
+    click.echo("\n📧 Email Settings:")
+    if settings.smtp_host and settings.smtp_user and settings.email_to:
+        click.echo(f"  SMTP Host:   {settings.smtp_host}:{settings.smtp_port}")
+        click.echo(f"  From:        {settings.smtp_user}")
+        click.echo(f"  To:          {settings.email_to}")
+        click.echo("  Status:      ✓ Configured")
+    else:
+        click.echo("  Status:      ✗ Not configured")
+    
+    click.echo("\n🔗 Linear Integration:")
+    if settings.linear_api_key:
+        click.echo("  API Key:     ✓ Configured")
+        click.echo(f"  Team ID:     {settings.linear_team_id or 'Not set'}")
+    else:
+        click.echo("  Status:      ✗ Not configured")
+    
+    lc.close()
+
+
+@cli.command()
+@click.option("--dry-run", is_flag=True, help="Preview report without enforcement")
+@click.option("--email", is_flag=True, help="Send report via email")
+def report(dry_run, email):
+    """
+    Generate and display a lifecycle report with task statistics and actions.
+    
+    Shows auto-archived tasks, warnings, stale active tasks, and summary counts.
+    Can optionally send the report via email.
+    """
+    lc = TaskLifecycle()
+    
+    try:
+        click.echo("📊 Generating lifecycle report...")
+        
+        status = lc.get_connection_status()
+        if status["connected"]:
+            click.echo(f"✓ Connected to Neo4j: {status['uri']}")
+        else:
+            click.echo("⚠ Running in mock mode (generating sample report)")
+        
+        # Run enforcement in dry-run mode to get current state
+        results = lc.enforce_lifecycle(dry_run=True)
+        
+        # Generate report
+        report_text = lc.generate_report(results)
+        click.echo(f"\n{report_text}")
+        
+        if email:
+            if dry_run:
+                click.echo("\n⚠ Email not sent in dry-run mode")
+            else:
+                lc.send_email_report(report_text)
+        
+    finally:
+        lc.close()
 
 
 if __name__ == "__main__":
