@@ -56,10 +56,10 @@ class ObsidianNeo4jSync:
 
     def _check_connection(self) -> bool:
         """
-        Verify that the Neo4j driver is initialized and responsive.
+        Verify the Neo4j driver is initialized and that a basic Cypher query succeeds.
         
         Returns:
-            True if the driver responds to a simple health query.
+            True if the driver responded to the health query.
         
         Raises:
             ConnectionError: If the driver is not initialized or the health check fails.
@@ -83,7 +83,7 @@ class ObsidianNeo4jSync:
             dict: Mapping with keys:
                 - connected (bool): `true` if a real driver is initialized and mock mode is disabled, `false` otherwise.
                 - mock_mode (bool): `true` if the instance is operating in mock mode, `false` otherwise.
-                - uri (str): Configured Neo4j URI when not in mock mode; "mock://local" when in mock mode.
+                - uri (str): The configured Neo4j URI when not in mock mode; "mock://local" when in mock mode.
         """
         return {
             "connected": self.driver is not None and not self.mock_mode,
@@ -164,10 +164,10 @@ class ObsidianNeo4jSync:
 
     def sync_all_tasks(self) -> int:
         """
-        Synchronize all task notes from the vault to Neo4j.
+        Synchronize every task Markdown file under the vault's Tasks directory to Neo4j.
         
         Returns:
-            int: Number of task files successfully synced. Returns 0 if running in mock mode or when no database connection is available.
+            int: Number of task files that were processed and attempted to be synced. Returns 0 when running in mock mode or when no database connection is available.
         """
         if self.mock_mode:
             print("[WARN] Sync skipped (mock mode)")
@@ -193,15 +193,15 @@ class ObsidianNeo4jSync:
 
     def get_stale_tasks(self, days_idle: int = 7) -> list[dict[str, object]]:
         """
-        Retrieve Task nodes with status 'draft' from Neo4j.
+        Return draft Task nodes from Neo4j.
         
-        This function queries Neo4j for tasks whose `status` property is 'draft' and returns a list of records containing task identifiers and timestamps. The optional `days_idle` parameter is accepted for API compatibility but is not applied to the query; the function does not filter by task age.
+        Queries the database for Task nodes whose `status` property equals 'draft' and returns a list of dictionaries with identifier and timestamp fields. The `days_idle` parameter is accepted for API compatibility but is not used to filter results.
         
         Parameters:
-            days_idle (int): Intended number of idle days to consider a task stale (not used by this implementation).
+            days_idle (int): Intended idle threshold in days (ignored by this implementation).
         
         Returns:
-            list[dict[str, object]]: A list of dictionaries where each dictionary contains the keys `uid`, `title`, `created`, and `last_modified` representing a draft task's identifier, title, creation time, and last-modified timestamp.
+            list[dict[str, object]]: List of dictionaries with keys `uid`, `title`, `created`, and `last_modified` for each draft task.
         """
         if self.mock_mode:
             print("[WARN] Query skipped (mock mode)")
@@ -239,9 +239,9 @@ class ObsidianNeo4jSync:
 
 def main() -> None:
     """
-    CLI entry point that runs a full Obsidian-to-Neo4j synchronization and reports stale tasks.
+    Run a complete Obsidian-to-Neo4j synchronization and report stale tasks.
     
-    Initializes an ObsidianNeo4jSync instance, prints connection status, performs a full sync of task notes, displays tasks older than seven days, and ensures the Neo4j driver is closed.
+    Creates an ObsidianNeo4jSync instance, prints the connection status, synchronizes all task notes, lists tasks older than seven days, and ensures the Neo4j driver is closed.
     """
     sync = ObsidianNeo4jSync()
 

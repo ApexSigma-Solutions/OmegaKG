@@ -12,9 +12,9 @@ from omega_kg.neo4j_schema import KnowledgeGraphSchema
 @click.group()
 def cli():
     """
-    Command-line interface group for Omega_KG knowledge graph operations.
+    Top-level Click command group that exposes Omega_KG CLI commands.
     
-    Exposes top-level Click commands to initialize the Neo4j schema, enforce task lifecycle rules (with dry-run and email options), display knowledge-graph statistics, and list stale tasks.
+    Provides subcommands to initialize the Neo4j schema (init), enforce task lifecycle rules with optional dry-run and email suppression (lifecycle), display knowledge-graph task statistics (stats), and list stale tasks older than a configurable threshold (stale).
     """
     pass
 
@@ -63,7 +63,14 @@ def lifecycle(dry_run, no_email):
 
 @cli.command()
 def stats():
-    """Show knowledge graph statistics"""
+    """
+    Display task counts and per-status statistics from the Neo4j knowledge graph.
+    
+    Prints a connection header and aggregated counts for total tasks and each status
+    (draft, active, completed, archived) to the console. If no Neo4j connection is
+    available, prints a mock-mode warning and returns. Always closes the underlying
+    ObsidianNeo4jSync client before returning.
+    """
     from omega_kg.obsidian_sync import ObsidianNeo4jSync
 
     click.echo("\n✓ Neo4j connection established\n")
@@ -119,10 +126,9 @@ def stats():
 @cli.command()
 def stale():
     """
-    Show tasks older than 7 days by printing each task's UID, title, and creation date.
+    Prints tasks older than seven days with their UID, title, and creation date.
     
-    Retrieves stale tasks from ObsidianNeo4jSync (threshold: 7 days), prints a header and one line per task in the format
-    "uid: title (created: date)", prints "(none)" if there are no stale tasks, and closes the sync client.
+    Fetches stale tasks from ObsidianNeo4jSync using a 7-day threshold, prints a header and one line per task in the format "uid: title (created: date)", prints "(none)" if no stale tasks are found, and closes the sync client.
     """
     from omega_kg.obsidian_sync import ObsidianNeo4jSync
 

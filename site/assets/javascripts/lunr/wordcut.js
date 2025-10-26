@@ -6699,6 +6699,13 @@ function hasOwnProperty(obj, prop) {
 // This makes sure that own properties are retained, so that
 // decorations and such are not lost along the way.
 module.exports = wrappy
+/**
+ * Create a wrapper that forwards arguments to a function and copies properties from a provided callback onto any function returned by that call.
+ * @param {Function} fn - The function to wrap. It will be invoked with the original this and all arguments when the returned wrapper is called.
+ * @param {Function} [cb] - Optional callback (or function) whose own properties will be copied onto the function returned by `fn` when `fn` returns a function different from `cb`. If both `fn` and `cb` are provided, `wrappy(fn, cb)` is equivalent to `wrappy(fn)(cb)`.
+ * @returns {Function} A wrapper function that calls `fn` with the supplied arguments. If `fn` returns a function and the last argument passed to `fn` was a different function, the properties of that last argument are copied onto the returned function before it is returned.
+ * @throws {TypeError} If `fn` is not a function.
+ */
 function wrappy (fn, cb) {
   if (fn && cb) return wrappy(fn)(cb)
 
