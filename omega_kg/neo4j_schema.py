@@ -19,10 +19,13 @@ class KnowledgeGraphSchema:
 
     def __init__(self, mock_mode: bool = False) -> None:
         """
-        Initialize schema manager with connection health check.
-
-        Args:
-            mock_mode: If True, skip database operations (for testing)
+        Create a KnowledgeGraphSchema and, unless mock_mode is True, attempt to establish and verify a Neo4j driver connection.
+        
+        Parameters:
+            mock_mode (bool): If True, skip creating a Neo4j driver and leave the instance in mock mode.
+        
+        Details:
+            When mock_mode is False, the initializer attempts to create a Neo4j driver using configured settings and runs a health check. On successful connection the driver is stored on the instance. If connection or authentication fails, the instance switches to mock mode and the driver is set to None.
         """
         self.driver = None
         self.mock_mode = mock_mode
@@ -44,13 +47,13 @@ class KnowledgeGraphSchema:
 
     def _check_connection(self) -> bool:
         """
-        Check that the configured Neo4j driver can execute a simple test query.
+        Verify that the configured Neo4j driver can run a simple test query.
         
         Returns:
-            True if the driver can execute a test query.
+            `true` if the driver executed the test query successfully.
         
         Raises:
-            ConnectionError: If no driver is initialized or the test query fails, with underlying error details.
+            ConnectionError: If no driver is initialized or the test query fails; includes underlying error details.
         """
         if not self.driver:
             raise ConnectionError("Driver not initialized")
@@ -81,9 +84,15 @@ class KnowledgeGraphSchema:
 
     def initialize_schema(self) -> None:
         """
-        Create the required Neo4j constraints and indexes for the knowledge graph.
+        Create the required Neo4j schema for the knowledge graph.
         
-        If mock mode is enabled or no database driver is available, the method exits without making changes and reports the situation via printed messages. On success it prints a confirmation; on failure it prints an error and a tip when the connection was lost.
+        When a live Neo4j driver is available, this creates database constraints and indexes:
+        - Constraint: Task.uid is unique
+        - Constraint: Plan.id is unique
+        - Index: Task.status
+        - Index: Task.created
+        
+        If running in mock mode or no driver is available, the method makes no changes.
         """
         if self.mock_mode:
             print("⚠ Schema initialization skipped (mock mode)")
