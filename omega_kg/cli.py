@@ -226,14 +226,14 @@ def status():
 
 
 @cli.command()
-@click.option("--dry-run", is_flag=True, help="Preview report without enforcement")
 @click.option("--email", is_flag=True, help="Send report via email")
-def report(dry_run, email):
+def report(email):
     """
     Generate and display a lifecycle report with task statistics and actions.
     
     Shows auto-archived tasks, warnings, stale active tasks, and summary counts.
-    Can optionally send the report via email.
+    Can optionally send the report via email. This command does not apply any
+    lifecycle changes - it only reports on current state.
     """
     lc = TaskLifecycle()
     
@@ -246,7 +246,7 @@ def report(dry_run, email):
         else:
             click.echo("⚠ Running in mock mode (generating sample report)")
         
-        # Run enforcement in dry-run mode to get current state
+        # Run enforcement in dry-run mode to get current state without changes
         results = lc.enforce_lifecycle(dry_run=True)
         
         # Generate report
@@ -254,10 +254,7 @@ def report(dry_run, email):
         click.echo(f"\n{report_text}")
         
         if email:
-            if dry_run:
-                click.echo("\n⚠ Email not sent in dry-run mode")
-            else:
-                lc.send_email_report(report_text)
+            lc.send_email_report(report_text)
         
     finally:
         lc.close()
