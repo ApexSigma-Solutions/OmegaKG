@@ -69,6 +69,6 @@ Omega_KG
 │   │   └── search_index.json
 │   ├── sitemap.xml
 │   └── sitemap.xml.gz
-├── src
+├── omega_kg
 │   └── settings.py
 └── tests
