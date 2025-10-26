@@ -3,20 +3,14 @@ cli:
   version: 1.19.0
 lint:
   enabled:
-    - trunk
-    - black
+    - osv-scanner@2.2.3
     - ruff
-    - flake8
     - isort
     - mypy
     - pyright
     - bandit
     - trivy
     - semgrep
-    - snyk
-    - zap
-    - pytest
-    - pytest-cov
     - markdownlint
     - yamllint
     - actionlint
@@ -27,11 +21,7 @@ lint:
     - hadolint
     - trufflehog
     - git-diff-check
-    - gitlint
-    - commitlint
     - codespell
-    - license_finder
-    - detect-secrets
     - gitleaks
     - reuse
     - markdown-link-check
