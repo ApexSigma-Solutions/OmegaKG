@@ -88,9 +88,9 @@ class TaskLifecycle:
     def __init__(self, mock_mode: bool = False):
         """
         Create a TaskLifecycle manager and initialize its persistence and vault settings.
-        
+
         Initializes instance attributes (Neo4j driver, vault path, and mock mode). If mock_mode is False, attempts to connect to the configured Neo4j instance and will switch the instance to mock mode and clear the driver if the connection cannot be established.
-        
+
         Parameters:
             mock_mode (bool): If True, skip Neo4j connection and operate in mock mode.
         """
@@ -116,10 +116,10 @@ class TaskLifecycle:
     def _check_connection(self) -> bool:
         """
         Check that the configured Neo4j driver can execute a simple query.
-        
+
         Returns:
             True if the connection is healthy.
-        
+
         Raises:
             ConnectionError: If the driver is not initialized or the health check fails.
         """
@@ -137,7 +137,7 @@ class TaskLifecycle:
     def get_connection_status(self) -> Dict[str, Any]:
         """
         Report the current Neo4j connection and mock-mode state.
-        
+
         Returns:
             dict: Mapping with connection information:
                 - connected (bool): `true` if a real Neo4j driver is configured and mock mode is not active, `false` otherwise.
@@ -155,10 +155,10 @@ class TaskLifecycle:
     ) -> Dict[str, List[Dict[str, Any]]]:
         """
         Enforces configured lifecycle rules, applying transitions or warnings to matching tasks.
-        
+
         Parameters:
             dry_run (bool): If True, simulate actions without modifying the database or files.
-        
+
         Returns:
             results (Dict[str, List[Dict[str, Any]]]): Mapping of result categories to lists of task records or error entries.
                 - "archived": tasks that were auto-transitioned to ARCHIVED.
@@ -255,10 +255,10 @@ class TaskLifecycle:
     ) -> List[Dict[str, Any]]:
         """
         Find tasks that meet the time-based criteria of a lifecycle rule.
-        
+
         Parameters:
             rule (LifecycleRule): The lifecycle transition rule whose conditions (from_status, days_threshold, and optional condition) are used to locate violating tasks.
-        
+
         Returns:
             violations (List[Dict[str, Any]]): List of task records matching the rule. Each dict contains keys `t.uid`, `t.title`, `t.filepath`, `t.status`, and `days_old` (number of days since task creation). Results are ordered by `days_old` descending.
         """
@@ -285,7 +285,7 @@ class TaskLifecycle:
     def _transition_task(self, session: Any, uid: str, rule: LifecycleRule) -> None:
         """
         Perform the lifecycle transition for a single task and persist the change to both the database and the Obsidian vault.
-        
+
         Updates the task's status and transition metadata in Neo4j, updates the corresponding Obsidian note's frontmatter and adds a transition notice to the note content, and prints a confirmation message.
         """
 
@@ -316,7 +316,7 @@ class TaskLifecycle:
     def _warn_task(self, session: Any, uid: str, rule: LifecycleRule) -> None:
         """
         Record that a task has been warned to avoid duplicate warnings.
-        
+
         Sets the Task node's `warned` flag to true and `warned_at` to the current datetime in the database; used when a lifecycle rule issues a warning (e.g., an approaching automatic transition).
         """
 
@@ -334,9 +334,9 @@ class TaskLifecycle:
     def _update_task_file(self, uid: str, new_status: str, rule: LifecycleRule) -> None:
         """
         Update the Obsidian note for a task to reflect an automatic lifecycle transition.
-        
+
         Finds the note file matching the given UID, sets the frontmatter "status" to new_status, adds a "lifecycle_transition" metadata entry (from, to, reason, date) derived from the provided rule, appends a human-readable transition notice to the note body, and writes the updated file back to the vault. If no matching file is found, logs a warning and returns without making changes.
-        
+
         Parameters:
             uid (str): Unique identifier of the task used to locate the note file.
             new_status (str): New task status to write into the frontmatter.
@@ -382,7 +382,7 @@ class TaskLifecycle:
     def generate_report(self, results: Dict[str, List[Dict[str, Any]]]) -> str:
         """
         Create a human-readable lifecycle report summarizing actions taken and current stale tasks.
-        
+
         Parameters:
             results (Dict[str, List[Dict[str, Any]]]): Mapping of lifecycle outcome categories to lists of task records.
                 Expected keys include:
@@ -390,7 +390,7 @@ class TaskLifecycle:
                 - "warned": list of tasks that were warned (each record contains 't.uid', 't.title', 'days_old', etc.)
                 - "failed": list of task records that failed processing
                 - other keys are permitted but ignored by this function.
-        
+
         Returns:
             str: A multi-line text report containing sections for auto-archived tasks, warnings, stale active tasks, and a summary with counts.
         """
@@ -450,7 +450,7 @@ class TaskLifecycle:
     def _get_stale_active_tasks(self) -> List[Dict[str, Any]]:
         """
         Finds active tasks older than 30 days that have had no commits in the last 7 days.
-        
+
         Returns:
             List[Dict[str, Any]]: A list of task dictionaries with keys 'uid', 'title', 'linear_id', and 'stale' (days since creation). Returns an empty list if no database driver is available.
         """
@@ -480,7 +480,7 @@ class TaskLifecycle:
     def send_email_report(self, report: str) -> None:
         """
         Send the provided lifecycle report to the configured SMTP recipient.
-        
+
         If SMTP settings (smtp_host, smtp_user, and email_to) are not all configured, the function does nothing. When configured, it composes a plain-text email with a subject that includes the current date, connects to the SMTP server using STARTTLS, authenticates with the configured user and password, and sends the message. Prints a success message on successful send or an error message if sending fails.
         """
 
@@ -513,7 +513,7 @@ class TaskLifecycle:
     def close(self) -> None:
         """
         Close the Neo4j driver if one is initialized.
-        
+
         Does nothing if no driver is configured.
         """
         if self.driver:
@@ -523,11 +523,11 @@ class TaskLifecycle:
 def main() -> None:
     """
     Command-line entry point to run task lifecycle enforcement.
-    
+
     Parses CLI flags:
       --dry-run: preview changes without applying them.
       --no-email: skip sending the email report.
-    
+
     Runs the lifecycle enforcement process, prints connection status and a human-readable report, optionally sends the report by email, and ensures the lifecycle resources are closed on exit.
     """
     import argparse

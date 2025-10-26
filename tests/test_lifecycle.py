@@ -59,9 +59,9 @@ class TestTaskLifecycle:
     def test_task_lifecycle_initialization(self, mock_neo4j_driver):
         """
         Verify TaskLifecycle initializes a Neo4j driver and exposes the configured vault path name.
-        
+
         Patches the Neo4j driver and settings to instantiate TaskLifecycle, then asserts a driver is assigned and the vault path's name equals "vault".
-        
+
         Parameters:
             mock_neo4j_driver: A mock object provided as the Neo4j driver replacement.
         """
@@ -197,7 +197,9 @@ class TestTaskLifecycleMockMode:
         with patch("omega_kg.lifecycle.GraphDatabase.driver") as mock_driver_class:
             mock_driver_class.return_value = mock_neo4j_driver
             # Configure mock session.run().single() to return a truthy result
-            mock_neo4j_driver.session.return_value.run.return_value.single.return_value = {"count": 1}
+            mock_neo4j_driver.session.return_value.run.return_value.single.return_value = {
+                "count": 1
+            }
 
             with patch("omega_kg.lifecycle.settings") as mock_settings:
                 mock_settings.neo4j_uri = "bolt://localhost:7687"

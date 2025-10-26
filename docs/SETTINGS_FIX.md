@@ -28,7 +28,7 @@ openrouter_api_key
    - Duplicate `gemini_api_key` definition
 
 4. **No permission for extra fields**:
-   - Settings had implicit `extra='forbid'` 
+   - Settings had implicit `extra='forbid'`
    - Needed explicit `extra='ignore'` to handle unknown environment variables
 
 ## 📝 Changes Made
@@ -44,13 +44,13 @@ from pydantic import Field
 class Settings(BaseSettings):
     # ... fields ...
     from pydantic import Field  # ❌ WRONG - import in middle of class
-    
+
     linear_project_id: Optional[str]  # ❌ MISSING
     openrouter_api_key: Optional[str]  # ❌ MISSING
-    
+
     gemini_api_key: Optional[str] = "your-gemini-api-key"
     gemini_api_key: Optional[str] = None  # ❌ DUPLICATE
-    
+
     class Config:  # ❌ OLD PYDANTIC v1 SYNTAX
         env_file = ".env"
         env_file_encoding = "utf-8"
@@ -66,7 +66,7 @@ class Settings(BaseSettings):
     linear_project_id: Optional[str] = None  # ✅ ADDED
     openrouter_api_key: Optional[str] = None  # ✅ ADDED
     gemini_api_key: Optional[str] = None  # ✅ FIXED (no duplicate)
-    
+
     model_config = SettingsConfigDict(  # ✅ PYDANTIC v2 SYNTAX
         env_file=".env",
         env_file_encoding="utf-8",

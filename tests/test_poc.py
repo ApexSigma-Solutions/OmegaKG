@@ -16,7 +16,6 @@ class TestProofOfConcept:
         mock_driver_class.return_value = mock_driver
 
         # Import after patching
-        from omega_kg import poc_okg
 
         # Test that driver can be created
         driver = mock_driver_class("bolt://localhost:7687", auth=("neo4j", "password"))
@@ -62,7 +61,7 @@ class TestProofOfConcept:
     def test_data_ingestion(self, mock_driver_class):
         """
         Verify that a Cypher ingestion statement is executed via a Neo4j session.
-        
+
         Parameters:
             mock_driver_class (MagicMock): Patched GraphDatabase.driver class which returns a mock driver whose session context manager yields a mock session. The test asserts that the session's `run` method is called to perform the ingestion.
         """
