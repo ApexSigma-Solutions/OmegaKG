@@ -128,7 +128,7 @@ class Module:
         """Initialize with connection health check and fallback."""
         self.driver = None
         self.mock_mode = mock_mode
-        
+
         if not mock_mode:
             try:
                 # Create connection
@@ -142,7 +142,7 @@ class Module:
                 print("⚠ Operations skipped (mock mode)")
                 self.mock_mode = True
                 self.driver = None
-    
+
     def _check_connection(self) -> bool:
         """Verify connection with test query."""
         if not self.driver:
@@ -154,7 +154,7 @@ class Module:
                 return True
         except Exception as e:
             raise ConnectionError(f"Health check failed: {e}")
-    
+
     def get_connection_status(self) -> dict[str, bool | str]:
         """Return connection status."""
         return {
@@ -162,7 +162,7 @@ class Module:
             "mock_mode": self.mock_mode,
             "uri": settings.neo4j_uri if not self.mock_mode else "mock://local",
         }
-    
+
     def database_operation(self):
         """Safe database operation with fallback."""
         if self.mock_mode:

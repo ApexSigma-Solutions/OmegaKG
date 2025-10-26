@@ -30,7 +30,7 @@ Applied the same proven recovery pattern from lifecycle.py and neo4j_schema.py:
 def __init__(self, mock_mode: bool = False) -> None:
     self.driver = None
     self.mock_mode = mock_mode
-    
+
     if not mock_mode:
         try:
             self.driver = GraphDatabase.driver(...)
@@ -58,11 +58,11 @@ def get_stale_tasks(self, days_idle: int = 7) -> list[dict[str, object]]:
     if self.mock_mode:
         print("⚠ Query skipped (mock mode)")
         return []
-    
+
     if not self.driver:
         print("⚠ Query skipped (no database connection)")
         return []
-    
+
     try:
         with self.driver.session() as session:
             result = session.run(...)
@@ -175,7 +175,7 @@ Applied to:
 
 **Before**: Any Neo4j unavailability = crash with unhandled exception
 
-**After**: 
+**After**:
 - Module detects unavailability at startup
 - Automatically activates mock mode
 - Continues operation with sample data
