@@ -77,14 +77,14 @@ poetry run pre-commit run --all-files
 
 ### Test: Module Import Paths
 ```bash
-grep -r "from src\." omega_kg/  # Should find nothing
+grep -r "from omega_kg\." omega_kg/  # Should find nothing
 grep -r "from omega_kg\." omega_kg/  # Should find correct imports
 ```
 
 **Results**:
-- ✅ No `src.` imports found in any Python files
+- ✅ No `omega_kg.` imports found in any Python files
 - ✅ All imports correctly use `omega_kg.` package path
-- ✅ Fixed import in `linear_sync.py`: `from src.settings` → `from omega_kg.settings`
+- ✅ Fixed import in `linear_sync.py`: `from omega_kg.settings` → `from omega_kg.settings`
 
 ---
 

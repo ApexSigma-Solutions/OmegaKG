@@ -3,9 +3,7 @@ Shared test fixtures and configuration for Omega_KG tests
 """
 
 import pytest
-import os
 from unittest.mock import MagicMock, patch
-from pathlib import Path
 
 
 @pytest.fixture
@@ -112,3 +110,37 @@ def sample_chat_session_data():
             "Implement task lifecycle with time-based transitions",
         ],
     }
+
+
+@pytest.fixture
+def task_lifecycle_mock(mock_env_vars):
+    """
+    Create a TaskLifecycle instance in mock mode for testing.
+
+    This fixture is useful for testing lifecycle logic without requiring
+    a live Neo4j connection.
+    """
+    from omega_kg.lifecycle import TaskLifecycle
+
+    lifecycle = TaskLifecycle(mock_mode=True)
+    yield lifecycle
+    lifecycle.close()
+
+
+@pytest.fixture
+def task_lifecycle_with_driver(mock_env_vars, mock_neo4j_driver):
+    """
+    Create a TaskLifecycle instance with mocked Neo4j driver.
+
+    This fixture allows testing lifecycle logic that interacts with
+    the database without requiring a live Neo4j connection.
+    """
+    from omega_kg.lifecycle import TaskLifecycle
+
+    with patch("omega_kg.lifecycle.GraphDatabase.driver") as mock_driver_factory:
+        mock_driver_factory.return_value = mock_neo4j_driver
+        lifecycle = TaskLifecycle(mock_mode=False)
+        # Override with mock to prevent actual connection
+        lifecycle.driver = mock_neo4j_driver
+        yield lifecycle
+        lifecycle.close()

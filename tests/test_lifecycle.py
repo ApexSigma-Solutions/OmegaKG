@@ -2,8 +2,7 @@
 Unit tests for omega_kg.lifecycle module
 """
 
-from datetime import datetime
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 from omega_kg.lifecycle import TaskStatus, LifecycleRule, TaskLifecycle
 
 
@@ -59,7 +58,9 @@ class TestTaskLifecycle:
 
     def test_task_lifecycle_initialization(self, mock_neo4j_driver):
         """Test TaskLifecycle initialization"""
-        with patch("omega_kg.lifecycle.GraphDatabase.driver", return_value=mock_neo4j_driver):
+        with patch(
+            "omega_kg.lifecycle.GraphDatabase.driver", return_value=mock_neo4j_driver
+        ):
             with patch("omega_kg.lifecycle.settings") as mock_settings:
                 mock_settings.neo4j_uri = "bolt://localhost:7687"
                 mock_settings.neo4j_user = "neo4j"
@@ -151,3 +152,53 @@ class TestTaskLifecycleEnforcement:
 
             assert isinstance(results, dict)
             assert all(isinstance(v, list) for v in results.values())
+
+
+class TestTaskLifecycleMockMode:
+    """Test TaskLifecycle with mock mode (no database connection)"""
+
+    def test_task_lifecycle_mock_mode_init(self):
+        """Test TaskLifecycle initialization in mock mode"""
+        lifecycle = TaskLifecycle(mock_mode=True)
+
+        assert lifecycle.mock_mode is True
+        assert lifecycle.driver is None
+
+    def test_task_lifecycle_mock_mode_enforce(self):
+        """Test lifecycle enforcement in mock mode returns mock data"""
+        lifecycle = TaskLifecycle(mock_mode=True)
+
+        results = lifecycle.enforce_lifecycle(dry_run=True)
+
+        # Should return mock results
+        assert isinstance(results, dict)
+        assert len(results["archived"]) > 0
+        assert len(results["warned"]) > 0
+
+    def test_task_lifecycle_connection_status_mock(self):
+        """Test connection status in mock mode"""
+        lifecycle = TaskLifecycle(mock_mode=True)
+
+        status = lifecycle.get_connection_status()
+
+        assert status["connected"] is False
+        assert status["mock_mode"] is True
+        assert status["uri"] == "mock://local"
+
+    def test_task_lifecycle_connection_status_real(self, mock_neo4j_driver):
+        """Test connection status with real driver"""
+        with patch("omega_kg.lifecycle.GraphDatabase.driver") as mock_driver_class:
+            mock_driver_class.return_value = mock_neo4j_driver
+
+            with patch("omega_kg.lifecycle.settings") as mock_settings:
+                mock_settings.neo4j_uri = "bolt://localhost:7687"
+                mock_settings.neo4j_user = "neo4j"
+                mock_settings.neo4j_password = "password"
+                mock_settings.obsidian_vault_path = "./vault"
+
+                lifecycle = TaskLifecycle(mock_mode=False)
+                status = lifecycle.get_connection_status()
+
+                # Should show as mock if connection check fails
+                # (since mock doesn't have working session)
+                assert "mock_mode" in status

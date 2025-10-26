@@ -3745,7 +3745,7 @@ function parse (pattern, isSub) {
   }
 
   regExp._glob = pattern
-  regExp._src = re
+  regExp._omega_kg = re
 
   return regExp
 }
@@ -3781,7 +3781,7 @@ function makeRe () {
     return pattern.map(function (p) {
       return (p === GLOBSTAR) ? twoStar
       : (typeof p === 'string') ? regExpEscape(p)
-      : p._src
+      : p._omega_kg
     }).join('\\\/')
   }).join('|')
 
