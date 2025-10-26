@@ -20,7 +20,10 @@ class PercolationEngine:
 
     def __init__(self, driver: Driver):
         """
-        Initialize PercolationEngine with a Neo4j driver.
+        Create a PercolationEngine bound to the provided Neo4j driver.
+        
+        Parameters:
+            driver (neo4j.Driver): Neo4j driver used for database operations by the engine.
         """
         self.driver = driver
 
@@ -64,15 +67,9 @@ class PercolationEngine:
 
     def _extract_frontmatter(self, content: str) -> Optional[Dict]:
         """
-        Extract YAML frontmatter from a Markdown string.
-
-        Parses the leading YAML frontmatter block delimited by '---' and returns a mapping of top-level keys to their string values; lines without ':' are ignored.
-
-        Parameters:
-            content (str): Markdown content to inspect.
-
-        Returns:
-            dict: Mapping of frontmatter keys to values, or None if no valid frontmatter is present.
+        Extract top-level YAML frontmatter keys and values from the start of a Markdown string.
+        
+        Returns a dictionary of key-value pairs if frontmatter is present and well-formed, or None otherwise.
         """
         if not content.startswith("---"):
             return None
@@ -142,10 +139,12 @@ class PercolationEngine:
 
     def _percolate_commits(self, path: Path, metadata: Dict, content: str) -> int:
         """
-        Create or update Commit nodes from markdown commit blocks and link them to Task nodes when a linear id is present.
-
+        Create or update Commit nodes from markdown commit blocks and link them to Task nodes when a Linear ID is present.
+        
+        Links each discovered commit (by hash) to an existing Task using the Linear ID when available.
+        
         Returns:
-            commit_count (int): Number of commit entries processed.
+            int: Number of commit entries processed.
         """
         commit_count = 0
 
@@ -255,13 +254,13 @@ class PercolationEngine:
     @staticmethod
     def _generate_decision_id(content: str) -> str:
         """
-        Create a compact decision identifier derived from the decision text.
-
+        Generate a compact decision identifier from decision text.
+        
         Parameters:
-            content (str): Decision content used to derive the identifier.
-
+            content (str): Decision text used to derive the identifier; the function uses the first three words to compute the suffix.
+        
         Returns:
-            str: Identifier in the form "DEC-XXXX" where "XXXX" is a zero-padded 4-digit numeric suffix derived from the initial words of the content.
+            str: Identifier in the form "DEC-XXXX" where "XXXX" is a zero-padded 4-digit numeric suffix derived deterministically from the initial words of the content.
         """
         # Create a simple hash from the first words
         words = content.split()[:3]
@@ -270,13 +269,13 @@ class PercolationEngine:
 
     def detect_stale_tasks(self, days_threshold: int = 30) -> List[Dict]:
         """
-        List tasks with status 'active' or 'ready' whose creation date is older than the given threshold in days.
-
+        Finds tasks with status 'active' or 'ready' created more than a given number of days ago.
+        
         Parameters:
             days_threshold (int): Number of days since creation after which a task is considered stale. Defaults to 30.
 
         Returns:
-            List[Dict]: A list of dictionaries for each stale task containing the keys 'uid', 'title', 'status', and 'created'.
+            List[Dict]: A list of dictionaries for each stale task containing the keys 'uid', 'title', 'status', and 'created'. Results are ordered by 'created' in ascending order.
         """
         stale_tasks = []
 
@@ -310,15 +309,15 @@ class PercolationEngine:
 
 def create_percolation_engine(uri: str, user: str, password: str) -> PercolationEngine:
     """
-    Factory function to create a PercolationEngine with a Neo4j connection.
-
-    Args:
-        uri: Neo4j connection URI
-        user: Neo4j username
-        password: Neo4j password
-
+    Create a PercolationEngine configured with a Neo4j driver.
+    
+    Parameters:
+        uri (str): Neo4j connection URI.
+        user (str): Neo4j username.
+        password (str): Neo4j password.
+    
     Returns:
-        Configured PercolationEngine instance
+        PercolationEngine: Engine instance initialized with a Neo4j driver.
     """
     driver = GraphDatabase.driver(uri, auth=(user, password))
     return PercolationEngine(driver)

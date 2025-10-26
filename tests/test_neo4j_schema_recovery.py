@@ -34,7 +34,9 @@ class TestKnowledgeGraphSchema:
         assert status["uri"] == "mock://local"
 
     def test_schema_close_mock_mode(self):
-        """Test close in mock mode"""
+        """
+        Verify that calling close() on a KnowledgeGraphSchema created in mock mode completes without raising an error.
+        """
         schema = KnowledgeGraphSchema(mock_mode=True)
 
         # Should complete without error
