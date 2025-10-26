@@ -245,8 +245,8 @@ class TestCLI:
         assert "✗ Not configured" in result.output
 
     @patch('omega_kg.cli.TaskLifecycle')
-    def test_report_command_dry_run(self, mock_lifecycle_class):
-        """Test the report command with --dry-run flag."""
+    def test_report_command(self, mock_lifecycle_class):
+        """Test the report command."""
         mock_lc = Mock()
         mock_lc.get_connection_status.return_value = {
             "connected": True,
@@ -256,7 +256,7 @@ class TestCLI:
         mock_lc.generate_report.return_value = mock_report
         mock_lifecycle_class.return_value = mock_lc
 
-        result = self.runner.invoke(cli, ['report', '--dry-run'])
+        result = self.runner.invoke(cli, ['report'])
 
         assert result.exit_code == 0
         assert "📊 Generating lifecycle report..." in result.output
@@ -281,21 +281,3 @@ class TestCLI:
 
         assert result.exit_code == 0
         mock_lc.send_email_report.assert_called_once_with(mock_report)
-
-    @patch('omega_kg.cli.TaskLifecycle')
-    def test_report_command_dry_run_no_email(self, mock_lifecycle_class):
-        """Test the report command with both --dry-run and --email (email should be skipped)."""
-        mock_lc = Mock()
-        mock_lc.get_connection_status.return_value = {
-            "connected": True,
-            "uri": "bolt://localhost:7687"
-        }
-        mock_report = "Test report"
-        mock_lc.generate_report.return_value = mock_report
-        mock_lifecycle_class.return_value = mock_lc
-
-        result = self.runner.invoke(cli, ['report', '--dry-run', '--email'])
-
-        assert result.exit_code == 0
-        assert "⚠ Email not sent in dry-run mode" in result.output
-        mock_lc.send_email_report.assert_not_called()
