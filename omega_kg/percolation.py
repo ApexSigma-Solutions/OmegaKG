@@ -67,15 +67,9 @@ class PercolationEngine:
 
     def _extract_frontmatter(self, content: str) -> Optional[Dict]:
         """
-        Extract YAML frontmatter from a Markdown string.
+        Extract top-level YAML frontmatter keys and values from the start of a Markdown string.
         
-        Parses the leading YAML frontmatter block delimited by '---' and returns a mapping of top-level keys to their string values; lines without ':' are ignored.
-        
-        Parameters:
-            content (str): Markdown content to inspect.
-        
-        Returns:
-            dict: Mapping of frontmatter keys to values, or None if no valid frontmatter is present.
+        Returns a dictionary of key-value pairs if frontmatter is present and well-formed, or None otherwise.
         """
         if not content.startswith("---"):
             return None
@@ -275,13 +269,13 @@ class PercolationEngine:
 
     def detect_stale_tasks(self, days_threshold: int = 30) -> List[Dict]:
         """
-        List tasks with status 'active' or 'ready' whose creation date is older than the given threshold in days.
+        Finds tasks with status 'active' or 'ready' created more than a given number of days ago.
         
         Parameters:
             days_threshold (int): Number of days since creation after which a task is considered stale. Defaults to 30.
         
         Returns:
-            List[Dict]: A list of dictionaries for each stale task containing the keys 'uid', 'title', 'status', and 'created'.
+            List[Dict]: A list of dictionaries for each stale task containing the keys 'uid', 'title', 'status', and 'created'. Results are ordered by 'created' in ascending order.
         """
         stale_tasks = []
 

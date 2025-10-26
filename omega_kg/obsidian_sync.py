@@ -86,7 +86,7 @@ class ObsidianNeo4jSync:
             dict: Mapping with keys:
                 - connected (bool): `true` if a real driver is initialized and mock mode is disabled, `false` otherwise.
                 - mock_mode (bool): `true` if the instance is operating in mock mode, `false` otherwise.
-                - uri (str): Configured Neo4j URI when not in mock mode; "mock://local" when in mock mode.
+                - uri (str): The configured Neo4j URI when not in mock mode; "mock://local" when in mock mode.
         """
         return {
             "connected": self.driver is not None and not self.mock_mode,
@@ -244,9 +244,9 @@ class ObsidianNeo4jSync:
 
 def main() -> None:
     """
-    CLI entry point that runs a full Obsidian-to-Neo4j synchronization and reports stale tasks.
+    Run a complete Obsidian-to-Neo4j synchronization and report stale tasks.
     
-    Initializes an ObsidianNeo4jSync instance, prints connection status, performs a full sync of task notes, displays tasks older than seven days, and ensures the Neo4j driver is closed.
+    Creates an ObsidianNeo4jSync instance, prints the connection status, synchronizes all task notes, lists tasks older than seven days, and ensures the Neo4j driver is closed.
     """
     sync = ObsidianNeo4jSync()
 
