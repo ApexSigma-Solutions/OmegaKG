@@ -4,6 +4,7 @@
 from neo4j import GraphDatabase
 from omega_kg.settings import settings
 
+
 def test_connection():
     """
     Verify connectivity to a Neo4j instance.
@@ -15,8 +16,7 @@ def test_connection():
     """
     try:
         driver = GraphDatabase.driver(
-            settings.neo4j_uri,
-            auth=(settings.neo4j_user, settings.neo4j_password)
+            settings.neo4j_uri, auth=(settings.neo4j_user, settings.neo4j_password)
         )
 
         with driver.session() as session:
@@ -30,6 +30,7 @@ def test_connection():
     except Exception as e:
         print("❌ Neo4j connection failed:", str(e))
         return False
+
 
 if __name__ == "__main__":
     test_connection()

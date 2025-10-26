@@ -30,12 +30,12 @@ class PercolationEngine:
     def percolate_from_vault(self, vault_path: Path) -> Dict[str, int]:
         """
         Percolates tasks, commits, and session/decision links from all Markdown files in an Obsidian vault.
-        
+
         Scans the given vault directory recursively for `.md` files, extracts frontmatter and content, and delegates per-file processing to the engine's task, commit, and session percolation routines. Errors reading or processing individual files are caught and do not halt the overall run.
-        
+
         Parameters:
             vault_path (Path): Root directory of the Obsidian vault to scan.
-        
+
         Returns:
             dict: Counts of processed items with keys `"tasks"`, `"commits"`, and `"links"`.
         """
@@ -90,12 +90,12 @@ class PercolationEngine:
     def _percolate_task(self, path: Path, metadata: Dict, content: str) -> int:
         """
         Find task UIDs in the given Markdown content, ensure corresponding Task nodes exist in the graph, and optionally link them to a Decision.
-        
+
         Parameters:
             path (Path): Filesystem path of the Markdown file where tasks were found.
             metadata (Dict): Parsed frontmatter metadata; may contain "date" for created timestamp and "decision_id" to link tasks to a Decision node.
             content (str): Full Markdown file content to search for task references (e.g., [[PROJ-123]]).
-        
+
         Returns:
             int: Number of task references processed.
         """
@@ -189,12 +189,12 @@ class PercolationEngine:
     def _percolate_session(self, path: Path, metadata: Dict, content: str) -> int:
         """
         Create or link a chat session from the file's metadata and extract Decision sections from the content, creating Decision nodes and CONTAINS relationships to the session.
-        
+
         Parameters:
             path (Path): Path to the markdown file (used for context).
             metadata (Dict): Frontmatter metadata. Must include a 'date' value and may include 'topic'.
             content (str): Full markdown content to scan for decision sections beginning with "## Decision".
-        
+
         Returns:
             int: Number of Decision-to-ChatSession links created.
         """
@@ -273,7 +273,7 @@ class PercolationEngine:
         
         Parameters:
             days_threshold (int): Number of days since creation after which a task is considered stale. Defaults to 30.
-        
+
         Returns:
             List[Dict]: A list of dictionaries for each stale task containing the keys 'uid', 'title', 'status', and 'created'. Results are ordered by 'created' in ascending order.
         """
