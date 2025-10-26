@@ -1,7 +1,9 @@
 from pathlib import Path
 import frontmatter
+from src.settings import Settings
 
-vault_path = Path(r"C:\Users\steyn\OneDrive\Apps\remotely-save\Omega.as Vault")
+settings = Settings()
+vault_path = Path(settings.obsidian_vault_path)
 task_files = list(vault_path.glob("Tasks/*.md"))
 
 print(f"Total: {len(task_files)}\n")
