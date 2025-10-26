@@ -1,0 +1,568 @@
+"""
+Omega_KG Task Lifecycle Enforcement
+Implements time-based state transitions with email notifications
+"""
+
+from datetime import datetime
+from typing import List, Dict, Optional, Any
+from dataclasses import dataclass
+from enum import Enum
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from pathlib import Path
+
+from neo4j import GraphDatabase
+from neo4j.exceptions import ServiceUnavailable, AuthError
+import frontmatter
+
+from omega_kg.settings import settings
+
+
+class ConnectionError(Exception):
+    """Raised when Neo4j connection cannot be established"""
+
+    pass
+
+
+class TaskStatus(Enum):
+    """Task lifecycle states"""
+
+    DRAFT = "draft"
+    READY = "ready"
+    ACTIVE = "active"
+    BLOCKED = "blocked"
+    COMPLETED = "completed"
+    ARCHIVED = "archived"
+
+
+@dataclass
+class LifecycleRule:
+    """Defines a lifecycle transition rule"""
+
+    from_status: TaskStatus
+    to_status: TaskStatus
+    days_threshold: int
+    condition: Optional[str] = None  # Cypher WHERE clause
+    action: str = "auto"  # auto, warn, manual
+
+
+class TaskLifecycle:
+    """Enforces task lifecycle rules and generates reports"""
+
+    # Lifecycle rules (the thermodynamics)
+    RULES = [
+        # Draft tasks decay to archive
+        LifecycleRule(
+            from_status=TaskStatus.DRAFT,
+            to_status=TaskStatus.ARCHIVED,
+            days_threshold=14,
+            condition="NOT t.pinned = true",
+            action="auto",
+        ),
+        # Draft tasks warn before archival
+        LifecycleRule(
+            from_status=TaskStatus.DRAFT,
+            to_status=TaskStatus.DRAFT,  # No transition, just warn
+            days_threshold=10,
+            condition="NOT t.pinned = true AND NOT t.warned = true",
+            action="warn",
+        ),
+        # Active tasks stale after 30 days without commits
+        LifecycleRule(
+            from_status=TaskStatus.ACTIVE,
+            to_status=TaskStatus.BLOCKED,  # Flag as blocked
+            days_threshold=30,
+            condition="NOT EXISTS((t)<-[:IMPLEMENTS]-(:Commit))",
+            action="warn",
+        ),
+        # Completed tasks archive after 90 days
+        LifecycleRule(
+            from_status=TaskStatus.COMPLETED,
+            to_status=TaskStatus.ARCHIVED,
+            days_threshold=90,
+            action="auto",
+        ),
+    ]
+
+    def __init__(self, mock_mode: bool = False):
+        """
+        Create a TaskLifecycle manager and initialize its persistence and vault settings.
+        
+        Initializes instance attributes (Neo4j driver, vault path, and mock mode). If mock_mode is False, attempts to connect to the configured Neo4j instance and will switch the instance to mock mode and clear the driver if the connection cannot be established.
+        
+        Parameters:
+            mock_mode (bool): If True, skip Neo4j connection and operate in mock mode.
+        """
+        self.driver = None
+        self.vault_path = Path(settings.obsidian_vault_path)
+        self.mock_mode = mock_mode
+
+        if not mock_mode:
+            try:
+                self.driver = GraphDatabase.driver(
+                    settings.neo4j_uri,
+                    auth=(settings.neo4j_user, settings.neo4j_password),
+                )
+                # Test the connection
+                self._check_connection()
+                print("✓ Neo4j connection established")
+            except (ServiceUnavailable, AuthError, ConnectionError) as e:
+                print(f"✗ Failed to connect to Neo4j: {e}")
+                print("⚠ Falling back to mock mode (dry-run only)")
+                self.mock_mode = True
+                self.driver = None
+
+    def _check_connection(self) -> bool:
+        """
+        Check that the configured Neo4j driver can execute a simple query.
+        
+        Returns:
+            True if the connection is healthy.
+        
+        Raises:
+            ConnectionError: If the driver is not initialized or the health check fails.
+        """
+        if not self.driver:
+            raise ConnectionError("Driver not initialized")
+
+        try:
+            with self.driver.session() as session:
+                result = session.run("RETURN 1 as status")
+                _ = result.single()
+                return True
+        except Exception as e:
+            raise ConnectionError(f"Connection health check failed: {e}")
+
+    def get_connection_status(self) -> Dict[str, Any]:
+        """
+        Report the current Neo4j connection and mock-mode state.
+        
+        Returns:
+            dict: Mapping with connection information:
+                - connected (bool): `true` if a real Neo4j driver is configured and mock mode is not active, `false` otherwise.
+                - mock_mode (bool): `true` if the lifecycle is operating in mock mode, `false` otherwise.
+                - uri (str): the active Neo4j URI when connected, or "mock://local" when in mock mode.
+        """
+        return {
+            "connected": self.driver is not None and not self.mock_mode,
+            "mock_mode": self.mock_mode,
+            "uri": settings.neo4j_uri if not self.mock_mode else "mock://local",
+        }
+
+    def enforce_lifecycle(
+        self, dry_run: bool = False
+    ) -> Dict[str, List[Dict[str, Any]]]:
+        """
+        Enforces configured lifecycle rules, applying transitions or warnings to matching tasks.
+        
+        Parameters:
+            dry_run (bool): If True, simulate actions without modifying the database or files.
+        
+        Returns:
+            results (Dict[str, List[Dict[str, Any]]]): Mapping of result categories to lists of task records or error entries.
+                - "archived": tasks that were auto-transitioned to ARCHIVED.
+                - "warned": tasks that were flagged with a warning.
+                - "blocked": tasks that were transitioned to BLOCKED.
+                - "failed": entries describing tasks or operations that failed with error details.
+                - "skipped": records explaining why processing was skipped (e.g., database unavailable).
+        """
+        results: Dict[str, List[Dict[str, Any]]] = {
+            "archived": [],
+            "warned": [],
+            "blocked": [],
+            "failed": [],
+            "skipped": [],
+        }
+
+        if self.mock_mode:
+            print("⚠ Running in mock mode - no database operations")
+            return self._get_mock_results()
+
+        if not self.driver:
+            print("✗ No database connection available")
+            return results
+
+        try:
+            with self.driver.session() as session:
+                for rule in self.RULES:
+                    violations = self._find_violations(session, rule)
+
+                    for task in violations:
+                        try:
+                            if dry_run:
+                                print(f"[DRY RUN] Would {rule.action}: {task['t.uid']}")
+                                continue
+
+                            if rule.action == "auto":
+                                self._transition_task(session, task["t.uid"], rule)
+                                results[rule.to_status.value].append(task)
+                            elif rule.action == "warn":
+                                self._warn_task(session, task["t.uid"], rule)
+                                results["warned"].append(task)
+
+                        except Exception as e:
+                            print(f"✗ Failed to process {task['t.uid']}: {e}")
+                            results["failed"].append({"task": task, "error": str(e)})
+
+        except ServiceUnavailable as e:
+            print(f"✗ Database connection lost: {e}")
+            print("💡 Tip: Ensure Neo4j is running on {settings.neo4j_uri}")
+            results["skipped"].append(
+                {"reason": "Database unavailable", "error": str(e)}
+            )
+        except Exception as e:
+            print(f"✗ Unexpected error: {e}")
+            results["failed"].append(
+                {"reason": "Lifecycle enforcement failed", "error": str(e)}
+            )
+
+        return results
+
+    def _get_mock_results(self) -> Dict[str, List[Dict[str, Any]]]:
+        """
+        Generate mock results for testing when database is unavailable.
+
+        Returns:
+            Sample lifecycle report data
+        """
+        return {
+            "archived": [
+                {
+                    "t.uid": "mock-draft-001",
+                    "t.title": "Old Draft Task (Mock)",
+                    "t.filepath": "Tasks/old_draft.md",
+                    "t.status": "draft",
+                    "days_old": 15,
+                }
+            ],
+            "warned": [
+                {
+                    "t.uid": "mock-draft-002",
+                    "t.title": "Draft Task Approaching Expiry (Mock)",
+                    "t.filepath": "Tasks/expiring_draft.md",
+                    "t.status": "draft",
+                    "days_old": 11,
+                }
+            ],
+            "blocked": [],
+            "failed": [],
+            "skipped": [],
+        }
+
+    def _find_violations(
+        self, session: Any, rule: LifecycleRule
+    ) -> List[Dict[str, Any]]:
+        """
+        Find tasks that meet the time-based criteria of a lifecycle rule.
+        
+        Parameters:
+            rule (LifecycleRule): The lifecycle transition rule whose conditions (from_status, days_threshold, and optional condition) are used to locate violating tasks.
+        
+        Returns:
+            violations (List[Dict[str, Any]]): List of task records matching the rule. Each dict contains keys `t.uid`, `t.title`, `t.filepath`, `t.status`, and `days_old` (number of days since task creation). Results are ordered by `days_old` descending.
+        """
+
+        # Build Cypher query
+        query = f"""
+            MATCH (t:Task)
+            WHERE t.status = $from_status
+              AND duration.between(t.created, datetime()).days > $days_threshold
+              {f"AND ({rule.condition})" if rule.condition else ""}
+            RETURN t.uid, t.title, t.filepath, t.status,
+                   duration.between(t.created, datetime()).days as days_old
+            ORDER BY days_old DESC
+        """
+
+        result = session.run(
+            query,
+            from_status=rule.from_status.value,
+            days_threshold=rule.days_threshold,
+        )
+
+        return [dict(record) for record in result]
+
+    def _transition_task(self, session: Any, uid: str, rule: LifecycleRule) -> None:
+        """
+        Perform the lifecycle transition for a single task and persist the change to both the database and the Obsidian vault.
+        
+        Updates the task's status and transition metadata in Neo4j, updates the corresponding Obsidian note's frontmatter and adds a transition notice to the note content, and prints a confirmation message.
+        """
+
+        # Update Neo4j
+        session.run(
+            """
+            MATCH (t:Task {uid: $uid})
+            SET t.status = $new_status,
+                t.transitioned_at = datetime(),
+                t.transition_reason = $reason
+        """,
+            uid=uid,
+            new_status=rule.to_status.value,
+            reason=(
+                f"Lifecycle rule: {rule.from_status.value} -> "
+                f"{rule.to_status.value} after {rule.days_threshold} days"
+            ),
+        )
+
+        # Update Obsidian file
+        self._update_task_file(uid, rule.to_status.value, rule)
+
+        print(
+            f"✓ Transitioned {uid}: {rule.from_status.value} → "
+            f"{rule.to_status.value}"
+        )
+
+    def _warn_task(self, session: Any, uid: str, rule: LifecycleRule) -> None:
+        """
+        Record that a task has been warned to avoid duplicate warnings.
+        
+        Sets the Task node's `warned` flag to true and `warned_at` to the current datetime in the database; used when a lifecycle rule issues a warning (e.g., an approaching automatic transition).
+        """
+
+        session.run(
+            """
+            MATCH (t:Task {uid: $uid})
+            SET t.warned = true,
+                t.warned_at = datetime()
+        """,
+            uid=uid,
+        )
+
+        print(f"⚠ Warned {uid}: approaching {rule.to_status.value}")
+
+    def _update_task_file(self, uid: str, new_status: str, rule: LifecycleRule) -> None:
+        """
+        Update the Obsidian note for a task to reflect an automatic lifecycle transition.
+        
+        Finds the note file matching the given UID, sets the frontmatter "status" to new_status, adds a "lifecycle_transition" metadata entry (from, to, reason, date) derived from the provided rule, appends a human-readable transition notice to the note body, and writes the updated file back to the vault. If no matching file is found, logs a warning and returns without making changes.
+        
+        Parameters:
+            uid (str): Unique identifier of the task used to locate the note file.
+            new_status (str): New task status to write into the frontmatter.
+            rule (LifecycleRule): Rule that triggered the transition; used to populate transition metadata (from, to, days threshold, and reason).
+        """
+
+        # Find task file
+        task_files = list(self.vault_path.glob(f"Tasks/**/{uid}*.md"))
+        if not task_files:
+            print(f"  ⚠ Task file not found for {uid}")
+            return
+
+        task_path = task_files[0]
+
+        # Update frontmatter
+        with open(task_path, "r", encoding="utf-8") as f:
+            post = frontmatter.load(f)
+
+        post.metadata["status"] = new_status
+        post.metadata["lifecycle_transition"] = {
+            "from": rule.from_status.value,
+            "to": rule.to_status.value,
+            "reason": f"Auto-transitioned after {rule.days_threshold} days",
+            "date": datetime.now().isoformat(),
+        }
+
+        # Append notice to content
+        notice = f"""
+
+---
+
+**🤖 Lifecycle Transition:** {rule.from_status.value} → **{new_status}**
+*Reason:* Automatic transition after {rule.days_threshold} days of inactivity.
+*Date:* {datetime.now().strftime('%Y-%m-%d %H:%M')}
+
+"""
+        post.content += notice
+
+        # Write back
+        with open(task_path, "w", encoding="utf-8") as f:
+            f.write(frontmatter.dumps(post))
+
+    def generate_report(self, results: Dict[str, List[Dict[str, Any]]]) -> str:
+        """
+        Create a human-readable lifecycle report summarizing actions taken and current stale tasks.
+        
+        Parameters:
+            results (Dict[str, List[Dict[str, Any]]]): Mapping of lifecycle outcome categories to lists of task records.
+                Expected keys include:
+                - "archived": list of tasks auto-archived (each record contains 't.uid', 't.title', 'days_old', etc.)
+                - "warned": list of tasks that were warned (each record contains 't.uid', 't.title', 'days_old', etc.)
+                - "failed": list of task records that failed processing
+                - other keys are permitted but ignored by this function.
+        
+        Returns:
+            str: A multi-line text report containing sections for auto-archived tasks, warnings, stale active tasks, and a summary with counts.
+        """
+
+        report_lines = [
+            "🔄 Task Lifecycle Report",
+            f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M')}",
+            "=" * 50,
+            "",
+        ]
+
+        # Auto-archived tasks
+        if results.get("archived"):
+            report_lines.append("🗄️  AUTO-ARCHIVED (14+ days draft):")
+            for task in results["archived"][:10]:  # Limit to 10
+                report_lines.append(
+                    f"  • {task['t.uid']}: {task['t.title']} ({task['days_old']} days)"
+                )
+            if len(results["archived"]) > 10:
+                report_lines.append(f"  ... and {len(results['archived']) - 10} more")
+            report_lines.append("")
+
+        # Warnings
+        if results.get("warned"):
+            report_lines.append("⚠️  WARNINGS (approaching expiry):")
+            for task in results["warned"][:10]:
+                days_remaining = 14 - task["days_old"]
+                report_lines.append(
+                    f"  • {task['t.uid']}: {task['t.title']} ({days_remaining} days until auto-archive)"
+                )
+            report_lines.append("")
+
+        # Stale active tasks
+        stale_active = self._get_stale_active_tasks()
+        if stale_active:
+            report_lines.append("🐌 STALE ACTIVE (30+ days, no commits):")
+            for task in stale_active[:5]:
+                report_lines.append(
+                    f"  • {task['t.linear_id'] or task['t.uid']}: {task['t.title']}"
+                )
+            report_lines.append("")
+
+        # Summary
+        report_lines.extend(
+            [
+                "=" * 50,
+                "SUMMARY:",
+                f"  Archived: {len(results.get('archived', []))}",
+                f"  Warned: {len(results.get('warned', []))}",
+                f"  Stale Active: {len(stale_active)}",
+                f"  Failed: {len(results.get('failed', []))}",
+            ]
+        )
+
+        return "\n".join(report_lines)
+
+    def _get_stale_active_tasks(self) -> List[Dict[str, Any]]:
+        """
+        Finds active tasks older than 30 days that have had no commits in the last 7 days.
+        
+        Returns:
+            List[Dict[str, Any]]: A list of task dictionaries with keys 'uid', 'title', 'linear_id', and 'stale' (days since creation). Returns an empty list if no database driver is available.
+        """
+
+        if not self.driver:
+            return []
+
+        with self.driver.session() as session:
+            result = session.run(
+                """
+                MATCH (t:Task)
+                WHERE t.status = 'active'
+                  AND duration.between(t.created, datetime()).days > 30
+                  AND NOT EXISTS {
+                      MATCH (t)<-[:IMPLEMENTS]-(c:Commit)
+                      WHERE duration.between(c.timestamp, datetime()).days < 7
+                  }
+                RETURN t.uid, t.title, t.linear_id,
+                       duration.between(t.created, datetime()).days as stale
+                ORDER BY stale DESC
+                LIMIT 10
+            """
+            )
+
+            return [dict(record) for record in result]
+
+    def send_email_report(self, report: str) -> None:
+        """
+        Send the provided lifecycle report to the configured SMTP recipient.
+        
+        If SMTP settings (smtp_host, smtp_user, and email_to) are not all configured, the function does nothing. When configured, it composes a plain-text email with a subject that includes the current date, connects to the SMTP server using STARTTLS, authenticates with the configured user and password, and sends the message. Prints a success message on successful send or an error message if sending fails.
+        """
+
+        # Check if email is configured
+        if not all([settings.smtp_host, settings.smtp_user, settings.email_to]):
+            print("⚠ Email not configured, skipping")
+            return
+
+        msg = MIMEMultipart()
+        msg["From"] = settings.smtp_user or ""
+        msg["To"] = settings.email_to or ""
+        msg["Subject"] = (
+            f"Omega_KG Lifecycle Report - " f"{datetime.now().strftime('%Y-%m-%d')}"
+        )
+
+        msg.attach(MIMEText(report, "plain"))
+
+        try:
+            with smtplib.SMTP(
+                settings.smtp_host or "localhost", settings.smtp_port
+            ) as server:
+                server.starttls()
+                server.login(settings.smtp_user or "", settings.smtp_password or "")
+                server.send_message(msg)
+
+            print("✓ Email report sent")
+        except Exception as e:
+            print(f"✗ Failed to send email: {e}")
+
+    def close(self) -> None:
+        """
+        Close the Neo4j driver if one is initialized.
+        
+        Does nothing if no driver is configured.
+        """
+        if self.driver:
+            self.driver.close()
+
+
+def main() -> None:
+    """
+    Command-line entry point to run task lifecycle enforcement.
+    
+    Parses CLI flags:
+      --dry-run: preview changes without applying them.
+      --no-email: skip sending the email report.
+    
+    Runs the lifecycle enforcement process, prints connection status and a human-readable report, optionally sends the report by email, and ensures the lifecycle resources are closed on exit.
+    """
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Enforce Omega_KG task lifecycle")
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Preview changes without applying",
+    )
+    parser.add_argument("--no-email", action="store_true", help="Skip email report")
+    args = parser.parse_args()
+
+    lifecycle = TaskLifecycle()
+
+    # Print connection status
+    status = lifecycle.get_connection_status()
+    if status["connected"]:
+        print(f"✓ Connected to Neo4j: {status['uri']}")
+    else:
+        print("⚠ Running in mock mode (no Neo4j connection)")
+
+    try:
+        print("🔄 Running lifecycle enforcement...")
+        results = lifecycle.enforce_lifecycle(dry_run=args.dry_run)
+
+        report = lifecycle.generate_report(results)
+        print(f"\n{report}")
+
+        if not args.dry_run and not args.no_email:
+            lifecycle.send_email_report(report)
+
+    finally:
+        lifecycle.close()
+
+
+if __name__ == "__main__":
+    main()
