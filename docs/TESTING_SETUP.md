@@ -266,7 +266,7 @@ class TestModule:
     """Test Group"""
     def test_feature_1(self):
         pass
-    
+
     def test_feature_2(self):
         pass
 ```

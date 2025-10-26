@@ -13,7 +13,7 @@ from omega_kg.neo4j_schema import KnowledgeGraphSchema
 def cli():
     """
     Command-line interface group for Omega_KG knowledge graph operations.
-    
+
     Exposes top-level Click commands to initialize the Neo4j schema, enforce task lifecycle rules (with dry-run and email options), display knowledge-graph statistics, and list stale tasks.
     """
     pass
@@ -23,7 +23,7 @@ def cli():
 def init():
     """
     Initialize the application's Neo4j schema and populate sample relationships.
-    
+
     Creates the schema, inserts sample relationships for demonstration, and closes the schema connection.
     """
     click.echo("🔧 Initializing Neo4j schema...")
@@ -40,7 +40,7 @@ def init():
 def lifecycle(dry_run, no_email):
     """
     Run task lifecycle enforcement, print a human-readable report, and optionally send it by email.
-    
+
     Parameters:
         dry_run (bool): If True, simulate changes without applying them.
         no_email (bool): If True, skip sending the email report.
@@ -120,7 +120,7 @@ def stats():
 def stale():
     """
     Show tasks older than 7 days by printing each task's UID, title, and creation date.
-    
+
     Retrieves stale tasks from ObsidianNeo4jSync (threshold: 7 days), prints a header and one line per task in the format
     "uid: title (created: date)", prints "(none)" if there are no stale tasks, and closes the sync client.
     """

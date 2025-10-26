@@ -10,9 +10,9 @@ from unittest.mock import MagicMock, patch
 def mock_env_vars(monkeypatch):
     """
     Prepare a predefined set of environment variables for tests and apply them using the provided monkeypatch fixture.
-    
+
     Returns:
-    	env_vars (dict): Mapping of environment variable names to values. Keys with value `None` indicate the variable was removed from the environment; other values were set.
+        env_vars (dict): Mapping of environment variable names to values. Keys with value `None` indicate the variable was removed from the environment; other values were set.
     """
     env_vars = {
         "APP_ENV": "test",
@@ -40,7 +40,7 @@ def mock_env_vars(monkeypatch):
 def test_vault_path(tmp_path):
     """
     Creates a temporary "test_vault" directory under the provided tmp_path for use in tests.
-    
+
     Returns:
         pathlib.Path: Path to the created temporary vault directory (tmp_path / "test_vault").
     """
@@ -53,7 +53,7 @@ def test_vault_path(tmp_path):
 def mock_neo4j_driver():
     """
     Create a mock Neo4j driver that yields a mock session when used as a context manager.
-    
+
     Returns:
         MagicMock: A mock driver whose session() returns a context manager that yields a mock session.
     """
@@ -68,7 +68,7 @@ def mock_neo4j_driver():
 def mock_neo4j_session():
     """
     Provide a MagicMock that simulates a Neo4j session for tests.
-    
+
     Returns:
         MagicMock: A mock object representing a Neo4j session, suitable for use wherever a session is expected in tests.
     """
@@ -80,7 +80,7 @@ def mock_neo4j_session():
 def sample_task_data():
     """
     Provide sample task data for tests.
-    
+
     Returns:
         dict: A mapping representing a task with the following keys:
             uid (str): Unique task identifier.
@@ -112,7 +112,7 @@ def sample_task_data():
 def sample_lifecycle_rule_data():
     """
     Provide a sample lifecycle rule dictionary used in tests.
-    
+
     Returns:
         dict: A lifecycle rule with the following keys:
             - from_status (str): Source task status (e.g., "draft").
@@ -134,7 +134,7 @@ def sample_lifecycle_rule_data():
 def sample_linear_webhook_payload():
     """
     Provide a representative Linear webhook payload for tests.
-    
+
     Returns:
         payload (dict): A dictionary simulating a Linear webhook update event with keys:
             - "action": event action string ("update").
@@ -159,7 +159,7 @@ def sample_linear_webhook_payload():
 def sample_chat_session_data():
     """
     Provide a sample chat session payload for tests.
-    
+
     Returns:
         dict: A chat session dictionary containing:
             - date (str): ISO date string of the session (e.g., "2025-10-25").
@@ -180,9 +180,9 @@ def sample_chat_session_data():
 def task_lifecycle_mock(mock_env_vars):
     """
     Provide a TaskLifecycle configured in mock mode for tests.
-    
+
     Yields a TaskLifecycle instance created with mock_mode=True and ensures lifecycle.close() is called after use.
-    
+
     Returns:
         TaskLifecycle: A lifecycle instance suitable for unit tests (mock mode).
     """
@@ -197,9 +197,9 @@ def task_lifecycle_mock(mock_env_vars):
 def task_lifecycle_with_driver(mock_env_vars, mock_neo4j_driver):
     """
     Provide a TaskLifecycle instance configured to use a mocked Neo4j driver.
-    
+
     Yields a TaskLifecycle created with mock_mode=False whose .driver is replaced by the provided mock_neo4j_driver, allowing tests to exercise lifecycle logic without a real Neo4j connection. Ensures lifecycle.close() is called after the fixture is torn down.
-    
+
     Returns:
         TaskLifecycle: A lifecycle instance with its driver overridden by the mock.
     """
