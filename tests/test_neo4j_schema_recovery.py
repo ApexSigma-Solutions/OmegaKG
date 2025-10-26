@@ -2,26 +2,8 @@
 Unit tests for omega_kg.neo4j_schema module
 """
 
-import pytest
 from unittest.mock import MagicMock, patch
 from omega_kg.neo4j_schema import KnowledgeGraphSchema
-
-
-@pytest.fixture
-def mock_neo4j_driver():
-    """
-    Create a MagicMock Neo4j driver whose session() can be used as a context manager in tests.
-    
-    The returned driver.mock.session() yields a MagicMock session when used with a with-statement, allowing tests to patch and inspect session interactions without a real Neo4j connection.
-    
-    Returns:
-        MagicMock: A mock Neo4j driver with a context-managed session mock.
-    """
-    driver = MagicMock()
-    session = MagicMock()
-    driver.session.return_value.__enter__.return_value = session
-    driver.session.return_value.__exit__.return_value = None
-    return driver
 
 
 class TestKnowledgeGraphSchema:

@@ -1,9 +1,6 @@
 #!/usr/bin/env pwsh
 # Omega_KG Post-Commit Hook (PowerShell Native)
 
-# Omega_KG Hook Version
-HOOK_VERSION="1.0.0"
-
 $ErrorActionPreference = 'SilentlyContinue'  # Never block commits
 
 # Locate session log

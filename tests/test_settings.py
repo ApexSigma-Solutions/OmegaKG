@@ -5,28 +5,34 @@ Unit tests for omega_kg.settings module
 from unittest.mock import patch
 
 
-def test_settings_load_from_env():
-    """Test that settings load correctly with defaults"""
+def test_settings_load_from_env(monkeypatch):
+    """Test that settings load correctly from environment variables"""
     from omega_kg.settings import Settings
+
+    # Set explicit environment variables
+    monkeypatch.setenv("NEO4J_URI", "bolt://test-host:7687")
+    monkeypatch.setenv("NEO4J_USER", "test-user")
+    monkeypatch.setenv("NEO4J_PASSWORD", "test-password")
+    monkeypatch.setenv("APP_ENV", "production")
 
     settings = Settings()
 
-    assert settings.app_env in ["development", "test", "production"]
-    assert settings.neo4j_uri is not None
-    assert settings.neo4j_user is not None
-    assert settings.neo4j_password is not None
+    assert settings.neo4j_uri == "bolt://test-host:7687"
+    assert settings.neo4j_user == "test-user"
+    assert settings.neo4j_password == "test-password"
+    assert settings.app_env == "production"
 
 
 def test_settings_defaults():
-    """Test that settings use correct defaults when env vars not set"""
+    """Test that settings use correct default values"""
     from omega_kg.settings import Settings
 
     settings = Settings()
 
-    assert settings.app_env in ["development", "test", "production"]
-    assert settings.neo4j_uri is not None
-    assert settings.neo4j_user is not None
-    assert settings.neo4j_password is not None
+    assert settings.app_env == "development"
+    assert settings.neo4j_uri == "bolt://localhost:7687"
+    assert settings.neo4j_user == "neo4j"
+    assert settings.neo4j_password == "please-change-this-password"
 
 
 def test_settings_singleton():
