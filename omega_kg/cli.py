@@ -12,9 +12,9 @@ from omega_kg.neo4j_schema import KnowledgeGraphSchema
 @click.group()
 def cli():
     """
-    Command-line interface group for Omega_KG knowledge graph operations.
-
-    Exposes top-level Click commands to initialize the Neo4j schema, enforce task lifecycle rules (with dry-run and email options), display knowledge-graph statistics, and list stale tasks.
+    Top-level Click command group that exposes Omega_KG CLI commands.
+    
+    Provides subcommands to initialize the Neo4j schema (init), enforce task lifecycle rules with optional dry-run and email suppression (lifecycle), display knowledge-graph task statistics (stats), and list stale tasks older than a configurable threshold (stale).
     """
     pass
 
@@ -22,9 +22,9 @@ def cli():
 @cli.command()
 def init():
     """
-    Initialize the application's Neo4j schema and populate sample relationships.
-
-    Creates the schema, inserts sample relationships for demonstration, and closes the schema connection.
+    Initialize the Neo4j schema and populate example relationships.
+    
+    Sets up the required schema (nodes, constraints) and creates sample relationships for demonstration. Ensures the schema connection is closed when finished.
     """
     click.echo("🔧 Initializing Neo4j schema...")
     schema = KnowledgeGraphSchema()
@@ -42,8 +42,8 @@ def lifecycle(dry_run, no_email):
     Run task lifecycle enforcement, print a human-readable report, and optionally send it by email.
 
     Parameters:
-        dry_run (bool): If True, simulate changes without applying them.
-        no_email (bool): If True, skip sending the email report.
+        dry_run (bool): Simulate lifecycle changes without applying them.
+        no_email (bool): Do not send the generated email report.
     """
     lc = TaskLifecycle()
 
@@ -63,7 +63,11 @@ def lifecycle(dry_run, no_email):
 
 @cli.command()
 def stats():
-    """Show knowledge graph statistics"""
+    """
+    Show aggregated counts of Task nodes in the knowledge graph and print them to the console.
+    
+    Connects to the configured Neo4j instance (or uses mock mode if no connection) and prints counts for total, draft, active, completed, and archived tasks. Ensures opened sync client and database driver are closed before returning.
+    """
     from omega_kg.obsidian_sync import ObsidianNeo4jSync
 
     click.echo("\n✓ Neo4j connection established\n")
@@ -119,10 +123,9 @@ def stats():
 @cli.command()
 def stale():
     """
-    Show tasks older than 7 days by printing each task's UID, title, and creation date.
-
-    Retrieves stale tasks from ObsidianNeo4jSync (threshold: 7 days), prints a header and one line per task in the format
-    "uid: title (created: date)", prints "(none)" if there are no stale tasks, and closes the sync client.
+    Print tasks older than 7 days to the console, showing each task's UID, title, and creation date.
+    
+    If stale tasks exist, prints a header and one line per task in the format "uid: title (created: date)". If no stale tasks are found, prints "(none)". The function closes the sync client before returning.
     """
     from omega_kg.obsidian_sync import ObsidianNeo4jSync
 

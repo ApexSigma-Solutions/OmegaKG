@@ -159,13 +159,13 @@ class TestObsidianSyncOperations:
 
                 def run_side_effect(query, **kwargs):
                     """
-                    Simulates a session.run side effect that succeeds once (health check) and then fails with a connection error.
-
+                    Simulate a session.run behavior that returns a successful health-check result once, then raises ServiceUnavailable on subsequent calls.
+                    
                     Returns:
-                        mock_result on the first invocation.
-
+                        mock_result: The successful result returned on the first invocation.
+                    
                     Raises:
-                        ServiceUnavailable: on the second and subsequent invocations to simulate a lost connection.
+                        ServiceUnavailable: On the second and any later invocation to simulate a lost connection.
                     """
                     call_count[0] += 1
                     if call_count[0] == 1:  # Health check
@@ -248,7 +248,9 @@ class TestObsidianSyncCleanup:
 
     @patch("omega_kg.obsidian_sync.settings")
     def test_close_with_driver(self, mock_settings):
-        """Should close driver when it exists."""
+        """
+        Verify that when a Neo4j driver is available, ObsidianNeo4jSync.close() calls the driver's close method once.
+        """
         mock_settings.neo4j_uri = "bolt://localhost:7688"
         mock_settings.neo4j_user = "neo4j"
         mock_settings.neo4j_password = "password"
