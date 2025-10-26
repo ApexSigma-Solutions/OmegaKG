@@ -179,8 +179,7 @@ class TestObsidianSyncOperations:
                 result = sync.get_stale_tasks(7)
 
                 assert result == []
-                assert ("Could not query stale tasks (connection lost)" in
-                        caplog.text)
+                assert "Could not query stale tasks (connection lost)" in caplog.text
 
 
 class TestObsidianSyncConnectionCheck:
@@ -221,7 +220,7 @@ class TestObsidianSyncConnectionCheck:
     def test_check_connection_query_fails(self, mock_settings):
         """
         Verify that a failed health-check query causes the sync instance to revert to mock mode.
-        
+
         Sets up a mocked Neo4j driver/session whose health-check query raises an exception and asserts the ObsidianNeo4jSync instance falls back to mock mode.
         """
         mock_settings.neo4j_uri = "bolt://localhost:7688"

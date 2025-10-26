@@ -97,9 +97,9 @@ class ObsidianNeo4jSync:
     def sync_task_note(self, task_file: Path) -> None:
         """
         Sync a single Obsidian markdown task note into Neo4j as a Task node.
-        
+
         Reads the file's frontmatter and content, derives a stable `uid` (falls back to the file stem when missing or templated), normalizes a `status` value, and upserts a Task node setting title, status, created, last_modified, filepath, content, and parent_plan. Operation short-circuits when the instance is in mock mode or when no Neo4j driver is available; connection errors during the database operation are handled internally.
-        
+
         Parameters:
             task_file (Path): Path to the markdown task file to sync; its frontmatter is used for metadata and its content becomes the node's content.
         """
@@ -235,7 +235,7 @@ class ObsidianNeo4jSync:
     def close(self) -> None:
         """
         Close the Neo4j driver if it is initialized.
-        
+
         This is safe to call multiple times; no action is taken when no driver exists.
         """
         if self.driver:

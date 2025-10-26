@@ -16,7 +16,6 @@ class TestProofOfConcept:
         mock_driver_class.return_value = mock_driver
 
         # Import after patching
-        from omega_kg import poc_okg
 
         # Test that driver can be created
         driver = mock_driver_class("bolt://localhost:7687", auth=("neo4j", "password"))

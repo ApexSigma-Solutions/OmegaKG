@@ -40,7 +40,7 @@ def init():
 def lifecycle(dry_run, no_email):
     """
     Run task lifecycle enforcement, print a human-readable report, and optionally send it by email.
-    
+
     Parameters:
         dry_run (bool): Simulate lifecycle changes without applying them.
         no_email (bool): Do not send the generated email report.

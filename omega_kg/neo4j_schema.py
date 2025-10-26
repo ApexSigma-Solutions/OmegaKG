@@ -69,7 +69,7 @@ class KnowledgeGraphSchema:
     def get_connection_status(self) -> dict[str, bool | str]:
         """
         Report the current Neo4j connection state and related metadata.
-        
+
         Returns:
             dict: Mapping with connection details:
                 - "connected": `True` if a live driver exists and mock mode is not active, `False` otherwise.
@@ -145,7 +145,7 @@ class KnowledgeGraphSchema:
     def close(self) -> None:
         """
         Close the Neo4j driver if one is open.
-        
+
         Does nothing when running in mock mode or if the driver is already None/closed.
         """
         if self.driver:

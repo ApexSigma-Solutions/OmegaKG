@@ -80,7 +80,7 @@ def mock_neo4j_session():
 def sample_task_data():
     """
     Provide sample task data for tests.
-    
+
     Returns:
         dict: A mapping representing a task with the following keys:
             uid (str): Unique task identifier.
@@ -112,7 +112,7 @@ def sample_task_data():
 def sample_lifecycle_rule_data():
     """
     Provide a sample lifecycle rule dictionary used in tests.
-    
+
     Returns:
         dict: A lifecycle rule with the following keys:
             - from_status (str): Source task status (e.g., "draft").
