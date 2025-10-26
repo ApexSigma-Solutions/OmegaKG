@@ -1,5 +1,5 @@
 from neo4j import GraphDatabase
-from src.settings import Settings
+from omega_kg.settings import Settings
 
 settings = Settings()
 driver = GraphDatabase.driver(

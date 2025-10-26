@@ -189,6 +189,8 @@ class TestTaskLifecycleMockMode:
         """Test connection status with real driver"""
         with patch("omega_kg.lifecycle.GraphDatabase.driver") as mock_driver_class:
             mock_driver_class.return_value = mock_neo4j_driver
+            # Configure mock session.run().single() to return a truthy result
+            mock_neo4j_driver.session.return_value.run.return_value.single.return_value = {"count": 1}
 
             with patch("omega_kg.lifecycle.settings") as mock_settings:
                 mock_settings.neo4j_uri = "bolt://localhost:7687"
@@ -199,6 +201,5 @@ class TestTaskLifecycleMockMode:
                 lifecycle = TaskLifecycle(mock_mode=False)
                 status = lifecycle.get_connection_status()
 
-                # Should show as mock if connection check fails
-                # (since mock doesn't have working session)
-                assert "mock_mode" in status
+                assert status["connected"] is True
+                assert status["mock_mode"] is False
