@@ -11,13 +11,13 @@ class LinearSync:
 
     def __init__(self):
         """
-        Initialize the LinearSync instance.
+        Initialize the LinearSync instance and prepare the Neo4j driver and Obsidian vault path.
         
         Creates a Neo4j driver using credentials from settings and stores the Obsidian vault path as a Path object.
         
         Attributes:
-            driver: Neo4j driver connected using settings.neo4j_uri and credentials from settings.
-            vault: Path object for the Obsidian vault from settings.obsidian_vault_path.
+            driver: Neo4j driver connected using settings.neo4j_uri and credentials from settings.neo4j_user/settings.neo4j_password.
+            vault: Path to the Obsidian vault directory from settings.obsidian_vault_path.
         """
         self.driver = GraphDatabase.driver(
             settings.neo4j_uri, auth=(settings.neo4j_user, settings.neo4j_password)
@@ -120,12 +120,12 @@ class LinearSync:
 
     def _handle_issue_deletion(self, issue: dict):
         """
-        Mark the corresponding Neo4j Task node as archived for a deleted Linear issue.
+        Mark the Neo4j Task matching the Linear issue as archived.
         
-        Updates the Task node with the matching Linear identifier by setting its status to 'archived', linear_status to 'Canceled', and transitioned_at to the current datetime.
+        Sets the Task's `status` to "archived", `linear_status` to "Canceled", and `transitioned_at` to the current datetime.
         
         Parameters:
-            issue (dict): Linear issue payload; must contain the "identifier" key with the Linear issue ID.
+            issue (dict): Linear issue payload containing the "identifier" key with the Linear issue ID.
         """
         linear_id = issue["identifier"]
 
