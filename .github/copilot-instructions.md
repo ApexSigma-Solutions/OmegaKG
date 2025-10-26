@@ -4,7 +4,7 @@
 
 **Knowledge Graph System**: Omega_KG is a Neo4j-powered knowledge management system that bridges Obsidian vaults, Linear tasks, and Git commits. The core architecture involves:
 
-- **Package location**: All code is under `omega_kg/` (not `omega_kg/`). Main config is in `omega_kg/settings.py`.
+- **Package location**: All code is under `omega_kg/`. Main config is in `omega_kg/settings.py`.
 - **Data flow**: Obsidian markdown → Neo4j graph → Linear sync → Git tracking
 - **Core modules**:
   - `lifecycle.py`: Task state transitions with time-based rules and email notifications
@@ -126,7 +126,7 @@ poetry run python -m omega_kg.lifecycle  # Run lifecycle enforcement directly
 
 ## Critical Fixes Applied
 
-- ✅ Import paths corrected: `omega_kg.settings` → `omega_kg.settings` (in `linear_sync.py`)
+- ✅ Import paths corrected: `src.omega_kg.settings` → `omega_kg.settings` (in `linear_sync.py`)
 - ✅ `.env.example` aligned with actual Neo4j configuration (was PostgreSQL)
 - ✅ PowerShell script updated to use module-based execution: `python -m omega_kg.lifecycle`
 
