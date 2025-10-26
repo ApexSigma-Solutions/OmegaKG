@@ -2,9 +2,6 @@
 # Omega_KG Universal Post-Commit Hook
 # Auto-detects environment (Git Bash/WSL2/Linux) and logs to Obsidian
 
-# Omega_KG Hook Version
-HOOK_VERSION="1.0.0"
-
 set -euo pipefail
 
 # Detect session log path
@@ -15,9 +12,11 @@ elif [[ -n "${OMEGA_VAULT_WIN:-}" ]]; then
     SESSION_LOG="${OMEGA_VAULT_WIN//\\//}/Sessions/$(date +%Y-%m-%d).md"
 else
     # Fallback: Try to find vault in common locations
+    # Enable nullglob to avoid literal non-matching patterns
+    shopt -s nullglob
     for path in \
         "$HOME/Documents/OmegaVault.as" \
-        "/mnt/c/Users/*/Documents/OmegaVault.as" \
+        /mnt/c/Users/*/Documents/OmegaVault.as \
         "$USERPROFILE/Documents/OmegaVault.as"
     do
         if [[ -d "$path" ]]; then
@@ -25,6 +24,8 @@ else
             break
         fi
     done
+    # Restore nullglob setting
+    shopt -u nullglob
 fi
 
 # Abort if no session log found

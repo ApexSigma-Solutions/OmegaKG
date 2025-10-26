@@ -2,19 +2,8 @@
 Unit tests for omega_kg.neo4j_schema module
 """
 
-import pytest
 from unittest.mock import MagicMock, patch
 from omega_kg.neo4j_schema import KnowledgeGraphSchema
-
-
-@pytest.fixture
-def mock_neo4j_driver():
-    """Create a mock Neo4j driver for testing"""
-    driver = MagicMock()
-    session = MagicMock()
-    driver.session.return_value.__enter__.return_value = session
-    driver.session.return_value.__exit__.return_value = None
-    return driver
 
 
 class TestKnowledgeGraphSchema:
