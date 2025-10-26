@@ -1,6 +1,6 @@
 version: 0.1
 cli:
-  version: 1.19.0
+  version: 1.25.0
 lint:
   enabled:
     - osv-scanner@2.2.3
@@ -20,11 +20,14 @@ lint:
     - checkov
     - hadolint
     - trufflehog
-    - git-diff-check
     - codespell
     - gitleaks
-    - reuse
-    - markdown-link-check
-    - markdown-table-formatter
-    - markdown-spellcheck
-    - markdown-toc
+  enabled:
+    - go@1.19.5
+    - node@18.12.1
+    - python@3.10.8
+plugins:
+  sources:
+    - id: trunk
+      ref: v1.7.3
+      uri: https://github.com/trunk-io/plugins
