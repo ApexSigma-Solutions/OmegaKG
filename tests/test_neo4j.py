@@ -6,9 +6,9 @@ from omega_kg.settings import settings
 
 def test_connection():
     """
-    Attempt to connect to a Neo4j instance and run a simple verification query.
+    Verify connectivity to a Neo4j instance.
     
-    Attempts to create a Neo4j driver using configured settings, open a session, run a small Cypher query that returns a message, print the returned message on success, and close the driver.
+    Creates a driver from configured settings, runs a simple Cypher query that returns a message, prints that message on success, and closes the driver.
     
     Returns:
         bool: `True` if the connection and query succeeded, `False` otherwise.

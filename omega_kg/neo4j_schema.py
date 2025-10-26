@@ -154,9 +154,9 @@ class KnowledgeGraphSchema:
 
 def main() -> None:
     """
-    CLI entry point that initializes the Neo4j schema and reports connection status.
+    CLI entry point to initialize the Neo4j schema and report connection status.
     
-    Parses command-line arguments, constructs a KnowledgeGraphSchema, prints whether it is connected or running in mock mode, invokes schema initialization, and ensures the underlying driver is closed when finished.
+    Creates a KnowledgeGraphSchema, performs schema initialization according to command-line options, prints whether a real Neo4j connection or mock mode is in use, and ensures the driver is closed on exit.
     """
     import argparse
 

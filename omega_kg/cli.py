@@ -12,9 +12,9 @@ from omega_kg.neo4j_schema import KnowledgeGraphSchema
 @click.group()
 def cli():
     """
-    Command-line interface group for Omega_KG knowledge graph operations.
+    Top-level Click command group that exposes Omega_KG CLI commands.
     
-    Exposes top-level Click commands to initialize the Neo4j schema, enforce task lifecycle rules (with dry-run and email options), display knowledge-graph statistics, and list stale tasks.
+    Provides subcommands to initialize the Neo4j schema (init), enforce task lifecycle rules with optional dry-run and email suppression (lifecycle), display knowledge-graph task statistics (stats), and list stale tasks older than a configurable threshold (stale).
     """
     pass
 
