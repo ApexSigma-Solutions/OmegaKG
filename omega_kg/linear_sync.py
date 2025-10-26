@@ -10,13 +10,34 @@ class LinearSync:
     """Bidirectional sync between Linear and Obsidian via Neo4j"""
 
     def __init__(self):
+        """
+        Initialize the LinearSync instance.
+        
+        Creates a Neo4j driver using credentials from settings and stores the Obsidian vault path as a Path object.
+        
+        Attributes:
+            driver: Neo4j driver connected using settings.neo4j_uri and credentials from settings.
+            vault: Path object for the Obsidian vault from settings.obsidian_vault_path.
+        """
         self.driver = GraphDatabase.driver(
             settings.neo4j_uri, auth=(settings.neo4j_user, settings.neo4j_password)
         )
         self.vault = Path(settings.obsidian_vault_path)
 
     def handle_linear_webhook(self, payload: dict):
-        """Process incoming Linear webhook"""
+        """
+        Route and handle a Linear webhook payload by dispatching supported actions.
+        
+        Processes the incoming `payload` dictionary, reading the `action` key to determine the operation and the `data` key for the issue payload. Supported actions:
+        - "update": synchronize the provided issue into Neo4j and the Obsidian vault.
+        - "remove": mark the corresponding issue as archived in Neo4j.
+        
+        Parameters:
+            payload (dict): Webhook payload expected to contain:
+                - "action" (str): the webhook event type ("update" or "remove").
+                - "data" (dict): the Linear issue object for the event.
+        
+        """
         action = payload.get("action")
         issue = payload.get("data")
 
@@ -26,7 +47,14 @@ class LinearSync:
             self._handle_issue_deletion(issue)
 
     def _sync_issue_update(self, issue: dict):
-        """Update Obsidian task from Linear issue change"""
+        """
+        Synchronize a Linear issue update into Neo4j and the corresponding Obsidian task file.
+        
+        Updates the matching Task node's Linear metadata in the Neo4j graph and then updates the Obsidian file's frontmatter for that task. If no matching Task node is found, no file updates are performed.
+        
+        Parameters:
+            issue (dict): Linear issue payload; must include 'identifier', 'state' (with 'name'), and 'updatedAt'. May include 'priority'.
+        """
         linear_id = issue["identifier"]
 
         # Update Neo4j
@@ -54,7 +82,18 @@ class LinearSync:
         self._update_task_file(task_path, issue)
 
     def _update_task_file(self, path: Path, issue: dict):
-        """Update task file frontmatter from Linear data"""
+        """
+        Update an Obsidian task file's frontmatter with fields from a Linear issue.
+        
+        Reads the file at `path`, sets frontmatter keys `linear_status`, `linear_priority`, and
+        `linear_updated` from the provided `issue`, maps the Linear state to an Obsidian
+        `status` value, and writes the updated frontmatter back to disk.
+        
+        Parameters:
+            path (Path): Filesystem path to the Obsidian note to update.
+            issue (dict): Linear issue payload containing at least `state["name"]` and
+                `updatedAt`. May include `priority`; if absent, `linear_priority` will be 0.
+        """
         with open(path, "r", encoding="utf-8") as f:
             post = frontmatter.load(f)
 
@@ -80,7 +119,14 @@ class LinearSync:
         print(f"✓ Updated {path.name} from Linear")
 
     def _handle_issue_deletion(self, issue: dict):
-        """Handle Linear issue deletion/removal"""
+        """
+        Mark the corresponding Neo4j Task node as archived for a deleted Linear issue.
+        
+        Updates the Task node with the matching Linear identifier by setting its status to 'archived', linear_status to 'Canceled', and transitioned_at to the current datetime.
+        
+        Parameters:
+            issue (dict): Linear issue payload; must contain the "identifier" key with the Linear issue ID.
+        """
         linear_id = issue["identifier"]
 
         # Update Neo4j to mark as archived

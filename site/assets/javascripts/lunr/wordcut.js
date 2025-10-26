@@ -3384,6 +3384,20 @@ function braceExpand (pattern, options) {
 // default, and can be disabled by setting options.noglobstar.
 Minimatch.prototype.parse = parse
 var SUBPARSE = {}
+/**
+ * Compile a glob pattern into a matcher or normalize simple patterns.
+ *
+ * @param {string} pattern - The glob pattern to parse.
+ * @param {number} isSub - If equal to the SUBPARSE sentinel, parse as a subpattern and return intermediate data.
+ * @returns {RegExp|string|Array|false} When parsed as a full pattern:
+ *   - a RegExp that matches the pattern if the pattern contains glob metacharacters;
+ *   - the unescaped pattern string if no metacharacters were present;
+ *   - the special GLOBSTAR value when pattern is "**";
+ *   - `false` if the pattern contains a disallowed '/'.
+ *   When called with isSub === SUBPARSE, returns a two-element array [re, hasMagic] where `re` is the partial
+ *   regular-expression source and `hasMagic` is a boolean indicating whether glob metacharacters were encountered.
+ * @throws {TypeError} If the pattern length exceeds the supported limit (64 KiB).
+ */
 function parse (pattern, isSub) {
   if (pattern.length > 1024 * 64) {
     throw new TypeError('pattern is too long')
@@ -3755,6 +3769,15 @@ minimatch.makeRe = function (pattern, options) {
 }
 
 Minimatch.prototype.makeRe = makeRe
+/**
+ * Build and cache a RegExp that matches the compiled pattern set held on this instance.
+ *
+ * Uses this.set and this.options to construct a regular expression that matches any
+ * of the stored pattern alternatives; stores the result on this.regexp for reuse.
+ * If no patterns exist or the constructed expression is invalid, sets and returns `false`.
+ *
+ * @returns {RegExp|false} A RegExp that matches the instance's pattern set, or `false` if no valid regexp could be produced.
+ */
 function makeRe () {
   if (this.regexp || this.regexp === false) return this.regexp
 
