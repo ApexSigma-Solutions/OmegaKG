@@ -3,6 +3,7 @@ Obsidian-Neo4j Synchronization
 Syncs task notes from Obsidian vault to Neo4j with connection recovery
 """
 
+import logging
 from pathlib import Path
 from datetime import datetime
 from neo4j import GraphDatabase
@@ -207,7 +208,7 @@ class ObsidianNeo4jSync:
             return []
 
         if not self.driver:
-            print("[WARN] Query skipped (no database connection)")
+            logging.warning("Query skipped (no database connection)")
             return []
 
         try:
@@ -223,7 +224,7 @@ class ObsidianNeo4jSync:
 
                 return [dict(record) for record in result]
         except ServiceUnavailable:
-            print("[WARN] Could not query stale tasks (connection lost)")
+            logging.warning("Could not query stale tasks (connection lost)")
             return []
 
     def close(self) -> None:

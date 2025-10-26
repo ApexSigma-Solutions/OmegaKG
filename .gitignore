@@ -13,6 +13,7 @@ dist/
 .venv
 .envrc
 *.egg
+.trunk/
 *.log
 .DS_Store
 .idea/

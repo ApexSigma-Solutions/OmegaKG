@@ -24,7 +24,7 @@ class TestLinearSyncInitialization:
 
             sync = LinearSync()
 
-            assert sync.driver is not None
+            assert sync.driver is mock_driver
             assert sync.vault == Path("./vault")
 
 
@@ -55,8 +55,9 @@ class TestHandleLinearWebhook:
                 },
             }
 
-            with patch.object(sync, "_sync_issue_update"):
+            with patch.object(sync, "_sync_issue_update") as mock_update:
                 sync.handle_linear_webhook(payload)
+                mock_update.assert_called_once()
 
     @patch("omega_kg.linear_sync.GraphDatabase.driver")
     def test_handle_remove_webhook(self, mock_driver_class):
@@ -77,8 +78,9 @@ class TestHandleLinearWebhook:
                 "data": {"identifier": "LINEAR-123"},
             }
 
-            with patch.object(sync, "_handle_issue_deletion"):
+            with patch.object(sync, "_handle_issue_deletion") as mock_delete:
                 sync.handle_linear_webhook(payload)
+                mock_delete.assert_called_once_with(payload["data"])
 
 
 class TestSyncIssueUpdate:
