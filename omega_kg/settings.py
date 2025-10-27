@@ -6,10 +6,14 @@ class Settings(BaseSettings):
     """
     Application settings loaded from environment variables.
 
-    WARNING: Sensitive default values are provided for development only and MUST be overridden in production via environment variables or a .env file.
-    Sensitive fields: neo4j_password, smtp_password, smtp_user, email_to, linear_api_key, linear_webhook_secret, github_token, nanogpt_api_key, openrouter_api_key, perplexity_api_key, gemini_api_key
+    WARNING: Sensitive default values are provided for development only and
+    MUST be overridden in production via environment variables or a .env file.
+    Sensitive fields: neo4j_password, smtp_password, smtp_user, email_to,
+    linear_api_key, linear_webhook_secret, github_token, nanogpt_api_key,
+    openrouter_api_key, perplexity_api_key, gemini_api_key
 
-    app_env: Application environment. Allowed values: "development" or "production".
+    app_env: Application environment. Allowed values: "development" or
+    "production".
     """
 
     # App environment
@@ -52,3 +56,31 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+
+def validate_settings() -> None:
+    """
+    Validate critical settings for production use.
+
+    Raises:
+        ValueError: If required settings are missing in production mode.
+    """
+    if settings.app_env == "production":
+        required_fields = [
+            "neo4j_password",
+            "obsidian_vault_path"
+        ]
+
+        missing = []
+        for field in required_fields:
+            value = getattr(settings, field)
+            if (not value or
+                    (isinstance(value, str) and
+                     value.startswith("please-change"))):
+                missing.append(field)
+
+        if missing:
+            raise ValueError(
+                f"Missing required production settings: {', '.join(missing)}. "
+                "Please configure these in your .env file."
+            )

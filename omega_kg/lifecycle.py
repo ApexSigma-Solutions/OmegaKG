@@ -3,6 +3,7 @@ Omega_KG Task Lifecycle Enforcement
 Implements time-based state transitions with email notifications
 """
 
+import logging
 from datetime import datetime
 from typing import List, Dict, Optional, Any
 from dataclasses import dataclass
@@ -17,6 +18,13 @@ from neo4j.exceptions import ServiceUnavailable, AuthError
 import frontmatter
 
 from omega_kg.settings import settings
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 
 class ConnectionError(Exception):
@@ -106,10 +114,11 @@ class TaskLifecycle:
                 )
                 # Test the connection
                 self._check_connection()
-                print("✓ Neo4j connection established")
+                logger.info("Neo4j connection established")
             except (ServiceUnavailable, AuthError, ConnectionError) as e:
-                print(f"✗ Failed to connect to Neo4j: {e}")
-                print("⚠ Falling back to mock mode (dry-run only)")
+                logger.error("Failed to connect to Neo4j: %s: %s",
+                             type(e).__name__, e)
+                logger.warning("Falling back to mock mode (dry-run only)")
                 self.mock_mode = True
                 self.driver = None
 
@@ -176,11 +185,11 @@ class TaskLifecycle:
         }
 
         if self.mock_mode:
-            print("⚠ Running in mock mode - no database operations")
+            logger.warning("Running in mock mode - no database operations")
             return self._get_mock_results()
 
         if not self.driver:
-            print("✗ No database connection available")
+            logger.error("No database connection available")
             return results
 
         try:
@@ -191,7 +200,8 @@ class TaskLifecycle:
                     for task in violations:
                         try:
                             if dry_run:
-                                print(f"[DRY RUN] Would {rule.action}: {task['t.uid']}")
+                                logger.info("[DRY RUN] Would %s: %s",
+                                            rule.action, task['t.uid'])
                                 continue
 
                             if rule.action == "auto":
@@ -202,17 +212,19 @@ class TaskLifecycle:
                                 results["warned"].append(task)
 
                         except Exception as e:
-                            print(f"✗ Failed to process {task['t.uid']}: {e}")
+                            logger.error("Failed to process %s: %s",
+                                         task['t.uid'], e)
                             results["failed"].append({"task": task, "error": str(e)})
 
         except ServiceUnavailable as e:
-            print(f"✗ Database connection lost: {e}")
-            print("💡 Tip: Ensure Neo4j is running on {settings.neo4j_uri}")
+            logger.error("Database connection lost: %s", e)
+            logger.info("Tip: Ensure Neo4j is running on %s",
+                        settings.neo4j_uri)
             results["skipped"].append(
                 {"reason": "Database unavailable", "error": str(e)}
             )
         except Exception as e:
-            print(f"✗ Unexpected error: {e}")
+            logger.error("Unexpected error: %s", e)
             results["failed"].append(
                 {"reason": "Lifecycle enforcement failed", "error": str(e)}
             )
@@ -308,10 +320,8 @@ class TaskLifecycle:
         # Update Obsidian file
         self._update_task_file(uid, rule.to_status.value, rule)
 
-        print(
-            f"✓ Transitioned {uid}: {rule.from_status.value} → "
-            f"{rule.to_status.value}"
-        )
+        logger.info("Transitioned %s: %s → %s",
+                    uid, rule.from_status.value, rule.to_status.value)
 
     def _warn_task(self, session: Any, uid: str, rule: LifecycleRule) -> None:
         """
@@ -329,7 +339,7 @@ class TaskLifecycle:
             uid=uid,
         )
 
-        print(f"⚠ Warned {uid}: approaching {rule.to_status.value}")
+        logger.warning("Warned %s: approaching %s", uid, rule.to_status.value)
 
     def _update_task_file(self, uid: str, new_status: str, rule: LifecycleRule) -> None:
         """
@@ -346,7 +356,7 @@ class TaskLifecycle:
         # Find task file
         task_files = list(self.vault_path.glob(f"Tasks/**/{uid}*.md"))
         if not task_files:
-            print(f"  ⚠ Task file not found for {uid}")
+            logger.warning("Task file not found for %s", uid)
             return
 
         task_path = task_files[0]
@@ -495,7 +505,8 @@ class TaskLifecycle:
 
         # Check if email is configured
         if not all([settings.smtp_host, settings.smtp_user, settings.email_to]):
-            print("⚠ Email not configured, skipping")
+            logger.warning("Email not configured, skipping")
+            return
             return
 
         msg = MIMEMultipart()
@@ -515,9 +526,9 @@ class TaskLifecycle:
                 server.login(settings.smtp_user or "", settings.smtp_password or "")
                 server.send_message(msg)
 
-            print("✓ Email report sent")
+            logger.info("Email report sent")
         except Exception as e:
-            print(f"✗ Failed to send email: {e}")
+            logger.error("Failed to send email: %s", e)
 
     def close(self) -> None:
         """
@@ -555,16 +566,16 @@ def main() -> None:
     # Print connection status
     status = lifecycle.get_connection_status()
     if status["connected"]:
-        print(f"✓ Connected to Neo4j: {status['uri']}")
+        logger.info("Connected to Neo4j: %s", status['uri'])
     else:
-        print("⚠ Running in mock mode (no Neo4j connection)")
+        logger.warning("Running in mock mode (no Neo4j connection)")
 
     try:
-        print("🔄 Running lifecycle enforcement...")
+        logger.info("Running lifecycle enforcement...")
         results = lifecycle.enforce_lifecycle(dry_run=args.dry_run)
 
         report = lifecycle.generate_report(results)
-        print(f"\n{report}")
+        print(f"\n{report} - lifecycle.py:578")
 
         if not args.dry_run and not args.no_email:
             lifecycle.send_email_report(report)
