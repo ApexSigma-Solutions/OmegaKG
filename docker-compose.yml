@@ -1,0 +1,63 @@
+# ApexSigma Network Definition
+# This network will be shared across all ApexSigma projects.
+networks:
+  apexsigma.net:
+    driver: bridge
+    name: apexsigma.net # Explicitly name the network for external access
+
+# Persistent Data Volumes
+# These volumes live outside the lifecycle of any single container.
+volumes:
+  neo4j-data: # Named volume for the Neo4j database files
+    driver: local
+    name: apexsigma.neo4j.data # Explicit, unambiguous name
+
+services:
+  # Neo4j Database Service
+  neo4j-db:
+    image: neo4j:5-community
+    container_name: apexsigma.neo4j.db # Consistent, human-readable name
+    restart: unless-stopped
+    ports:
+      # Expose ports to THE HOST MACHINE for external service access
+      - "7474:7474" # HTTP
+      - "7687:7687" # Bolt
+    networks:
+      - apexsigma.net
+    volumes:
+      - neo4j-data:/data # Persist the database data
+    environment:
+      # Pull configuration from .env file
+      # NEVER hardcode credentials in the YAML file
+      NEO4J_AUTH: ${NEO4J_USER}/${NEO4J_PASSWORD}
+      # Increase memory allocation for larger graphs
+      NEO4J_dbms_memory_heap_initial__size: ${NEO4J_HEAP_SIZE}
+      NEO4J_dbms_memory_heap_max__size: ${NEO4J_HEAP_SIZE}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7474/"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Omega_KG Capture Service
+  omega-kg:
+    build: . # Build from the Dockerfile in the current directory
+    container_name: apexsigma.omega.kg
+    restart: unless-stopped
+    ports:
+      - "8765:8765" # Expose webhook to the host for the browser extension
+    networks:
+      - apexsigma.net
+    volumes:
+      # Mount your Obsidian vault from the host into the container
+      - "${OBSIDIAN_VAULT_PATH}:/vault:ro" # Read-only mount
+    env_file:
+      - .env # Load environment variables from .env file
+    depends_on:
+      neo4j-db:
+        condition: service_healthy # Wait for Neo4j to be healthy before starting
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8765/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
