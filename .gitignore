@@ -19,3 +19,8 @@ dist/
 .idea/
 .vscode/
 .genkit/
+junit.xml
+.coverage
+.pytest_cache/
+*.cover
+.hypothesis/
