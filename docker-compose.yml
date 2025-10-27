@@ -34,10 +34,11 @@ services:
       NEO4J_dbms_memory_heap_initial__size: ${NEO4J_HEAP_SIZE}
       NEO4J_dbms_memory_heap_max__size: ${NEO4J_HEAP_SIZE}
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:7474/"]
+      test: ["CMD", "bash", "-c", "cat < /dev/null > /dev/tcp/localhost/7687"]
       interval: 30s
       timeout: 10s
       retries: 5
+      start_period: 60s
 
   # Omega_KG Capture Service
   omega-kg:
@@ -53,11 +54,16 @@ services:
       - "${OBSIDIAN_VAULT_PATH}:/vault:ro" # Read-only mount
     env_file:
       - .env # Load environment variables from .env file
+    environment:
+      # Override Neo4j URI to use the Docker network hostname
+      NEO4J_URI: bolt://neo4j-db:7687
     depends_on:
       neo4j-db:
         condition: service_healthy # Wait for Neo4j to be healthy before starting
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8765/health"]
+      test: ["CMD", "python", "-c", 
+             "import urllib.request; urllib.request.urlopen('http://localhost:8765/health')"]
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 30s
