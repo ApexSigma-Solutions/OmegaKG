@@ -20,10 +20,12 @@ except ImportError as e:
 
 def check_capture_server():
     """
-    Verify the local capture server at http://127.0.0.1:8765/health is running and responding.
+    Check whether the local capture server's health endpoint is available.
+    
+    Emits brief status messages to stdout about the check and any errors encountered.
     
     Returns:
-        bool: `True` if the server returned HTTP 200 and a JSON payload, `False` otherwise.
+        `True` if the health endpoint returned HTTP 200 and a JSON payload, `False` otherwise.
     """
     print("1️⃣  Checking capture server... - troubleshoot_extension.py:23")
     try:
@@ -86,10 +88,10 @@ def check_vault_accessible():
 
 def check_neo4j():
     """
-    Verify connectivity to the configured Neo4j instance and report basic node counts.
+    Check connectivity to the configured Neo4j instance and report basic ChatSession node counts.
     
     Returns:
-        bool: `true` if a connection to the Neo4j server can be established and a simple query succeeds, `false` otherwise.
+        bool: `True` if a simple test query succeeds and the ChatSession node count is retrieved, `False` otherwise.
     """
     print("\n3️⃣  Checking Neo4j... - troubleshoot_extension.py:77")
     try:
@@ -152,9 +154,9 @@ def check_recent_captures():
 
 def print_extension_instructions():
     """
-    Print a concise checklist and tip to help troubleshoot the Omega_KG Chrome extension.
+    Prints a concise troubleshooting checklist for the Omega_KG Chrome extension.
     
-    Prints a series of human-readable steps to verify the extension is loaded, in developer mode, visible as "Omega_KG Chat Capture", present on supported AI platforms, showing the floating Ω button, and emitting logs in the service worker and browser console, followed by a tip to force a manual capture.
+    Provides steps to verify the extension is installed and in developer mode, that the extension is listed as "Omega_KG Chat Capture", that it appears on supported AI platforms, that the floating Ω button is visible, and where to inspect browser and service worker console logs. Ends with a tip to force a manual capture to exercise logging.
     """
     print("\n5️⃣  Chrome Extension Checklist: - troubleshoot_extension.py:134")
     print("□ Extension loaded in chrome://extensions/ - troubleshoot_extension.py:135")
