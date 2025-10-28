@@ -75,10 +75,10 @@ class CaptureResponse(BaseModel):
 
 def generate_conversation_hash(data: ConversationData) -> str:
     """
-    Create a short deterministic identifier for a conversation.
+    Create a short, deterministic identifier for a conversation.
     
     Parameters:
-        data (ConversationData): Conversation payload whose platform, URL, and number of messages are used to derive the identifier.
+        data (ConversationData): Conversation payload whose platform, url, and messages list are used to derive the identifier.
     
     Returns:
         str: An 8-character hexadecimal string derived from the MD5 hash of the conversation's platform, URL, and message count.
@@ -90,19 +90,12 @@ def generate_conversation_hash(data: ConversationData) -> str:
 
 def format_conversation_markdown(data: ConversationData) -> str:
     """
-    Format a ConversationData object into Obsidian-compatible Markdown with YAML frontmatter.
+    Format a ConversationData into an Obsidian-compatible Markdown document with YAML frontmatter.
     
-    The resulting markdown starts with YAML frontmatter containing platform, date, url, message_count,
-    captured_at timestamp, conversation_hash, optional title, participants, and any provided metadata,
-    followed by a human-readable conversation body with a title, summary fields, and each message as a
-    numbered section including role, content, and optional message timestamp.
-    
-    Parameters:
-        data (ConversationData): Conversation payload containing platform, url, optional title,
-            a list of messages (each with role, content, optional timestamp), and optional metadata.
+    The frontmatter contains platform, date, url, message_count, captured_at, conversation_hash, optional title, participants, and any provided metadata. The body contains a title, summary fields (date, platform, URL, message count) and the conversation messages as numbered sections with role, content, and optional message timestamps.
     
     Returns:
-        str: Complete markdown document as a string ready to be written into an Obsidian vault.
+        str: Complete Markdown document including YAML frontmatter and human-readable conversation body.
     """
     now = datetime.now()
     date_str = now.strftime("%Y-%m-%d")
@@ -172,12 +165,12 @@ def write_to_obsidian(
     conversation_hash: str
 ) -> Path:
     """
-    Write markdown content into the configured Obsidian vault under AI_Conversations/<platform>.
+    Write a conversation markdown file into the Obsidian vault under AI_Conversations/<platform>/.
     
     Parameters:
-        platform (str): AI platform name; used to create a platform-specific subfolder (spaces replaced with underscores).
+        platform (str): Platform name used to create the subfolder (spaces normalized to underscores).
         content (str): Markdown content to write to the file.
-        conversation_hash (str): Hash appended to the filename in the form `YYYY-MM-DD-{conversation_hash}.md`.
+        conversation_hash (str): Short hash appended to the filename to ensure uniqueness.
     
     Returns:
         Path: Path to the created markdown file.
@@ -215,17 +208,14 @@ def write_to_obsidian(
 
 def percolate_to_neo4j(file_path: Path, data: ConversationData) -> int:
     """
-    Persist conversation metadata and any extracted decisions into Neo4j as a ChatSession node and related Decision nodes.
+    Persist the conversation into Neo4j by creating or updating a ChatSession node and extracting Decision nodes from messages.
     
     Parameters:
-        file_path (Path): Path to the markdown file representing the captured conversation.
-        data (ConversationData): Original conversation payload used to populate node properties and to extract decision-like sentences.
+        file_path (Path): Filesystem path to the conversation's markdown file.
+        data (ConversationData): Conversation payload used to populate node properties and to extract decision content.
     
     Returns:
-        nodes_created (int): Total number of nodes created in Neo4j (ChatSession plus any Decision nodes).
-    
-    Raises:
-        Exception: If connecting to Neo4j or executing queries fails.
+        int: Number of nodes created in Neo4j for this conversation.
     """
     try:
         driver = GraphDatabase.driver(
@@ -457,9 +447,9 @@ async def capture_conversation(data: ConversationData):
 
 async def batch_percolate_sessions():
     """
-    Percolates PowerShell session logs from the Obsidian "Sessions" folder into Neo4j as ChatSession nodes with their command history.
+    Percolates PowerShell session logs from the configured Sessions folder into Neo4j.
     
-    If the Sessions folder does not exist, the job exits without error. Otherwise it connects to Neo4j using configured settings, runs a batch percolation via the PercolationEngine, and closes the driver when complete.
+    If the Sessions folder is missing, the function returns without error. When session files are present, it uses the PercolationEngine to percolate them into Neo4j and logs aggregated statistics; errors are logged.
     """
     try:
         sessions_path = Path(settings.obsidian_vault_path) / "Sessions"
@@ -506,9 +496,9 @@ async def startup_event():
 
 def main():
     """
-    Start the Omega_KG Capture Server and run the FastAPI application.
+    Start the Omega_KG FastAPI capture server using Uvicorn on 127.0.0.1:8765.
     
-    Logs configured startup information (including Obsidian vault path and Neo4j URI) and launches the Uvicorn server hosting the application on 127.0.0.1:8765, blocking the current process while the server runs.
+    Logs configured startup information (Obsidian vault path and Neo4j URI) and blocks the calling process while the server runs.
     """
     import uvicorn
     

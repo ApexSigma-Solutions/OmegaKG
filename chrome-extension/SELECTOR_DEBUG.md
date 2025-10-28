@@ -10,19 +10,21 @@ When the extension shows "Found 0 message elements", the DOM selectors are outda
 2. **Right-click the Ω button** (bottom-right floating button)
 3. **Open browser console** (F12)
 4. **Check the debug output**:
+
    ```
    === Omega_KG Debug Mode ===
    Platform: Claude.ai
-   
+
    === Selector Patterns Found ===
    12x: DIV.font-claude-message [user-message]
      Example text: What is the capital of France?
-   
+
    8x: DIV.markdown-content [assistant-response]
      Example text: The capital of France is Paris...
    ```
 
 5. **Update `content.js`** with the found selectors:
+
    ```javascript
    'Claude.ai': {
      messages: '[data-testid*="user-message"], [data-testid*="assistant-response"]',
@@ -37,19 +39,21 @@ When the extension shows "Found 0 message elements", the DOM selectors are outda
 
 ## Current Status (Oct 28, 2025)
 
-| Platform | Status | Notes |
-|----------|--------|-------|
-| ChatGPT | ✅ Working | Uses `[data-message-author-role]` |
-| Claude.ai | ❌ 0 messages | Needs selector update |
-| Gemini | ❌ 0 messages | Needs selector update |
-| Perplexity | ❓ Untested | May need update |
+| Platform   | Status        | Notes                             |
+| ---------- | ------------- | --------------------------------- |
+| ChatGPT    | ✅ Working    | Uses `[data-message-author-role]` |
+| Claude.ai  | ❌ 0 messages | Needs selector update             |
+| Gemini     | ❌ 0 messages | Needs selector update             |
+| Perplexity | ❓ Untested   | May need update                   |
 
 ## How to Update Selectors
 
 ### Method 1: Debug Mode (Recommended)
+
 Right-click Ω button → Check console → Copy selectors
 
 ### Method 2: Manual Inspection
+
 1. Open browser DevTools (F12)
 2. Click "Inspect Element" on a message
 3. Look for:
@@ -58,25 +62,29 @@ Right-click Ω button → Check console → Copy selectors
    - Class names with "message", "chat", "response"
 4. Test selector in console:
    ```javascript
-   document.querySelectorAll('[data-testid*="message"]')
+   document.querySelectorAll('[data-testid*="message"]');
    ```
 5. Update `content.js` with working selector
 
 ## Platform-Specific Tips
 
 ### Claude.ai
+
 - Look for: `data-testid` attributes
 - User messages often have: `user-message`, `human-message`
 - Assistant messages: `assistant-message`, `ai-response`
 - Content wrapper: `.font-claude-message`, `.markdown-content`
 
 ### Gemini
+
 - Look for: `.model-response-text`, `.user-query`
 - May use: `data-message-author-role`
 - Content wrapper: `.markdown`, `.message-content`
 
 ### Common Patterns
+
 All AI platforms typically use one of these:
+
 - `[data-message-author-role="user|assistant"]` (ChatGPT)
 - `[data-testid*="message"]` (Claude, others)
 - `.message-content`, `.chat-message` (class-based)
@@ -88,7 +96,7 @@ Run this in browser console on the AI chat page:
 
 ```javascript
 // Test if selector finds messages
-const elements = document.querySelectorAll('YOUR_SELECTOR_HERE');
+const elements = document.querySelectorAll("YOUR_SELECTOR_HERE");
 console.log(`Found ${elements.length} elements`);
 elements.forEach((el, i) => {
   console.log(`${i}: ${el.textContent.substring(0, 50)}...`);
@@ -96,6 +104,7 @@ elements.forEach((el, i) => {
 ```
 
 Example for Claude:
+
 ```javascript
 const messages = document.querySelectorAll('[data-testid*="message"]');
 console.log(`Found ${messages.length} messages`);
@@ -117,6 +126,7 @@ console.log(`Found ${messages.length} messages`);
 ## Fallback Extraction
 
 If specific selectors fail, the extension now uses a fallback that searches for:
+
 - `[class*="message"]`
 - `[class*="chat"]`
 - `[class*="conversation"]`
@@ -128,11 +138,13 @@ This should catch messages even when specific selectors are outdated.
 ## Need Help?
 
 Run the troubleshoot script:
+
 ```powershell
 poetry run python troubleshoot_extension.py
 ```
 
 This checks:
+
 - ✅ Capture server running
 - ✅ Obsidian vault accessible
 - ✅ Neo4j connected

@@ -261,7 +261,7 @@ This creates:
 If the POC script doesn't work, create data manually:
 
 ```bash
-poetry run python << 'EOF'
+poetry run python -c @'
 from neo4j import GraphDatabase
 from omega_kg.settings import settings
 from datetime import datetime
@@ -298,7 +298,7 @@ with driver.session() as session:
     print("✅ Sample data created successfully")
 
 driver.close()
-EOF
+'@
 ```
 
 Expected output:
@@ -1084,10 +1084,10 @@ poetry run mypy omega_kg/
 
 ### Important URLs
 
-| Service       | URL                                             | Login               |
-| ------------- | ----------------------------------------------- | ------------------- |
+| Service       | URL                                               | Login               |
+| ------------- | ------------------------------------------------- | ------------------- |
 | Neo4j Browser | <http://localhost:7474>                           | neo4j / password    |
-| Obsidian      | localhost or app                                | Your vault          |
+| Obsidian      | localhost or app                                  | Your vault          |
 | GitHub        | <https://github.com/ApexSigma-Solutions/omega_kg> | Your GitHub account |
 
 ### Key Files

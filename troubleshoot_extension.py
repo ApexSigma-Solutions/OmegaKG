@@ -20,7 +20,9 @@ except ImportError as e:
 
 def check_capture_server():
     """
-    Verify the local capture server at http://127.0.0.1:8765/health is running and responding.
+    Check whether the local capture server's health endpoint is available.
+    
+    Emits brief status messages to stdout about the check and any errors encountered.
     
     Returns:
         bool: True if the server returned HTTP 200 and a JSON payload, False otherwise.
@@ -154,9 +156,9 @@ def check_recent_captures():
 
 def print_extension_instructions():
     """
-    Prints a concise Chrome extension troubleshooting checklist and a manual-capture tip for Omega_KG.
+    Prints a concise troubleshooting checklist for the Omega_KG Chrome extension.
     
-    Outputs human-readable checklist items to verify the extension is loaded and visible, developer mode is enabled, the floating Ω button appears on supported AI platforms, and where to inspect service worker and browser console logs.
+    Provides steps to verify the extension is installed and in developer mode, that the extension is listed as "Omega_KG Chat Capture", that it appears on supported AI platforms, that the floating Ω button is visible, and where to inspect browser and service worker console logs. Ends with a tip to force a manual capture to exercise logging.
     """
     print("\n5️⃣  Chrome Extension Checklist: - troubleshoot_extension.py:134")
     print("□ Extension loaded in chrome://extensions/ - troubleshoot_extension.py:135")

@@ -1,7 +1,7 @@
 # .pre-commit-config-infra.yaml
 # Docker/shell-based infrastructure checks
 # Run via: scripts/pre-commit-full.ps1 or in CI/CD
-
+---
 repos:
   # Include all Python checks from main config
   - repo: https://github.com/astral-sh/ruff-pre-commit
@@ -23,7 +23,9 @@ repos:
     hooks:
       - id: trivy-fs
         name: Trivy filesystem scan
-        entry: docker run --rm -v .:/workspace aquasec/trivy:latest fs --scanners vuln,secret,config /workspace
+        entry: >
+          docker run --rm -v .:/workspace aquasec/trivy:latest fs
+          --scanners vuln,secret,config /workspace
         language: system
         pass_filenames: false
 
