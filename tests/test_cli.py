@@ -228,14 +228,25 @@ class TestCLI:
         assert "✓ Yes" in result.output
         assert "development" in result.output
 
-    def test_status_command_mock_mode(self, monkeypatch):
+    @patch('omega_kg.lifecycle.TaskLifecycle')
+    @patch('omega_kg.settings.settings')
+    def test_status_command_mock_mode(self, mock_settings, mock_lifecycle_class):
         """Test the status command in mock mode."""
-        # Set minimal environment variables
-        monkeypatch.setenv("NEO4J_URI", "bolt://localhost:7687")
-        monkeypatch.setenv("NEO4J_USER", "neo4j")
-        monkeypatch.setenv("NEO4J_PASSWORD", "password")
-        monkeypatch.setenv("OBSIDIAN_VAULT_PATH", "./vault")
-        monkeypatch.setenv("APP_ENV", "test")
+        # Mock settings to show email not configured
+        mock_settings.app_env = "test"
+        mock_settings.obsidian_vault_path = "./vault"
+        mock_settings.smtp_host = None
+        mock_settings.smtp_user = None
+        mock_settings.email_to = None
+        mock_settings.linear_api_key = None
+
+        mock_lc = MagicMock()
+        mock_lc.get_connection_status.return_value = {
+            "connected": False,
+            "mock_mode": True,
+            "uri": "mock://local"
+        }
+        mock_lifecycle_class.return_value = mock_lc
 
         result = self.runner.invoke(cli, ['status'])
 
