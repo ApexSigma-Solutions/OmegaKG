@@ -44,7 +44,7 @@ services:
   omega-kg:
     build: . # Build from the Dockerfile in the current directory
     container_name: apexsigma.omega.kg
-    restart: unless-stopped
+    restart: no # Lifecycle runs once on demand; don't auto-restart
     ports:
       - "8765:8765" # Expose webhook to the host for the browser extension
     networks:
@@ -60,6 +60,8 @@ services:
     depends_on:
       neo4j-db:
         condition: service_healthy # Wait for Neo4j to be healthy before starting
+    profiles:
+      - lifecycle # Only run with explicit --profile flag
     healthcheck:
       test: ["CMD", "python", "-c", 
              "import urllib.request; urllib.request.urlopen('http://localhost:8765/health')"]
