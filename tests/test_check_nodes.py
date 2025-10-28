@@ -15,7 +15,11 @@ class TestCheckNodes:
     @patch('omega_kg.check_nodes.GraphDatabase.driver')
     @patch('builtins.print')
     def test_check_nodes_with_tasks(self, mock_print, mock_driver):
-        """Test check_nodes script driver creation."""
+        """
+        Ensure importing the module creates a Neo4j driver using the configured URI and credentials.
+        
+        Verifies that module import calls GraphDatabase.driver with settings.neo4j_uri and auth set to (settings.neo4j_user, settings.neo4j_password) by mocking the driver and session and simulating empty query results.
+        """
         # Mock the driver instance and session
         mock_driver_instance = Mock()
         mock_session = Mock()
