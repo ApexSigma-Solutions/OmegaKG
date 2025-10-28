@@ -27,6 +27,7 @@ nav:
       - Neo4j Setup: NEO4J_SETUP.md
   - Documentation:
       - Development Standards: DEVELOPMENT_STANDARDS.md
+      - Command Cheatsheet: COMMAND_CHEATSHEET.md
       - API Reference: reference.md
       - Project Tree: Omega_KG.tree.md
   - Implementation:
