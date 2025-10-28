@@ -43,7 +43,11 @@ class TestCheckNodes:
         )
 
     def test_check_nodes_script_execution(self):
-        """Test that check_nodes.py can be executed as a script."""
+        """
+        Ensure omega_kg/check_nodes.py can be executed as a script without syntax errors.
+        
+        Runs the script in a controlled environment with invalid Neo4j credentials to prevent real connections and asserts the process does not exit with the Python syntax-error code (2).
+        """
         # Create a safe environment to prevent real DB connections
         env = os.environ.copy()
         env['NEO4J_URI'] = 'bolt://invalid-host:9999'  # Invalid URI to prevent connection
@@ -98,6 +102,21 @@ class TestCheckNodes:
         empty_result.__iter__ = Mock(return_value=empty_iter)
 
         def run_side_effect(query, *args, **kwargs):
+            """
+            Return a mock result appropriate for the supplied Cypher query string.
+            
+            Parameters:
+            	query (str): Cypher query text used to choose which mock result to return.
+            	*args: Unused positional arguments forwarded by the caller.
+            	**kwargs: Unused keyword arguments forwarded by the caller.
+            
+            Returns:
+            	Mock: One of `count_result`, `sample_result`, `empty_result`, or a new generic Mock depending on which query pattern `query` matches:
+            	- `count_result` when `query` starts with "MATCH (t:Task) RETURN count"
+            	- `sample_result` when `query` starts with "MATCH (t:Task) RETURN t LIMIT 5"
+            	- `empty_result` when `query` (after stripping leading/trailing whitespace) starts with "MATCH (n) RETURN"
+            	- a new generic Mock for any other query
+            """
             if query.startswith("MATCH (t:Task) RETURN count"):
                 return count_result
             if query.startswith("MATCH (t:Task) RETURN t LIMIT 5"):
