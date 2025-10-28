@@ -436,10 +436,7 @@ async def batch_percolate_sessions():
     to Neo4j (ChatSession nodes with command history).
     """
     try:
-        sessions_path = Path(
-            "C:/Users/steyn/OneDrive/Apps/remotely-save/"
-            "Omega.as Vault/Sessions"
-        )
+        sessions_path = Path(settings.obsidian_vault_path) / "Sessions"
         
         if not sessions_path.exists():
             logger.warning(f"Sessions path does not exist: {sessions_path}")
