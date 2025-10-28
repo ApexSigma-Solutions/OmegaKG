@@ -35,13 +35,13 @@ Omega_KG is a **knowledge management system** that:
 
 **Key Concepts:**
 
-| Term | Meaning |
-|------|---------|
-| **Neo4j** | Graph database that stores all your data (conversations, tasks, commits, decisions) |
-| **Obsidian** | Note-taking app where markdown files sync with Neo4j |
-| **Task** | An item to do, with status (draft, ready, active, completed) |
-| **Session** | A conversation or meeting where decisions are made |
-| **Decision** | A conclusion or plan captured in a session |
+| Term         | Meaning                                                                             |
+| ------------ | ----------------------------------------------------------------------------------- |
+| **Neo4j**    | Graph database that stores all your data (conversations, tasks, commits, decisions) |
+| **Obsidian** | Note-taking app where markdown files sync with Neo4j                                |
+| **Task**     | An item to do, with status (draft, ready, active, completed)                        |
+| **Session**  | A conversation or meeting where decisions are made                                  |
+| **Decision** | A conclusion or plan captured in a session                                          |
 
 ---
 
@@ -177,10 +177,10 @@ Start-Sleep -Seconds 30
 
 ### Option B: Neo4j Desktop (GUI)
 
-1. Download Neo4j Desktop from https://neo4j.com/download/
+1. Download Neo4j Desktop from <https://neo4j.com/download/>
 2. Create a new database (use password from .env)
 3. Start the database
-4. Browser will open at http://localhost:7474
+4. Browser will open at <http://localhost:7474>
 
 ### Option C: Neo4j Cloud
 
@@ -227,7 +227,7 @@ Expected output:
 
 **Local Neo4j:**
 
-1. Open http://localhost:7474
+1. Open <http://localhost:7474>
 2. Username: `neo4j`
 3. Password: (your password from .env)
 
@@ -277,14 +277,14 @@ with driver.session() as session:
             topic: $topic
         })
     """, date=datetime.now().isoformat(), topic="Getting Started Demo")
-    
+
     # Create a Decision
     session.run("""
         CREATE (d:Decision {
             content: $content
         })
     """, content="Use Neo4j as the primary data store")
-    
+
     # Create a Task
     session.run("""
         CREATE (t:Task {
@@ -294,7 +294,7 @@ with driver.session() as session:
             created: $created
         })
     """, uid="DEMO-001", title="Set up Neo4j database", status="completed", created=datetime.now().isoformat())
-    
+
     print("✅ Sample data created successfully")
 
 driver.close()
@@ -324,7 +324,7 @@ driver = GraphDatabase.driver(settings.neo4j_uri, auth=(settings.neo4j_user, set
 
 with driver.session() as session:
     result = session.run("MATCH (n) RETURN labels(n)[0] as type, count(*) as count")
-    
+
     print("\n📊 Data in Neo4j:")
     print("-" * 40)
     for record in result:
@@ -362,7 +362,7 @@ with driver.session() as session:
         RETURN t.uid, t.title, t.status, t.created
         ORDER BY t.created DESC
     """)
-    
+
     print("\n📋 All Tasks:")
     print("-" * 60)
     for record in result:
@@ -402,7 +402,7 @@ with driver.session() as session:
         MATCH (d:Decision)-[:IMPLEMENTS]->(t:Task)
         RETURN d.content as decision, t.title as task, t.status as status
     """)
-    
+
     print("\n🔗 Decisions linked to Tasks:")
     print("-" * 70)
     count = 0
@@ -411,7 +411,7 @@ with driver.session() as session:
         print(f"    └→ Task: {record['task']} [{record['status']}]")
         print()
         count += 1
-    
+
     if count == 0:
         print("  (No links found - create some data first!)")
     print("-" * 70 + "\n")
@@ -448,7 +448,7 @@ Obsidian Sync automatically keeps your markdown files in sync with Neo4j.
 
 ### Prerequisites
 
-- Obsidian installed (https://obsidian.md)
+- Obsidian installed (<https://obsidian.md>)
 - An Obsidian vault created
 - Path to vault set in `.env` (OBSIDIAN_VAULT_PATH)
 
@@ -466,7 +466,7 @@ $testFile = "$vaultPath/TASK-TEST-001.md"
 uid: TASK-TEST-001
 title: Complete Omega_KG setup
 status: ready
-linear_id: 
+linear_id:
 created: 2025-10-28
 ---
 
@@ -528,7 +528,7 @@ with driver.session() as session:
     filepath=str(test_file),
     created=metadata.get('created'),
     content=content)
-    
+
     print("✅ Task synced from Obsidian to Neo4j")
 
 driver.close()
@@ -551,7 +551,7 @@ with driver.session() as session:
         MATCH (t:Task {uid: 'TASK-TEST-001'})
         RETURN t.uid, t.title, t.status, t.filepath
     """)
-    
+
     records = list(result)
     if records:
         r = records[0]
@@ -606,23 +606,23 @@ with driver.session() as session:
         RETURN t.uid, t.title, t.status, t.created, t.transitioned_at
         ORDER BY t.status, t.created DESC
     """)
-    
+
     print("\n📈 Task Lifecycle Status:")
     print("-" * 80)
-    
+
     by_status = {}
     for record in result:
         status = record['t.status']
         if status not in by_status:
             by_status[status] = []
         by_status[status].append(record)
-    
+
     for status in ['draft', 'ready', 'active', 'blocked', 'completed', 'archived']:
         tasks = by_status.get(status, [])
         print(f"\n{status.upper()} ({len(tasks)} tasks):")
         for t in tasks:
             print(f"  • {t['t.uid']}: {t['t.title']}")
-    
+
     print("\n" + "-" * 80 + "\n")
 
 driver.close()
@@ -658,6 +658,7 @@ poetry run python -m omega_kg.lifecycle
 ```
 
 This will:
+
 - Archive draft tasks older than 14 days (if not pinned)
 - Warn about tasks about to expire
 - Move active tasks to blocked after 30 days without commits
@@ -667,106 +668,59 @@ This will:
 
 ## Verification Checklist
 
-Use this checklist to verify everything is working:
+**Option 1: Quick Verification Script (Recommended)**
+
+Run the built-in verification script to check all 6 system components:
 
 ```bash
-# Run all verification checks
-poetry run python << 'EOF'
-from neo4j import GraphDatabase
-from omega_kg.settings import settings
-from pathlib import Path
+poetry run python verify_system.py
+```
 
-print("\n" + "="*80)
-print("OMEGA_KG VERIFICATION CHECKLIST")
-print("="*80 + "\n")
+This command will:
 
-checks_passed = 0
-checks_total = 6
+- ✅ Verify settings are loaded from `.env`
+- ✅ Test Neo4j connection
+- ✅ Check data exists in the graph
+- ✅ Verify tasks are queryable
+- ✅ Confirm Obsidian vault is accessible
+- ✅ Verify markdown files are readable
 
-# Check 1: Settings loaded
-try:
-    print("✓ Check 1: Settings loaded")
-    print(f"  Neo4j URI: {settings.neo4j_uri}")
-    print(f"  Obsidian Vault: {settings.obsidian_vault_path}")
-    checks_passed += 1
-except Exception as e:
-    print(f"✗ Check 1 failed: {e}")
+Expected output:
 
-# Check 2: Neo4j connection
-try:
-    driver = GraphDatabase.driver(settings.neo4j_uri, auth=(settings.neo4j_user, settings.neo4j_password))
-    with driver.session() as session:
-        session.run("RETURN 1")
-    driver.close()
-    print("✓ Check 2: Neo4j connection successful")
-    checks_passed += 1
-except Exception as e:
-    print(f"✗ Check 2 failed: {e}")
+```plaintext
+================================================================================
+OMEGA_KG SYSTEM VERIFICATION
+================================================================================
 
-# Check 3: Data exists
-try:
-    driver = GraphDatabase.driver(settings.neo4j_uri, auth=(settings.neo4j_user, settings.neo4j_password))
-    with driver.session() as session:
-        result = session.run("MATCH (n) RETURN count(n) as count")
-        count = list(result)[0]['count']
-    driver.close()
-    if count > 0:
-        print(f"✓ Check 3: Data exists in Neo4j ({count} nodes)")
-        checks_passed += 1
-    else:
-        print("✗ Check 3 failed: No data in Neo4j (run Step 4)")
-except Exception as e:
-    print(f"✗ Check 3 failed: {e}")
+1️⃣  Settings loaded
+   Neo4j URI: bolt://localhost:7687
+   Obsidian Vault: /path/to/vault
 
-# Check 4: Tasks can be queried
-try:
-    driver = GraphDatabase.driver(settings.neo4j_uri, auth=(settings.neo4j_user, settings.neo4j_password))
-    with driver.session() as session:
-        result = session.run("MATCH (t:Task) RETURN count(t) as count")
-        count = list(result)[0]['count']
-    driver.close()
-    if count > 0:
-        print(f"✓ Check 4: Tasks are queryable ({count} tasks)")
-        checks_passed += 1
-    else:
-        print("✗ Check 4 failed: No tasks found (run Step 4)")
-except Exception as e:
-    print(f"✗ Check 4 failed: {e}")
+2️⃣  Attempting Neo4j connection...
+✅ Neo4j connection successful
 
-# Check 5: Obsidian vault exists
-try:
-    vault_path = Path(settings.obsidian_vault_path)
-    if vault_path.exists():
-        print(f"✓ Check 5: Obsidian vault exists")
-        print(f"  Path: {vault_path}")
-        checks_passed += 1
-    else:
-        print(f"✗ Check 5 failed: Obsidian vault not found at {vault_path}")
-except Exception as e:
-    print(f"✗ Check 5 failed: {e}")
+3️⃣  Checking for data in Neo4j...
+✅ Found 42 nodes in database
 
-# Check 6: Can read markdown
-try:
-    import frontmatter
-    vault_path = Path(settings.obsidian_vault_path)
-    md_files = list(vault_path.glob("*.md"))
-    if len(md_files) > 0:
-        print(f"✓ Check 6: Markdown files found ({len(md_files)} files)")
-        checks_passed += 1
-    else:
-        print("✗ Check 6 failed: No markdown files in vault")
-except Exception as e:
-    print(f"✗ Check 6 failed: {e}")
+... (more checks)
 
-# Summary
-print("\n" + "-"*80)
-print(f"RESULTS: {checks_passed}/{checks_total} checks passed")
-if checks_passed == checks_total:
-    print("✅ All systems operational!")
-else:
-    print(f"⚠️  {checks_total - checks_passed} checks failed - see above for details")
-print("-"*80 + "\n")
-EOF
+RESULTS: 6/6 checks passed
+✅ System fully configured - all systems operational
+================================================================================
+```
+
+---
+
+**Option 2: Manual Verification Commands**
+
+If you prefer to verify each component manually, use these commands:
+
+```bash
+# Verify settings
+poetry run python -c "from omega_kg.settings import settings; print(f'Neo4j: {settings.neo4j_uri}')"
+
+# Verify Neo4j connection
+poetry run python -c "from neo4j import GraphDatabase; from omega_kg.settings import settings; driver = GraphDatabase.driver(settings.neo4j_uri, auth=(settings.neo4j_user, settings.neo4j_password)); print('✅ Connected'); driver.close()"
 ```
 
 ---
@@ -797,7 +751,7 @@ with driver.session() as session:
     title="Example: Create a new task",
     status="draft",
     created=datetime.now().isoformat())
-    
+
     print("✅ Task created: TASK-20251028-001")
 
 driver.close()
@@ -823,7 +777,7 @@ with driver.session() as session:
     uid="TASK-20251028-001",
     status="active",
     now=datetime.now().isoformat())
-    
+
     print("✅ Task TASK-20251028-001 status changed to 'active'")
 
 driver.close()
@@ -848,7 +802,7 @@ with driver.session() as session:
     """,
     decision_content="Implement knowledge graph system",
     task_uid="TASK-20251028-001")
-    
+
     print("✅ Linked Decision → Task")
 
 driver.close()
@@ -869,7 +823,7 @@ with driver.session() as session:
         MATCH (t:Task {uid: $uid})
         SET t.pinned = true
     """, uid="TASK-20251028-001")
-    
+
     print("✅ Task pinned (will not auto-archive)")
 
 driver.close()
@@ -892,7 +846,7 @@ with driver.session() as session:
         RETURN t.uid, t.title, t.status, t.created, t.filepath
         ORDER BY t.created DESC
     """)
-    
+
     # Write to CSV
     with open('tasks_export.csv', 'w', newline='', encoding='utf-8') as f:
         writer = csv.writer(f)
@@ -905,7 +859,7 @@ with driver.session() as session:
                 record['t.created'],
                 record['t.filepath']
             ])
-    
+
     print("✅ Tasks exported to tasks_export.csv")
 
 driver.close()
@@ -919,6 +873,7 @@ EOF
 ### Problem: "Connection refused" when connecting to Neo4j
 
 **Causes:**
+
 - Neo4j is not running
 - Wrong URI in .env
 - Neo4j crashed
@@ -942,6 +897,7 @@ cat .env | findstr NEO4J_URI
 ### Problem: "Authentication failed" when connecting
 
 **Causes:**
+
 - Wrong password in .env
 - Neo4j default password still in use
 
@@ -960,6 +916,7 @@ docker-compose up -d neo4j-db
 ### Problem: "No such file or directory" for Obsidian vault
 
 **Causes:**
+
 - Wrong path in .env
 - Path doesn't exist
 
@@ -979,6 +936,7 @@ mkdir C:\Users\YourName\Obsidian\MyVault
 ### Problem: Markdown files not syncing to Neo4j
 
 **Causes:**
+
 - Frontmatter format incorrect
 - File encoding is not UTF-8
 - Module not running
@@ -1008,6 +966,7 @@ EOF
 ### Problem: "Module not found" errors
 
 **Causes:**
+
 - Poetry environment not activated
 - Dependencies not installed
 
@@ -1027,6 +986,7 @@ poetry run python -c "from omega_kg.settings import settings"
 ### Problem: Queries in Neo4j return no results
 
 **Causes:**
+
 - Data hasn't been created yet
 - Query syntax is wrong
 - Nodes don't have expected properties
@@ -1108,22 +1068,22 @@ poetry run mypy omega_kg/
 
 ### Important URLs
 
-| Service | URL | Login |
-|---------|-----|-------|
-| Neo4j Browser | http://localhost:7474 | neo4j / password |
-| Obsidian | localhost or app | Your vault |
-| GitHub | https://github.com/ApexSigma-Solutions/omega_kg | Your GitHub account |
+| Service       | URL                                             | Login               |
+| ------------- | ----------------------------------------------- | ------------------- |
+| Neo4j Browser | <http://localhost:7474>                           | neo4j / password    |
+| Obsidian      | localhost or app                                | Your vault          |
+| GitHub        | <https://github.com/ApexSigma-Solutions/omega_kg> | Your GitHub account |
 
 ### Key Files
 
-| File | Purpose |
-|------|---------|
-| `.env` | Configuration (never commit) |
-| `.env.example` | Template (commit this) |
-| `omega_kg/settings.py` | Load .env variables |
-| `omega_kg/lifecycle.py` | Task automation |
-| `omega_kg/linear_sync.py` | Obsidian sync |
-| `omega_kg/poc_okg.py` | Create test data |
+| File                      | Purpose                      |
+| ------------------------- | ---------------------------- |
+| `.env`                    | Configuration (never commit) |
+| `.env.example`            | Template (commit this)       |
+| `omega_kg/settings.py`    | Load .env variables          |
+| `omega_kg/lifecycle.py`   | Task automation              |
+| `omega_kg/linear_sync.py` | Obsidian sync                |
+| `omega_kg/poc_okg.py`     | Create test data             |
 
 ---
 

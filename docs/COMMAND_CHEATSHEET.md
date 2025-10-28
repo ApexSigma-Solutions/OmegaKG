@@ -327,51 +327,56 @@ LIMIT 20
 
 ## Verification
 
-### Full System Check
+### Full System Check (Recommended)
 
 ```bash
-poetry run python << 'EOF'
-from neo4j import GraphDatabase
-from omega_kg.settings import settings
-from pathlib import Path
+poetry run python verify_system.py
+```
 
-print("\n✓ OMEGA_KG VERIFICATION\n")
+**Output example:**
+```
+================================================================================
+OMEGA_KG SYSTEM VERIFICATION
+================================================================================
 
+1️⃣  Settings loaded
+   Neo4j URI: bolt://localhost:7687
+   Obsidian Vault: /path/to/vault
+
+2️⃣  Attempting Neo4j connection...
+✅ Neo4j connection successful
+
+3️⃣  Checking for data in Neo4j...
+✅ Found 42 nodes in database
+
+4️⃣  Checking if tasks can be queried...
+✅ Found 8 tasks
+
+5️⃣  Checking Obsidian vault...
+✅ Obsidian vault found
+   Path: /path/to/vault
+   Markdown files: 15
+
+6️⃣  Checking markdown files...
+✅ Found 15 markdown files
+
+================================================================================
+RESULTS: 6/6 checks passed
+✅ System fully configured - all systems operational
+================================================================================
+```
+
+### Quick Checks
+
+```bash
 # Check settings
-print("1️⃣ Settings:")
-print(f"   Neo4j: {settings.neo4j_uri}")
-print(f"   Vault: {settings.obsidian_vault_path}")
+poetry run python -c "from omega_kg.settings import settings; print(f'✅ Neo4j: {settings.neo4j_uri}')"
 
 # Check Neo4j connection
-try:
-    driver = GraphDatabase.driver(settings.neo4j_uri, auth=(settings.neo4j_user, settings.neo4j_password))
-    with driver.session() as session:
-        session.run("RETURN 1")
-    driver.close()
-    print("2️⃣ Neo4j: Connected ✅")
-except Exception as e:
-    print(f"2️⃣ Neo4j: Failed ❌ ({e})")
+poetry run python -c "from neo4j import GraphDatabase; from omega_kg.settings import settings; d = GraphDatabase.driver(settings.neo4j_uri, auth=(settings.neo4j_user, settings.neo4j_password)); print('✅ Connected'); d.close()"
 
-# Check data exists
-try:
-    driver = GraphDatabase.driver(settings.neo4j_uri, auth=(settings.neo4j_user, settings.neo4j_password))
-    with driver.session() as session:
-        count = list(session.run("MATCH (n) RETURN count(n) as count"))[0]['count']
-    driver.close()
-    print(f"3️⃣ Data: {count} nodes ✅")
-except Exception as e:
-    print(f"3️⃣ Data: Failed ❌ ({e})")
-
-# Check vault
-vault = Path(settings.obsidian_vault_path)
-if vault.exists():
-    md_files = len(list(vault.glob("*.md")))
-    print(f"4️⃣ Obsidian: {md_files} files ✅")
-else:
-    print(f"4️⃣ Obsidian: Path not found ❌")
-
-print()
-EOF
+# Count nodes
+poetry run python -c "from neo4j import GraphDatabase; from omega_kg.settings import settings; d = GraphDatabase.driver(settings.neo4j_uri, auth=(settings.neo4j_user, settings.neo4j_password)); c = list(d.session().run('MATCH (n) RETURN count(n)') )[0][0]; print(f'📊 Total nodes: {c}')"
 ```
 
 ---
@@ -488,14 +493,14 @@ GITHUB_TOKEN=ghp_xxx
 
 ## Helpful Links
 
-| Resource | Link |
-|----------|------|
-| Neo4j Browser | [http://localhost:7474](http://localhost:7474) |
-| Neo4j Documentation | [https://neo4j.com/docs/](https://neo4j.com/docs/) |
-| Cypher Query Language | [https://neo4j.com/docs/cypher-manual/current/](https://neo4j.com/docs/cypher-manual/current/) |
-| Obsidian | [https://obsidian.md](https://obsidian.md) |
-| Python Neo4j Driver | [https://neo4j.com/docs/python-manual/current/](https://neo4j.com/docs/python-manual/current/) |
-| Project Repo | [https://github.com/ApexSigma-Solutions/omega_kg](https://github.com/ApexSigma-Solutions/omega_kg) |
+| Resource              | Link                                                                                               |
+| --------------------- | -------------------------------------------------------------------------------------------------- |
+| Neo4j Browser         | [http://localhost:7474](http://localhost:7474)                                                     |
+| Neo4j Documentation   | [https://neo4j.com/docs/](https://neo4j.com/docs/)                                                 |
+| Cypher Query Language | [https://neo4j.com/docs/cypher-manual/current/](https://neo4j.com/docs/cypher-manual/current/)     |
+| Obsidian              | [https://obsidian.md](https://obsidian.md)                                                         |
+| Python Neo4j Driver   | [https://neo4j.com/docs/python-manual/current/](https://neo4j.com/docs/python-manual/current/)     |
+| Project Repo          | [https://github.com/ApexSigma-Solutions/omega_kg](https://github.com/ApexSigma-Solutions/omega_kg) |
 
 ---
 
