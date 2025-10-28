@@ -1,309 +1,514 @@
+#!/usr/bin/env python
 """
-Omega_KG Ephemeral Capture Server
-Receives AI conversations from browser extension via localhost webhook
+Omega_KG Capture Server
 
-API Endpoints:
-- POST /capture: Receives a conversation payload from the browser extension and writes it to the Obsidian vault.
-    Payload (JSON):
-        {
-            "platform": str,
-            "url": str,
-            "messages": [
-                {"role": "user"|"assistant", "content": str, "timestamp": str}
-            ],
-            "timestamp": str,
-            "conversation_hash": str
-        }
-    Returns:
-        {
-            "success": True,
-            "filepath": str,
-            "message": str
-        }
+FastAPI server that receives AI conversations from chrome extension,
+saves them to Obsidian vault, and percolates to Neo4j.
 """
+
+import hashlib
+import logging
+from datetime import datetime
+from pathlib import Path
+from typing import Dict, List, Optional
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from pathlib import Path
-from datetime import datetime
-from typing import List, Optional
-import uvicorn
+from neo4j import GraphDatabase
+from pydantic import BaseModel, Field
 
 from omega_kg.settings import settings
 from omega_kg.percolation import PercolationEngine
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
-scheduler = AsyncIOScheduler()
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
+logger = logging.getLogger(__name__)
 
-app = FastAPI(title="Omega_KG Capture")
+# Create FastAPI app
+app = FastAPI(
+    title="Omega_KG Capture Server",
+    description="Receives AI conversations and integrates with Neo4j",
+    version="1.0.0"
+)
 
-async def batch_percolate():
-    """
-    Percolate new conversations periodically.
-
-    Scans the 'AI Conversations' directory in the Obsidian vault for markdown notes
-    created in the last 10 minutes and percolates them into the knowledge graph.
-    """
-    print("🔄 Running batch percolation... - capture_server.py:48")
-    
-    vault_path = Path(settings.obsidian_vault_path)
-    conv_dir = vault_path / "AI Conversations"
-    
-    # Find notes created in last 10 minutes
-    cutoff = datetime.now().timestamp() - 600  # 10 min
-    
-    new_notes = [
-        f for f in conv_dir.rglob("*.md")
-        if f.stat().st_mtime > cutoff
-    ]
-    
-    if not new_notes:
-        print("No new conversations to percolate - capture_server.py:62")
-        return
-    
-    engine = PercolationEngine()
-    try:
-        for note in new_notes:
-            engine.percolate_note(note)
-        print(f"✓ Percolated {len(new_notes)} conversations - capture_server.py:69")
-    finally:
-        engine.close()
-
-@app.on_event("startup")
-async def startup():
-    # Schedule percolation every 5 minutes
-    scheduler.add_job(batch_percolate, 'interval', minutes=5)
-    scheduler.start()
-    print("✓ Batch percolation scheduled (every 5 min) - capture_server.py:78")
-
-@app.on_event("shutdown")
-async def shutdown():
-    scheduler.shutdown()
-
-# CORS for browser extension
-# Use settings.cors_allowed_origins if defined, else default to ["*"] for development
-if hasattr(settings, "cors_allowed_origins") and settings.cors_allowed_origins:
-    allowed_origins = settings.cors_allowed_origins
-else:
-    allowed_origins = [
-        "http://localhost",
-        "http://127.0.0.1",
-        "http://localhost:8765",
-        "http://127.0.0.1:8765",
-    ]
-
+# Add CORS middleware for chrome extension
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=allowed_origins,
+    allow_origins=["*"],  # Chrome extension origin
     allow_credentials=True,
-    allow_methods=[
-        "*"
-    ],
-    allow_headers=[
-        "*"
-    ],
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
+# Pydantic models for request validation
 class Message(BaseModel):
-    role: str  # 'user' or 'assistant'
-    content: str
-    timestamp: str
+    """Individual message in a conversation."""
+    role: str = Field(..., description="Message role (user/assistant)")
+    content: str = Field(..., description="Message content")
+    timestamp: Optional[str] = Field(None, description="Message timestamp")
 
 
-class ConversationCapture(BaseModel):
-    platform: str
-    url: str
-    messages: List[Message]
-    timestamp: str
-    conversation_hash: str
+class ConversationData(BaseModel):
+    """Conversation data from chrome extension."""
+    platform: str = Field(..., description="AI platform name")
+    url: str = Field(..., description="Conversation URL")
+    title: Optional[str] = Field(None, description="Conversation title")
+    messages: List[Message] = Field(
+        ..., description="List of conversation messages"
+    )
+    metadata: Optional[Dict] = Field(
+        default_factory=dict, description="Additional metadata"
+    )
 
 
-@app.post("/capture")
-async def capture_conversation(data: ConversationCapture):
+class CaptureResponse(BaseModel):
+    """Response after successful capture."""
+    success: bool
+    file_path: str
+    nodes_created: int
+    message: str
+
+
+def generate_conversation_hash(data: ConversationData) -> str:
     """
-    Receive conversation from browser extension.
-
+    Create a short, deterministic identifier for a conversation.
+    
+    Parameters:
+        data (ConversationData): Conversation payload whose platform, url, and messages list are used to derive the identifier.
+    
     Returns:
-        dict: {
-            "success": bool,
-            "filepath": str,
-            "message": str
-        }
+        str: An 8-character hexadecimal string derived from the MD5 hash of the conversation's platform, URL, and message count.
     """
-    
-    # Write to Obsidian immediately
-    filepath = write_to_obsidian(data)
-    
-    # Percolate immediately (optional - can be async)
-    # Commented out by default for performance
-    # engine = PercolationEngine()
-    # engine.percolate_note(filepath)
-    # engine.close()
-    
-    return {
-        "success": True,
-        "filepath": str(filepath),
-        "message": f"Captured {len(data.messages)} messages from {data.platform}"
-    }
-def write_to_obsidian(data: ConversationCapture) -> Path:
-    """
-    Write conversation to Obsidian vault.
+    content = f"{data.platform}-{data.url}-{len(data.messages)}"
+    hash_obj = hashlib.md5(content.encode())
+    return hash_obj.hexdigest()[:8]
 
-    Uses a hash-based filename to prevent duplicates and ensure idempotency (skips writing if file already exists).
-    """
-    
-    vault_path = Path(settings.obsidian_vault_path)
-    conv_dir = vault_path / "AI Conversations" / data.platform
-    conv_dir.mkdir(parents=True, exist_ok=True)
-    
-    # Use hash as filename (prevents duplicates)
-    filename = f"{data.conversation_hash}.md"
-    filepath = conv_dir / filename
-    
-    # Skip if already exists (idempotent)
-    if filepath.exists():
-    return filepath
-    
-    return filepath
-    # Format as markdown
-    markdown = format_conversation_markdown(data)
-    filepath.write_text(markdown, encoding='utf-8')
-def format_conversation_markdown(data: ConversationCapture) -> str:
-    """
-    Format conversation as markdown with rich metadata.
 
-    # Extract query categories
-    user_messages = [m for m in data.messages if m.role == 'user']
-    first_query = user_messages[0].content if user_messages else ""
+def format_conversation_markdown(data: ConversationData) -> str:
+    """
+    Format a ConversationData into an Obsidian-compatible Markdown document with YAML frontmatter.
     
-    # Detect query type
-    query_type = detect_query_type(first_query)
+    The frontmatter contains platform, date, url, message_count, captured_at, conversation_hash, optional title, participants, and any provided metadata. The body contains a title, summary fields (date, platform, URL, message count) and the conversation messages as numbered sections with role, content, and optional message timestamps.
     
-    lines = [
+    Returns:
+        str: Complete Markdown document including YAML frontmatter and human-readable conversation body.
+    """
+    now = datetime.now()
+    date_str = now.strftime("%Y-%m-%d")
+    timestamp_str = now.isoformat()
+    
+    # Generate conversation hash
+    conv_hash = generate_conversation_hash(data)
+    
+    # Build frontmatter
+    frontmatter_lines = [
         "---",
-        "type: ai-conversation",
         f"platform: {data.platform}",
+        f"date: {date_str}",
         f"url: {data.url}",
-        f"captured: {data.timestamp}",
-        f"query_type: {query_type}",
         f"message_count: {len(data.messages)}",
-        f"tags: [ai, {data.platform}, conversation, {query_type}]",
-        "---",
-        "",
-        f"# {data.platform.title()} - {query_type.title()}",
-        "",
-        f"**Captured:** {datetime.fromisoformat(data.timestamp).strftime('%Y-%m-%d %H:%M')}",
-        f"**URL:** {data.url}",
-        "",
-        "## Conversation",
-        ""
+        f"captured_at: {timestamp_str}",
+        f"conversation_hash: {conv_hash}",
     ]
     
-    for msg in data.messages:
-        role_emoji = "💭" if msg.role == 'user' else "🤖"
-        role_label = "You" if msg.role == 'user' else data.platform.title()
+    if data.title:
+        frontmatter_lines.append(f"title: {data.title}")
+    
+    # Add participants
+    roles = list(set(msg.role for msg in data.messages))
+    frontmatter_lines.append(f"participants: {roles}")
+    
+    # Add metadata if present
+    if data.metadata:
+        for key, value in data.metadata.items():
+            frontmatter_lines.append(f"{key}: {value}")
+    
+    frontmatter_lines.append("---")
+    frontmatter = "\n".join(frontmatter_lines)
+    
+    # Build conversation content
+    title = data.title or f"{data.platform} Conversation"
+    content_lines = [
+        f"\n# {title}",
+        f"\n**Date**: {date_str}",
+        f"**Platform**: {data.platform}",
+        f"**URL**: [{data.url}]({data.url})",
+        f"**Messages**: {len(data.messages)}\n",
+        "---\n"
+    ]
+    
+    # Add messages
+    for i, msg in enumerate(data.messages, 1):
+        role_emoji = "👤" if msg.role.lower() == "user" else "🤖"
+        role_title = msg.role.title()
         
-        lines.append(f"### {role_emoji} {role_label}")
-        lines.append("")
-        lines.append(msg.content)
-        lines.append("")
+        content_lines.append(f"\n## {role_emoji} Message {i} ({role_title})\n")
+        content_lines.append(msg.content)
+        content_lines.append("\n")
+        
+        if msg.timestamp:
+            content_lines.append(f"*Sent: {msg.timestamp}*\n")
     
-    return "\n".join(lines)
-
-
-def detect_query_type(query: str) -> str:
-    """
-    Detect query category from content.
-
-    Categories:
-        - 'code': Matches keywords like 'implement', 'code', 'function', 'debug', 'error', 'fix'.
-        - 'research': Matches phrases such as 'what is', 'explain', 'how does', 'research', 'latest'.
-        - 'planning': Matches 'plan', 'roadmap', 'architecture', 'design', 'strategy'.
-        - 'debugging': Matches 'error', 'bug', 'not working', 'issue', 'problem'.
-        - 'learning': Matches 'learn', 'tutorial', 'teach', 'understand', 'example'.
-        - 'general': Used if no keywords match.
-
-    Matching logic:
-        The function checks if any keyword for each category is present in the lowercased query string.
-        The first matching category is returned; otherwise, 'general' is returned.
-    """
-    query_lower = query.lower()
+    # Combine frontmatter and content
+    markdown = frontmatter + "\n" + "\n".join(content_lines)
     
-    patterns = {
-        'code': ['implement', 'code', 'function', 'debug', 'fix'],
-        'research': ['what is', 'explain', 'how does', 'research', 'latest'],
-        'planning': ['plan', 'roadmap', 'architecture', 'design', 'strategy'],
-        'debugging': ['error', 'bug', 'not working', 'issue', 'problem'],
-        'learning': ['learn', 'tutorial', 'teach', 'understand', 'example']
+    return markdown
+
+
+def write_to_obsidian(
+    platform: str,
+    content: str,
+    conversation_hash: str
+) -> Path:
+    """
+    Write a conversation markdown file into the Obsidian vault under AI_Conversations/<platform>/.
+    
+    Parameters:
+        platform (str): Platform name used to create the subfolder (spaces normalized to underscores).
+        content (str): Markdown content to write to the file.
+        conversation_hash (str): Short hash appended to the filename to ensure uniqueness.
+    
+    Returns:
+        Path: Path to the created markdown file.
+    
+    Raises:
+        ValueError: If the configured Obsidian vault path does not exist.
+        IOError: If writing the file fails.
+    """
+    vault_path = Path(settings.obsidian_vault_path)
+    
+    if not vault_path.exists():
+        raise ValueError(f"Obsidian vault not found: {vault_path}")
+    
+    # Normalize platform name for folder
+    platform_folder = platform.replace(" ", "_")
+    ai_conv_path = vault_path / "AI_Conversations" / platform_folder
+    
+    # Create folder if it doesn't exist
+    ai_conv_path.mkdir(parents=True, exist_ok=True)
+    
+    # Generate filename: YYYY-MM-DD-{hash}.md
+    date_str = datetime.now().strftime("%Y-%m-%d")
+    filename = f"{date_str}-{conversation_hash}.md"
+    file_path = ai_conv_path / filename
+    
+    # Write content
+    try:
+        file_path.write_text(content, encoding="utf-8")
+        logger.info(f"Wrote conversation to: {file_path}")
+        return file_path
+    except Exception as e:
+        logger.error(f"Failed to write file: {e}")
+        raise IOError(f"Failed to write markdown file: {e}")
+
+
+def percolate_to_neo4j(file_path: Path, data: ConversationData) -> int:
+    """
+    Persist the conversation into Neo4j by creating or updating a ChatSession node and extracting Decision nodes from messages.
+    
+    Parameters:
+        file_path (Path): Filesystem path to the conversation's markdown file.
+        data (ConversationData): Conversation payload used to populate node properties and to extract decision content.
+    
+    Returns:
+        int: Number of nodes created in Neo4j for this conversation.
+    """
+    try:
+        driver = GraphDatabase.driver(
+            settings.neo4j_uri,
+            auth=(settings.neo4j_user, settings.neo4j_password)
+        )
+        
+        nodes_created = 0
+        
+        with driver.session() as session:
+            # Create ChatSession node
+            conv_hash = generate_conversation_hash(data)
+            
+            result = session.run(
+                """
+                MERGE (s:ChatSession {conversation_hash: $hash})
+                ON CREATE SET
+                    s.date = date($date),
+                    s.platform = $platform,
+                    s.filepath = $filepath,
+                    s.url = $url,
+                    s.message_count = $msg_count,
+                    s.created_at = datetime($created_at)
+                ON MATCH SET
+                    s.updated_at = datetime($created_at)
+                RETURN s
+                """,
+                hash=conv_hash,
+                date=datetime.now().strftime("%Y-%m-%d"),
+                platform=data.platform,
+                filepath=str(file_path),
+                url=data.url,
+                msg_count=len(data.messages),
+                created_at=datetime.now().isoformat()
+            )
+            
+            if result.single():
+                nodes_created += 1
+                logger.info(f"Created ChatSession node: {conv_hash}")
+            
+            # Extract potential decisions from conversation
+            # (Simple keyword-based extraction for now)
+            decision_keywords = [
+                "decided to", "will use", "going to",
+                "plan is", "approach is", "solution is"
+            ]
+            
+            for i, msg in enumerate(data.messages):
+                content_lower = msg.content.lower()
+                
+                # Check if message contains decision keywords
+                for keyword in decision_keywords:
+                    if keyword in content_lower:
+                        # Extract sentence containing keyword
+                        sentences = msg.content.split(".")
+                        for sentence in sentences:
+                            if keyword in sentence.lower():
+                                decision_content = sentence.strip()
+                                
+                                # Create Decision node
+                                result = session.run(
+                                    """
+                                    MATCH (s:ChatSession {
+                                        conversation_hash: $hash
+                                    })
+                                    CREATE (d:Decision {
+                                        content: $content,
+                                        decision_id: $dec_id,
+                                        extracted_at: datetime($extracted_at)
+                                    })
+                                    CREATE (s)-[:CONTAINS]->(d)
+                                    RETURN d
+                                    """,
+                                    hash=conv_hash,
+                                    content=decision_content,
+                                    dec_id=f"{conv_hash}-dec-{i}",
+                                    extracted_at=datetime.now().isoformat()
+                                )
+                                
+                                if result.single():
+                                    nodes_created += 1
+                                    logger.info(
+                                        f"Created Decision: {decision_content[:50]}"
+                                    )
+                                
+                                break  # Only one decision per message
+        
+        driver.close()
+        logger.info(f"Created {nodes_created} nodes in Neo4j")
+        return nodes_created
+        
+    except Exception as e:
+        logger.error(f"Neo4j percolation failed: {e}")
+        raise
+
+
+@app.get("/")
+async def root():
+    """
+    Expose basic server metadata and available endpoints.
+    
+    Returns:
+        dict: Mapping with keys:
+            - service: service name
+            - status: current service status
+            - version: service version
+            - endpoints: dict mapping endpoint names (e.g., "capture", "health") to their HTTP routes
+    """
+    return {
+        "service": "Omega_KG Capture Server",
+        "status": "running",
+        "version": "1.0.0",
+        "endpoints": {
+            "capture": "POST /capture",
+            "health": "GET /health"
+        }
     }
-    
-    for category, keywords in patterns.items():
-        if any(kw in query_lower for kw in keywords):
-            return category
-    
-    return 'general'
 
 
 @app.get("/health")
-async def health():
+async def health_check():
     """
-    Health check endpoint.
-
+    Provide a health snapshot of Obsidian vault accessibility and Neo4j connectivity.
+    
     Returns:
-        dict: {
-            "status": "ok",      # Service status
-            "service": "omega_kg_capture"  # Service name
-        }
+        dict: Health information containing:
+            - status (str): Overall status, typically "healthy".
+            - timestamp (str): ISO 8601 timestamp of the check.
+            - vault_accessible (bool): `True` if the configured vault path exists, `False` otherwise.
+            - vault_path (str, optional): The configured vault path if available.
+            - neo4j_connected (bool): `True` if a simple query to Neo4j succeeded, `False` otherwise.
+            - neo4j_error (str, optional): Error message when Neo4j connectivity failed.
     """
-    return {"status": "ok", "service": "omega_kg_capture"}
-@app.get("/stats")
-async def stats():
-    """
-    Get capture statistics.
-
-    Returns:
-        {
-            "total_conversations": int,
-            "by_platform": {platform: int}
-        }
-    """
-    vault_path = Path(settings.obsidian_vault_path)
-    conv_dir = vault_path / "AI Conversations"
-
-    if not conv_dir.exists():
-        return {"total_conversations": 0, "by_platform": {}}
-
-    by_platform = {}
-    total_conversations = 0
-
-    for platform_dir in conv_dir.iterdir():
-        if platform_dir.is_dir():
-            count = sum(1 for f in platform_dir.glob("*.md"))
-            by_platform[platform_dir.name] = count
-            total_conversations += count
-
-    return {
-        "total_conversations": total_conversations,
-        "by_platform": by_platform
+    health_status = {
+        "status": "healthy",
+        "timestamp": datetime.now().isoformat(),
+        "vault_accessible": False,
+        "neo4j_connected": False
     }
-    uvicorn.run(
-        app,
-        host="127.0.0.1",
-        port=8765,
-        log_level="info"
-    )
-    Starts the Omega_KG Capture Server on port 8765.
-    Health check endpoint available at /health.
+    
+    # Check vault accessibility
+    try:
+        vault_path = Path(settings.obsidian_vault_path)
+        health_status["vault_accessible"] = vault_path.exists()
+        health_status["vault_path"] = str(vault_path)
+    except Exception as e:
+        logger.warning(f"Vault check failed: {e}")
+    
+    # Check Neo4j connectivity
+    try:
+        driver = GraphDatabase.driver(
+            settings.neo4j_uri,
+            auth=(settings.neo4j_user, settings.neo4j_password)
+        )
+        with driver.session() as session:
+            session.run("RETURN 1")
+        driver.close()
+        health_status["neo4j_connected"] = True
+    except Exception as e:
+        logger.warning(f"Neo4j check failed: {e}")
+        health_status["neo4j_error"] = str(e)
+    
+    return health_status
+
+
+@app.post("/capture", response_model=CaptureResponse)
+async def capture_conversation(data: ConversationData):
     """
-    print("🚀 Starting Omega_KG Capture Server - capture_server.py:300")
-    print("Listening on: http://localhost:8765 - capture_server.py:301")
-    print("Health check: http://localhost:8765/health - capture_server.py:302")
+    Process a captured ConversationData by formatting it to Obsidian-compatible Markdown, saving it to the configured vault, and percolating the conversation into Neo4j.
+    
+    Parameters:
+        data (ConversationData): Conversation payload from the Chrome extension containing platform, url, messages, and optional metadata.
+    
+    Returns:
+        CaptureResponse: Contains success status, the created file path, the number of Neo4j nodes created, and a descriptive message.
+    
+    Raises:
+        HTTPException: On failure to validate input (400), write the file (500), or percolate data to Neo4j (500).
+    """
+    logger.info(
+        f"Received capture request: {data.platform} "
+        f"({len(data.messages)} messages)"
+    )
+    
+    try:
+        # 1. Format as markdown
+        markdown_content = format_conversation_markdown(data)
+        logger.info("Formatted conversation as markdown")
+        
+        # 2. Generate hash for filename
+        conv_hash = generate_conversation_hash(data)
+        
+        # 3. Write to Obsidian vault
+        file_path = write_to_obsidian(
+            platform=data.platform,
+            content=markdown_content,
+            conversation_hash=conv_hash
+        )
+        logger.info(f"Wrote to Obsidian: {file_path}")
+        
+        # 4. Percolate to Neo4j
+        nodes_created = percolate_to_neo4j(file_path, data)
+        logger.info(f"Created {nodes_created} Neo4j nodes")
+        
+        # 5. Return success response
+        return CaptureResponse(
+            success=True,
+            file_path=str(file_path),
+            nodes_created=nodes_created,
+            message=(
+                f"Successfully captured {len(data.messages)} messages "
+                f"from {data.platform}"
+            )
+        )
+        
+    except ValueError as e:
+        logger.error(f"Validation error: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+    except IOError as e:
+        logger.error(f"File write error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as e:
+        logger.error(f"Capture failed: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to capture conversation: {str(e)}"
+        )
+
+
+async def batch_percolate_sessions():
+    """
+    Percolates PowerShell session logs from the configured Sessions folder into Neo4j.
+    
+    If the Sessions folder is missing, the function returns without error. When session files are present, it uses the PercolationEngine to percolate them into Neo4j and logs aggregated statistics; errors are logged.
+    """
+    try:
+        sessions_path = Path(settings.obsidian_vault_path) / "Sessions"
+        
+        if not sessions_path.exists():
+            logger.warning(f"Sessions path does not exist: {sessions_path}")
+            return
+        
+        # Initialize Neo4j driver and percolation engine
+        driver = GraphDatabase.driver(
+            settings.neo4j_uri,
+            auth=(settings.neo4j_user, settings.neo4j_password)
+        )
+        engine = PercolationEngine(driver)
+        
+        # Percolate all session files
+        stats = engine.percolate_from_vault(sessions_path)
+        logger.info(
+            f"Percolated session logs: {stats['tasks']} tasks, "
+            f"{stats['commits']} commits, {stats['links']} decision links"
+        )
+        
+        driver.close()
+        
+    except Exception as e:
+        logger.error(f"Batch session percolation failed: {e}")
+
+
+@app.on_event("startup")
+async def startup_event():
+    """Schedule batch percolation on server startup."""
+    from apscheduler.schedulers.asyncio import AsyncIOScheduler
+    
+    scheduler = AsyncIOScheduler()
+    scheduler.add_job(
+        batch_percolate_sessions,
+        'interval',
+        minutes=5,
+        id='session_percolation'
+    )
+    scheduler.start()
+    logger.info("✓ Session percolation scheduled (every 5 minutes)")
+
+
+def main():
+    """
+    Start the Omega_KG FastAPI capture server using Uvicorn on 127.0.0.1:8765.
+    
+    Logs configured startup information (Obsidian vault path and Neo4j URI) and blocks the calling process while the server runs.
+    """
+    import uvicorn
+    
+    logger.info("Starting Omega_KG Capture Server...")
+    logger.info(f"Vault path: {settings.obsidian_vault_path}")
+    logger.info(f"Neo4j URI: {settings.neo4j_uri}")
     
     uvicorn.run(
         app,
-        host="0.0.0.0",
+        host="127.0.0.1",
         port=8765,
         log_level="info"
     )
