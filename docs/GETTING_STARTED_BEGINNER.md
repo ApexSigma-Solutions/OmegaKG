@@ -261,7 +261,7 @@ This creates:
 If the POC script doesn't work, create data manually:
 
 ```bash
-poetry run python << 'EOF'
+poetry run python -c @'
 from neo4j import GraphDatabase
 from omega_kg.settings import settings
 from datetime import datetime
@@ -298,7 +298,7 @@ with driver.session() as session:
     print("✅ Sample data created successfully")
 
 driver.close()
-EOF
+'@
 ```
 
 Expected output:
