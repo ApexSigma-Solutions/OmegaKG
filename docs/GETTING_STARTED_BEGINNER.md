@@ -682,8 +682,8 @@ This command will:
 - ✅ Test Neo4j connection
 - ✅ Check data exists in the graph
 - ✅ Verify tasks are queryable
-- ✅ Confirm Obsidian vault is accessible
-- ✅ Verify markdown files are readable
+- ✅ Confirm Obsidian vault is accessible with proper folder structure
+- ✅ Verify markdown files in Plans, Tasks, Archive, AI_Conversations, Daily, and Sessions folders
 
 Expected output:
 
@@ -694,24 +694,40 @@ OMEGA_KG SYSTEM VERIFICATION
 
 1️⃣  Settings loaded
    Neo4j URI: bolt://localhost:7687
-   Obsidian Vault: /path/to/vault
+   Obsidian Vault: C:\Users\steyn\OneDrive\ApexSigma\omegavault.as\omegavault.as
 
 2️⃣  Attempting Neo4j connection...
 ✅ Neo4j connection successful
 
 3️⃣  Checking for data in Neo4j...
-✅ Found 42 nodes in database
+⚠️  Check 3 warning: No data in Neo4j yet
+   (Run Step 4 in GETTING_STARTED_BEGINNER.md)
 
-... (more checks)
+4️⃣  Checking if tasks can be queried...
+⚠️  Check 4 warning: No tasks found yet
 
-RESULTS: 6/6 checks passed
-✅ System fully configured - all systems operational
+5️⃣  Checking Obsidian vault structure...
+✅ Obsidian vault found
+   Path: C:\Users\steyn\OneDrive\ApexSigma\omegavault.as\omegavault.as
+   ✅ Plans                 13 files
+   ✅ Tasks                  5 files
+   ✅ Archive                0 files
+   ✅ AI_Conversations       0 files
+   ✅ Daily                  0 files
+   ✅ Sessions               2 files
+
+6️⃣  Verifying markdown content...
+✅ Found 20 markdown files in 3 folders
+
+================================================================================
+RESULTS: 4/6 checks passed
+✅ System is operational!
 ================================================================================
 ```
 
 ---
 
-**Option 2: Manual Verification Commands**
+### Manual Verification Commands
 
 If you prefer to verify each component manually, use these commands:
 

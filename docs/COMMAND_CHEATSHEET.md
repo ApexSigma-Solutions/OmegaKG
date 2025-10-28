@@ -334,35 +334,41 @@ poetry run python verify_system.py
 ```
 
 **Output example:**
-```
+
+```text
 ================================================================================
 OMEGA_KG SYSTEM VERIFICATION
 ================================================================================
 
 1️⃣  Settings loaded
    Neo4j URI: bolt://localhost:7687
-   Obsidian Vault: /path/to/vault
+   Obsidian Vault: C:\Users\steyn\OneDrive\ApexSigma\omegavault.as\omegavault.as
 
 2️⃣  Attempting Neo4j connection...
 ✅ Neo4j connection successful
 
 3️⃣  Checking for data in Neo4j...
-✅ Found 42 nodes in database
+⚠️  Check 3 warning: No data in Neo4j yet
 
 4️⃣  Checking if tasks can be queried...
-✅ Found 8 tasks
+⚠️  Check 4 warning: No tasks found yet
 
-5️⃣  Checking Obsidian vault...
+5️⃣  Checking Obsidian vault structure...
 ✅ Obsidian vault found
-   Path: /path/to/vault
-   Markdown files: 15
+   Path: C:\Users\steyn\OneDrive\ApexSigma\omegavault.as\omegavault.as
+   ✅ Plans                 13 files
+   ✅ Tasks                  5 files
+   ✅ Archive                0 files
+   ✅ AI_Conversations       0 files
+   ✅ Daily                  0 files
+   ✅ Sessions               2 files
 
-6️⃣  Checking markdown files...
-✅ Found 15 markdown files
+6️⃣  Verifying markdown content...
+✅ Found 20 markdown files in 3 folders
 
 ================================================================================
-RESULTS: 6/6 checks passed
-✅ System fully configured - all systems operational
+RESULTS: 4/6 checks passed
+✅ System is operational!
 ================================================================================
 ```
 
