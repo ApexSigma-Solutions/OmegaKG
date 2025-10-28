@@ -1,9 +1,12 @@
 # omega_kg/linear_sync.py
 
+import logging
 from neo4j import GraphDatabase
 from pathlib import Path
 import frontmatter
 from omega_kg.settings import settings
+
+logger = logging.getLogger(__name__)
 
 
 class LinearSync:
@@ -40,6 +43,11 @@ class LinearSync:
         """
         action = payload.get("action")
         issue = payload.get("data")
+
+        # Type guard: ensure issue is a dict before proceeding
+        if not isinstance(issue, dict):
+            logger.warning("Invalid issue data in Linear webhook payload")
+            return
 
         if action == "update":
             self._sync_issue_update(issue)
