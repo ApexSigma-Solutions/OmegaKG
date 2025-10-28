@@ -15,11 +15,7 @@ class TestCheckNodes:
     @patch('omega_kg.check_nodes.GraphDatabase.driver')
     @patch('builtins.print')
     def test_check_nodes_with_tasks(self, mock_print, mock_driver):
-        """
-        Ensure importing the module creates a Neo4j driver using the configured URI and credentials.
-        
-        Verifies that module import calls GraphDatabase.driver with settings.neo4j_uri and auth set to (settings.neo4j_user, settings.neo4j_password) by mocking the driver and session and simulating empty query results.
-        """
+        """Test check_nodes script driver creation."""
         # Mock the driver instance and session
         mock_driver_instance = Mock()
         mock_session = Mock()
@@ -77,3 +73,47 @@ class TestCheckNodes:
         importlib.reload(mod)
         assert hasattr(mod, "query")
         assert mod.query.strip() == "MATCH (n) RETURN count(n) as count, labels(n) as labels LIMIT 10"
+    @patch('omega_kg.check_nodes.GraphDatabase.driver')
+    @patch('builtins.print')
+    def test_sample_query_executed_when_tasks_exist(self, mock_print, mock_driver):
+        """When tasks exist, script should query a small sample of tasks."""
+        # Arrange driver and session
+        driver = Mock()
+        session = Mock()
+        mock_driver.return_value = driver
+        driver.session.return_value = session
+
+        # Return count > 0 on first count query
+        count_result = Mock()
+        count_result.single.return_value = {'count': 2}
+
+        # Sample tasks iterator
+        sample_iter = iter([{'t': {'uid': 'A'}}, {'t': {'uid': 'B'}}])
+        sample_result = Mock()
+        sample_result.__iter__ = Mock(return_value=sample_iter)
+
+        # Empty iterator for final "all nodes" query
+        empty_iter = iter([])
+        empty_result = Mock()
+        empty_result.__iter__ = Mock(return_value=empty_iter)
+
+        def run_side_effect(query, *args, **kwargs):
+            if query.startswith("MATCH (t:Task) RETURN count"):
+                return count_result
+            if query.startswith("MATCH (t:Task) RETURN t LIMIT 5"):
+                return sample_result
+            if query.strip().startswith("MATCH (n) RETURN"):
+                return empty_result
+            return Mock()
+
+        session.run.side_effect = run_side_effect
+
+        # Act: import (executes module code)
+        import importlib, omega_kg.check_nodes as mod
+        importlib.reload(mod)
+
+        # Assert: sample query executed
+        issued_queries = [c.args[0] for c in session.run.call_args_list]
+        assert any("MATCH (t:Task) RETURN t LIMIT 5" in q for q in issued_queries)
+        # And printed at least two Task lines
+        assert any("Task:" in str(c.args[0]) for c in mock_print.call_args_list)

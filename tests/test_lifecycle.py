@@ -212,3 +212,24 @@ class TestTaskLifecycleMockMode:
 
                 assert status["connected"] is True
                 assert status["mock_mode"] is False
+    def test_task_lifecycle_connection_status_mock(self):
+        """get_connection_status should reflect mock mode correctly."""
+        lc = TaskLifecycle(mock_mode=True)
+        status = lc.get_connection_status()
+        assert status["connected"] is False
+        assert status["mock_mode"] is True
+        assert status["uri"] == "mock://local"
+
+    def test_task_lifecycle_connection_status_connected(self, mock_neo4j_driver):
+        """get_connection_status should report connected when driver is set."""
+        with patch("omega_kg.lifecycle.GraphDatabase.driver", return_value=mock_neo4j_driver):
+            with patch("omega_kg.lifecycle.settings") as mock_settings:
+                mock_settings.neo4j_uri = "bolt://localhost:7687"
+                mock_settings.neo4j_user = "neo4j"
+                mock_settings.neo4j_password = "password"
+                mock_settings.obsidian_vault_path = "./vault"
+                lc = TaskLifecycle(mock_mode=False)
+                status = lc.get_connection_status()
+                assert status["connected"] is True
+                assert status["mock_mode"] is False
+                assert status["uri"] == mock_settings.neo4j_uri
