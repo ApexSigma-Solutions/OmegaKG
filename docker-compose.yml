@@ -42,29 +42,40 @@ services:
 
   # Omega_KG Capture Service
   omega-kg:
-    build: . # Build from the Dockerfile in the current directory
+    # Build from current directory
+    build: .
     container_name: apexsigma.omega.kg
-    restart: no # Lifecycle runs once on demand; don't auto-restart
+    # Don't auto-restart lifecycle container
+    restart: "no"
     ports:
-      - "8765:8765" # Expose webhook to the host for the browser extension
+      # Webhook port
+      - "8765:8765"
     networks:
       - apexsigma.net
     volumes:
-      # Mount your Obsidian vault from the host into the container
-      - "${OBSIDIAN_VAULT_PATH}:/vault:ro" # Read-only mount
+      # Mount Obsidian vault from host into container
+      - "${OBSIDIAN_VAULT_PATH}:/vault:ro"
     env_file:
-      - .env # Load environment variables from .env file
+      # Load environment variables from .env file
+      - .env
     environment:
-      # Override Neo4j URI to use the Docker network hostname
+      # Override Neo4j URI to use Docker network hostname
       NEO4J_URI: bolt://neo4j-db:7687
     depends_on:
       neo4j-db:
-        condition: service_healthy # Wait for Neo4j to be healthy before starting
+        # Wait for Neo4j healthy before starting
+        condition: service_healthy
     profiles:
-      - lifecycle # Only run with explicit --profile flag
+      # On-demand execution only
+      - lifecycle
     healthcheck:
-      test: ["CMD", "python", "-c", 
-             "import urllib.request; urllib.request.urlopen('http://localhost:8765/health')"]
+      test:
+        - "CMD"
+        - "python"
+        - "-c"
+        - >
+          import urllib.request;
+          urllib.request.urlopen('http://localhost:8765/health')
       interval: 30s
       timeout: 10s
       retries: 3

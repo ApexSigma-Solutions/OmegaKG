@@ -2,10 +2,15 @@ version: 0.1
 cli:
   version: 1.25.0
 lint:
-  # NOTE: Trunk tool management has issues on Windows
-  # We use Poetry-managed linters instead (see pyproject.toml)
-  # Python linting: poetry run ruff check, mypy, etc.
-  # Run: poetry run pytest for testing
   enabled:
-    # Only use git-diff-check (no external deps)
-    - git-diff-check
+    # Python - use Poetry tools instead via separate run
+    # - ruff@0.8.2         # Using Poetry: poetry run ruff
+    # - mypy@1.14.1        # Using Poetry: poetry run mypy
+    # - isort@5.13.2       # Using Poetry: poetry run isort
+    # - bandit@1.8.0       # Using Poetry: poetry run bandit
+    
+    # Reliable cross-platform tools only
+    - git-diff-check      # Built-in git checking
+    - prettier@3.4.2      # Code formatting
+    - markdownlint@0.39.0 # Markdown linting
+    - yamllint@1.35.1     # YAML validation
