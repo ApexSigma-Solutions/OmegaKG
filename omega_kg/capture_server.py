@@ -74,13 +74,14 @@ class CaptureResponse(BaseModel):
 
 
 def generate_conversation_hash(data: ConversationData) -> str:
-    """Generate unique hash for conversation.
+    """
+    Create a short deterministic identifier for a conversation.
     
-    Args:
-        data: Conversation data
-        
+    Parameters:
+        data (ConversationData): Conversation payload whose platform, url, and message count are used to derive the identifier.
+    
     Returns:
-        Short hash string for filename
+        str: An 8-character hexadecimal string derived from the MD5 hash of "platform-url-message_count".
     """
     content = f"{data.platform}-{data.url}-{len(data.messages)}"
     hash_obj = hashlib.md5(content.encode())
@@ -88,13 +89,20 @@ def generate_conversation_hash(data: ConversationData) -> str:
 
 
 def format_conversation_markdown(data: ConversationData) -> str:
-    """Convert conversation JSON to Obsidian markdown format.
+    """
+    Format a ConversationData object into Obsidian-compatible Markdown with YAML frontmatter.
     
-    Args:
-        data: Conversation data from chrome extension
-        
+    The resulting markdown starts with YAML frontmatter containing platform, date, url, message_count,
+    captured_at timestamp, conversation_hash, optional title, participants, and any provided metadata,
+    followed by a human-readable conversation body with a title, summary fields, and each message as a
+    numbered section including role, content, and optional message timestamp.
+    
+    Parameters:
+        data (ConversationData): Conversation payload containing platform, url, optional title,
+            a list of messages (each with role, content, optional timestamp), and optional metadata.
+    
     Returns:
-        Formatted markdown string with frontmatter
+        str: Complete markdown document as a string ready to be written into an Obsidian vault.
     """
     now = datetime.now()
     date_str = now.strftime("%Y-%m-%d")
@@ -314,7 +322,16 @@ def percolate_to_neo4j(file_path: Path, data: ConversationData) -> int:
 
 @app.get("/")
 async def root():
-    """Root endpoint - server info."""
+    """
+    Expose basic server metadata and available endpoints.
+    
+    Returns:
+        dict: Mapping with keys:
+            - service: service name
+            - status: current service status
+            - version: service version
+            - endpoints: dict mapping endpoint names (e.g., "capture", "health") to their HTTP routes
+    """
     return {
         "service": "Omega_KG Capture Server",
         "status": "running",
@@ -328,10 +345,17 @@ async def root():
 
 @app.get("/health")
 async def health_check():
-    """Health check endpoint for chrome extension.
+    """
+    Provides a health snapshot indicating Obsidian vault accessibility and Neo4j connectivity.
     
     Returns:
-        Health status and Neo4j connectivity
+        dict: Health information containing:
+            - status (str): Overall status, typically "healthy".
+            - timestamp (str): ISO 8601 timestamp of the check.
+            - vault_accessible (bool): True if the configured vault path exists.
+            - vault_path (str, optional): The configured vault path.
+            - neo4j_connected (bool): True if a simple query to Neo4j succeeded.
+            - neo4j_error (str, optional): Error message when Neo4j connectivity failed.
     """
     health_status = {
         "status": "healthy",
@@ -367,16 +391,17 @@ async def health_check():
 
 @app.post("/capture", response_model=CaptureResponse)
 async def capture_conversation(data: ConversationData):
-    """Capture AI conversation from chrome extension.
+    """
+    Process a captured ConversationData by formatting it to Obsidian-compatible Markdown, saving it to the configured vault, and percolating the conversation into Neo4j.
     
-    Args:
-        data: Conversation data from chrome extension
-        
+    Parameters:
+        data (ConversationData): Conversation payload from the Chrome extension containing platform, url, messages, and optional metadata.
+    
     Returns:
-        CaptureResponse with file path and node count
-        
+        CaptureResponse: Contains success status, the created file path, the number of Neo4j nodes created, and a descriptive message.
+    
     Raises:
-        HTTPException: If capture, write, or percolation fails
+        HTTPException: On failure to validate input (400), write the file (500), or percolate data to Neo4j (500).
     """
     logger.info(
         f"Received capture request: {data.platform} "
@@ -430,10 +455,9 @@ async def capture_conversation(data: ConversationData):
 
 async def batch_percolate_sessions():
     """
-    Batch percolation job for PowerShell session logs.
+    Percolates PowerShell session logs from the configured Sessions folder into Neo4j as ChatSession nodes with their command history.
     
-    Runs every 5 minutes to percolate session files from the Sessions folder
-    to Neo4j (ChatSession nodes with command history).
+    If the Sessions folder is absent, the job exits without error; otherwise it connects to Neo4j, runs batch percolation via the PercolationEngine, logs aggregated statistics, and closes the driver.
     """
     try:
         sessions_path = Path(settings.obsidian_vault_path) / "Sessions"
@@ -479,7 +503,11 @@ async def startup_event():
 
 
 def main():
-    """Run the capture server."""
+    """
+    Start the Omega_KG Capture Server and run the FastAPI application.
+    
+    Logs configured startup information (including Obsidian vault path and Neo4j URI) and launches the Uvicorn server hosting the application on 127.0.0.1:8765, blocking the current process while the server runs.
+    """
     import uvicorn
     
     logger.info("Starting Omega_KG Capture Server...")

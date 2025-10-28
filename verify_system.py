@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python
+#!/usr/bin/env python
 """Omega_KG System Verification Script."""
 
 import sys
@@ -12,7 +12,19 @@ from omega_kg.settings import settings
 
 
 def main():
-    """Run all verification checks."""
+    """
+    Run a six-step system verification for the Omega_KG setup and print a human-readable report.
+    
+    Performs these checks in sequence and reports success, warnings, or errors for each:
+    1. Confirms settings are loaded and displays Neo4j URI and Obsidian vault path.
+    2. Verifies a Neo4j connection by running a simple query.
+    3. Checks that data (nodes) exist in the Neo4j database.
+    4. Confirms Task nodes are queryable in Neo4j.
+    5. Validates the Obsidian vault structure and counts Markdown files, including AI_Conversations subfolders.
+    6. Counts Markdown files across Plans, Tasks, and Sessions and reports coverage.
+    
+    After the checks, prints a summary showing how many of the six checks passed and a final status message indicating operational, partially configured, or needs configuration.
+    """
     print('\n' + '='*80)
     print('OMEGA_KG SYSTEM VERIFICATION')
     print('='*80 + '\n')
