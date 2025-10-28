@@ -6699,6 +6699,18 @@ function hasOwnProperty(obj, prop) {
 // This makes sure that own properties are retained, so that
 // decorations and such are not lost along the way.
 module.exports = wrappy
+/**
+ * Create a wrapper for a function that preserves enumerable properties from the original function
+ * and, when appropriate, copies enumerable properties from the provided callback onto any function
+ * returned by the wrapped function.
+ *
+ * @param {Function} fn - The function to wrap. Its own enumerable properties will be copied onto the returned wrapper.
+ * @param {Function} [cb] - Optional callback; when provided in curried form, returns a wrapper that will
+ *                         be invoked with `cb`. When the wrapped function returns a function that is not
+ *                         the last argument, that returned function receives the enumerable properties of `cb`.
+ * @returns {Function} The wrapper function that proxies calls to `fn` while preserving and propagating properties as described.
+ * @throws {TypeError} If `fn` is not a function.
+ */
 function wrappy (fn, cb) {
   if (fn && cb) return wrappy(fn)(cb)
 
