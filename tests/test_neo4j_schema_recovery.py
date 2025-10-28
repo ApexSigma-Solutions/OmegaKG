@@ -68,7 +68,11 @@ class TestKnowledgeGraphSchema:
     def test_schema_connection_status_with_driver(
         self, mock_driver_class, mock_neo4j_driver
     ):
-        """Test connection status with active driver"""
+        """
+        Verify that KnowledgeGraphSchema reports a successful connection when the Neo4j driver responds with a healthy status.
+        
+        Creates a KnowledgeGraphSchema with a patched driver whose session health check returns {"status": 1}, then asserts that get_connection_status() reports `connected` as `True` and `mock_mode` as `False`.
+        """
         mock_driver_class.return_value = mock_neo4j_driver
 
         with patch("omega_kg.neo4j_schema.settings") as mock_settings:
