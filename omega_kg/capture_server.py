@@ -78,10 +78,10 @@ def generate_conversation_hash(data: ConversationData) -> str:
     Create a short deterministic identifier for a conversation.
     
     Parameters:
-        data (ConversationData): Conversation payload whose platform, url, and message count are used to derive the identifier.
+        data (ConversationData): Conversation payload whose platform, URL, and number of messages are used to derive the identifier.
     
     Returns:
-        str: An 8-character hexadecimal string derived from the MD5 hash of "platform-url-message_count".
+        str: An 8-character hexadecimal string derived from the MD5 hash of the conversation's platform, URL, and message count.
     """
     content = f"{data.platform}-{data.url}-{len(data.messages)}"
     hash_obj = hashlib.md5(content.encode())
@@ -171,19 +171,20 @@ def write_to_obsidian(
     content: str,
     conversation_hash: str
 ) -> Path:
-    """Write markdown content to Obsidian vault.
+    """
+    Write markdown content into the configured Obsidian vault under AI_Conversations/<platform>.
     
-    Args:
-        platform: AI platform name (ChatGPT, Claude, etc.)
-        content: Markdown content to write
-        conversation_hash: Unique hash for filename
-        
+    Parameters:
+        platform (str): AI platform name; used to create a platform-specific subfolder (spaces replaced with underscores).
+        content (str): Markdown content to write to the file.
+        conversation_hash (str): Hash appended to the filename in the form `YYYY-MM-DD-{conversation_hash}.md`.
+    
     Returns:
-        Path to created file
-        
+        Path: Path to the created markdown file.
+    
     Raises:
-        ValueError: If vault path doesn't exist
-        IOError: If file write fails
+        ValueError: If the configured Obsidian vault path does not exist.
+        IOError: If writing the file fails.
     """
     vault_path = Path(settings.obsidian_vault_path)
     
@@ -213,17 +214,18 @@ def write_to_obsidian(
 
 
 def percolate_to_neo4j(file_path: Path, data: ConversationData) -> int:
-    """Extract conversation into Neo4j knowledge graph.
+    """
+    Persist conversation metadata and any extracted decisions into Neo4j as a ChatSession node and related Decision nodes.
     
-    Args:
-        file_path: Path to markdown file
-        data: Original conversation data
-        
+    Parameters:
+        file_path (Path): Path to the markdown file representing the captured conversation.
+        data (ConversationData): Original conversation payload used to populate node properties and to extract decision-like sentences.
+    
     Returns:
-        Number of nodes created
-        
+        nodes_created (int): Total number of nodes created in Neo4j (ChatSession plus any Decision nodes).
+    
     Raises:
-        Exception: If Neo4j connection or query fails
+        Exception: If connecting to Neo4j or executing queries fails.
     """
     try:
         driver = GraphDatabase.driver(
@@ -346,15 +348,15 @@ async def root():
 @app.get("/health")
 async def health_check():
     """
-    Provides a health snapshot indicating Obsidian vault accessibility and Neo4j connectivity.
+    Provide a health snapshot of Obsidian vault accessibility and Neo4j connectivity.
     
     Returns:
         dict: Health information containing:
             - status (str): Overall status, typically "healthy".
             - timestamp (str): ISO 8601 timestamp of the check.
-            - vault_accessible (bool): True if the configured vault path exists.
-            - vault_path (str, optional): The configured vault path.
-            - neo4j_connected (bool): True if a simple query to Neo4j succeeded.
+            - vault_accessible (bool): `True` if the configured vault path exists, `False` otherwise.
+            - vault_path (str, optional): The configured vault path if available.
+            - neo4j_connected (bool): `True` if a simple query to Neo4j succeeded, `False` otherwise.
             - neo4j_error (str, optional): Error message when Neo4j connectivity failed.
     """
     health_status = {
@@ -455,9 +457,9 @@ async def capture_conversation(data: ConversationData):
 
 async def batch_percolate_sessions():
     """
-    Percolates PowerShell session logs from the configured Sessions folder into Neo4j as ChatSession nodes with their command history.
+    Percolates PowerShell session logs from the Obsidian "Sessions" folder into Neo4j as ChatSession nodes with their command history.
     
-    If the Sessions folder is absent, the job exits without error; otherwise it connects to Neo4j, runs batch percolation via the PercolationEngine, logs aggregated statistics, and closes the driver.
+    If the Sessions folder does not exist, the job exits without error. Otherwise it connects to Neo4j using configured settings, runs a batch percolation via the PercolationEngine, and closes the driver when complete.
     """
     try:
         sessions_path = Path(settings.obsidian_vault_path) / "Sessions"

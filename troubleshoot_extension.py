@@ -23,7 +23,7 @@ def check_capture_server():
     Verify the local capture server at http://127.0.0.1:8765/health is running and responding.
     
     Returns:
-        bool: `True` if the server returned HTTP 200 and a JSON payload, `False` otherwise.
+        bool: True if the server returned HTTP 200 and a JSON payload, False otherwise.
     """
     print("1️⃣  Checking capture server... - troubleshoot_extension.py:23")
     try:
@@ -86,10 +86,12 @@ def check_vault_accessible():
 
 def check_neo4j():
     """
-    Verify connectivity to the configured Neo4j instance and report basic node counts.
+    Check connectivity to the configured Neo4j instance and print a basic count of ChatSession nodes.
+    
+    Prints diagnostic messages about connection status and the total number of ChatSession nodes found.
     
     Returns:
-        bool: `true` if a connection to the Neo4j server can be established and a simple query succeeds, `false` otherwise.
+        bool: `True` if a test query succeeds against the configured Neo4j server, `False` otherwise.
     """
     print("\n3️⃣  Checking Neo4j... - troubleshoot_extension.py:77")
     try:
@@ -152,9 +154,9 @@ def check_recent_captures():
 
 def print_extension_instructions():
     """
-    Print a concise checklist and tip to help troubleshoot the Omega_KG Chrome extension.
+    Prints a concise Chrome extension troubleshooting checklist and a manual-capture tip for Omega_KG.
     
-    Prints a series of human-readable steps to verify the extension is loaded, in developer mode, visible as "Omega_KG Chat Capture", present on supported AI platforms, showing the floating Ω button, and emitting logs in the service worker and browser console, followed by a tip to force a manual capture.
+    Outputs human-readable checklist items to verify the extension is loaded and visible, developer mode is enabled, the floating Ω button appears on supported AI platforms, and where to inspect service worker and browser console logs.
     """
     print("\n5️⃣  Chrome Extension Checklist: - troubleshoot_extension.py:134")
     print("□ Extension loaded in chrome://extensions/ - troubleshoot_extension.py:135")
