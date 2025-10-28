@@ -1,3 +1,4 @@
+---
 # ApexSigma Network Definition
 # This network will be shared across all ApexSigma projects.
 networks:
@@ -34,30 +35,49 @@ services:
       NEO4J_dbms_memory_heap_initial__size: ${NEO4J_HEAP_SIZE}
       NEO4J_dbms_memory_heap_max__size: ${NEO4J_HEAP_SIZE}
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:7474/"]
+      test: ["CMD", "bash", "-c", "cat < /dev/null > /dev/tcp/localhost/7687"]
       interval: 30s
       timeout: 10s
       retries: 5
+      start_period: 60s
 
   # Omega_KG Capture Service
   omega-kg:
-    build: . # Build from the Dockerfile in the current directory
+    # Build from current directory
+    build: .
     container_name: apexsigma.omega.kg
-    restart: unless-stopped
+    # Don't auto-restart lifecycle container
+    restart: "no"
     ports:
-      - "8765:8765" # Expose webhook to the host for the browser extension
+      # Webhook port
+      - "8765:8765"
     networks:
       - apexsigma.net
     volumes:
-      # Mount your Obsidian vault from the host into the container
-      - "${OBSIDIAN_VAULT_PATH}:/vault:ro" # Read-only mount
+      # Mount Obsidian vault from host into container
+      - "${OBSIDIAN_VAULT_PATH}:/vault:ro"
     env_file:
-      - .env # Load environment variables from .env file
+      # Load environment variables from .env file
+      - .env
+    environment:
+      # Override Neo4j URI to use Docker network hostname
+      NEO4J_URI: bolt://neo4j-db:7687
     depends_on:
       neo4j-db:
-        condition: service_healthy # Wait for Neo4j to be healthy before starting
+        # Wait for Neo4j healthy before starting
+        condition: service_healthy
+    profiles:
+      # On-demand execution only
+      - lifecycle
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8765/health"]
+      test:
+        - "CMD"
+        - "python"
+        - "-c"
+        - >
+          import urllib.request;
+          urllib.request.urlopen('http://localhost:8765/health')
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 30s

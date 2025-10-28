@@ -1,30 +1,17 @@
 version: 0.1
 cli:
-  version: 1.19.0
+  version: 1.25.0
 lint:
   enabled:
-    - osv-scanner@2.2.3
-    - ruff
-    - isort
-    - mypy
-    - pyright
-    - bandit
-    - trivy
-    - semgrep
-    - markdownlint
-    - yamllint
-    - actionlint
-    - prettier
-    - shfmt
-    - shellcheck
-    - checkov
-    - hadolint
-    - trufflehog
-    - git-diff-check
-    - codespell
-    - gitleaks
-    - reuse
-    - markdown-link-check
-    - markdown-table-formatter
-    - markdown-spellcheck
-    - markdown-toc
+    # Python linting via Poetry (not Trunk - Windows compatibility)
+    - ruff@0.6.9
+    - mypy@1.11.2
+    - isort@5.13.2
+    - bandit@1.8.0
+    
+    # Reliable cross-platform tools via Trunk
+    - trufflehog@3.90.11
+    - git-diff-check      # Built-in git checking
+    - prettier@3.4.2      # Code formatting
+    - markdownlint@0.39.0 # Markdown linting
+    - yamllint@1.35.1     # YAML validation
