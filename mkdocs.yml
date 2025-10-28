@@ -1,6 +1,6 @@
 site_name: Omega_KG Documentation
-repo_url: https://github.com/your-org/omega-kg
-repo_name: your-org/omega-kg
+repo_url: https://github.com/ApexSigma-Solutions/omega_kg
+repo_name: ApexSigma-Solutions/omega_kg
 theme:
   name: material
   features:
@@ -20,7 +20,24 @@ plugins:
             docstring_style: google
 nav:
   - Home: index.md
-  - API Reference: reference.md
+  - Getting Started:
+      - Installation: TESTING_SETUP.md
+      - Configuration: SETTINGS_FIX.md
+      - Neo4j Setup: NEO4J_SETUP.md
+  - Documentation:
+      - Development Standards: DEVELOPMENT_STANDARDS.md
+      - API Reference: reference.md
+      - Project Tree: Omega_KG.tree.md
+  - Implementation:
+      - Phase 3 Summary: PHASE_3_SUMMARY.md
+      - Implementation Summary: IMPLEMENTATION_SUMMARY.md
+      - Connection Recovery: CONNECTION_RECOVERY.md
+  - Reports:
+      - Test Report: TEST_REPORT.md
+      - Test Report Summary: TEST_REPORT_SUMMARY.md
+      - Completion Report: COMPLETION_REPORT.md
+      - Final Verification: FINAL_VERIFICATION.md
+      - Delivery Summary: DELIVERY_SUMMARY.md
 markdown_extensions:
   - admonition
   - codehilite
@@ -36,4 +53,4 @@ markdown_extensions:
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/your-org/omega-kg
+      link: https://github.com/ApexSigma-Solutions/omega_kg
