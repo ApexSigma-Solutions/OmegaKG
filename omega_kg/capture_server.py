@@ -81,7 +81,7 @@ def generate_conversation_hash(data: ConversationData) -> str:
         data (ConversationData): Conversation payload whose platform, url, and messages list are used to derive the identifier.
     
     Returns:
-        str: An 8-character hexadecimal string derived from the MD5 hash of "platform-url-message_count".
+        str: An 8-character hexadecimal string derived from the MD5 hash of the conversation's platform, URL, and message count.
     """
     content = f"{data.platform}-{data.url}-{len(data.messages)}"
     hash_obj = hashlib.md5(content.encode())
@@ -338,15 +338,15 @@ async def root():
 @app.get("/health")
 async def health_check():
     """
-    Provides a health snapshot indicating Obsidian vault accessibility and Neo4j connectivity.
+    Provide a health snapshot of Obsidian vault accessibility and Neo4j connectivity.
     
     Returns:
         dict: Health information containing:
             - status (str): Overall status, typically "healthy".
             - timestamp (str): ISO 8601 timestamp of the check.
-            - vault_accessible (bool): True if the configured vault path exists.
-            - vault_path (str, optional): The configured vault path.
-            - neo4j_connected (bool): True if a simple query to Neo4j succeeded.
+            - vault_accessible (bool): `True` if the configured vault path exists, `False` otherwise.
+            - vault_path (str, optional): The configured vault path if available.
+            - neo4j_connected (bool): `True` if a simple query to Neo4j succeeded, `False` otherwise.
             - neo4j_error (str, optional): Error message when Neo4j connectivity failed.
     """
     health_status = {

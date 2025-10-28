@@ -25,7 +25,7 @@ def check_capture_server():
     Emits brief status messages to stdout about the check and any errors encountered.
     
     Returns:
-        `True` if the health endpoint returned HTTP 200 and a JSON payload, `False` otherwise.
+        bool: True if the server returned HTTP 200 and a JSON payload, False otherwise.
     """
     print("1️⃣  Checking capture server... - troubleshoot_extension.py:23")
     try:
@@ -88,10 +88,12 @@ def check_vault_accessible():
 
 def check_neo4j():
     """
-    Check connectivity to the configured Neo4j instance and report basic ChatSession node counts.
+    Check connectivity to the configured Neo4j instance and print a basic count of ChatSession nodes.
+    
+    Prints diagnostic messages about connection status and the total number of ChatSession nodes found.
     
     Returns:
-        bool: `True` if a simple test query succeeds and the ChatSession node count is retrieved, `False` otherwise.
+        bool: `True` if a test query succeeds against the configured Neo4j server, `False` otherwise.
     """
     print("\n3️⃣  Checking Neo4j... - troubleshoot_extension.py:77")
     try:
