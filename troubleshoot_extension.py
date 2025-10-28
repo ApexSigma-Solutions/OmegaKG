@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Troubleshoot Omega_KG Chrome Extension capture issues.
 

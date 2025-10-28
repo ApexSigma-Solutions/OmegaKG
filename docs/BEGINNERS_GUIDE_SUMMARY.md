@@ -128,6 +128,7 @@ Solutions for common problems:
 After following the guide, users can verify:
 
 ### ✅ Data Storage
+
 ```bash
 # See all data types and counts
 poetry run python << 'EOF'
@@ -144,6 +145,7 @@ EOF
 ```
 
 ### ✅ Data Retrieval
+
 ```bash
 # Query tasks and their status
 poetry run python << 'EOF'
@@ -160,6 +162,7 @@ EOF
 ```
 
 ### ✅ Obsidian Sync
+
 ```bash
 # Verify markdown files sync to Neo4j
 poetry run python << 'EOF'
@@ -186,6 +189,7 @@ EOF
 ```
 
 ### ✅ Data Relationships
+
 ```bash
 # Verify decisions link to tasks
 poetry run python << 'EOF'
@@ -231,18 +235,22 @@ Getting Started
 ## The Three Verification Points
 
 ### Point 1: Data Creation & Storage (Step 4-5)
+
 **"Is data being captured and stored in Neo4j?"**
 
 Test with:
+
 ```bash
 poetry run python -m omega_kg.poc_okg
 # Then query to verify data exists
 ```
 
 ### Point 2: Data Retrieval (Step 5)
+
 **"Is data queriable and retrievable?"**
 
 Test with:
+
 ```bash
 poetry run python << 'EOF'
 from neo4j import GraphDatabase
@@ -259,9 +267,11 @@ EOF
 ```
 
 ### Point 3: Obsidian Sync (Step 6)
+
 **"Is Obsidian sync working properly?"**
 
 Test with:
+
 ```bash
 # Create markdown file → Sync to Neo4j → Query to verify
 # Guide provides complete example with expected output
@@ -272,26 +282,31 @@ Test with:
 ## Key Features of the Guide
 
 ✅ **Beginner-Friendly**
+
 - No assumptions of prior knowledge
 - Explains all terms
 - Visual organization with emojis
 
 ✅ **Hands-On**
+
 - Every command is copy-paste ready
 - All examples show expected output
 - Clear markers for success vs failure
 
 ✅ **Complete**
+
 - Prerequisites through verification
 - From 0 to working system
 - Troubleshooting for common issues
 
 ✅ **Modular**
+
 - Can skip to specific section
 - Each step builds on previous
 - No cross-dependencies
 
 ✅ **Practical**
+
 - Real-world examples
 - 7 common tasks with solutions
 - Integration with Obsidian
@@ -330,6 +345,7 @@ Users will have:
 6. ✅ Understanding of the system
 
 **Next steps for users:**
+
 - Create real data
 - Integrate with Linear
 - Set up email notifications
@@ -340,12 +356,12 @@ Users will have:
 
 ## Files Included
 
-| File | Purpose | Audience |
-|------|---------|----------|
-| GETTING_STARTED_BEGINNER.md | Complete walkthrough | New users |
-| COMMAND_CHEATSHEET.md | Quick reference | All users |
-| DEVELOPMENT_STANDARDS.md | Best practices | Developers |
-| This summary | Overview & guide | Project leads |
+| File                        | Purpose              | Audience      |
+| --------------------------- | -------------------- | ------------- |
+| GETTING_STARTED_BEGINNER.md | Complete walkthrough | New users     |
+| COMMAND_CHEATSHEET.md       | Quick reference      | All users     |
+| DEVELOPMENT_STANDARDS.md    | Best practices       | Developers    |
+| This summary                | Overview & guide     | Project leads |
 
 ---
 
@@ -358,11 +374,13 @@ Users will have:
 ### In Documentation:
 
 The guide is included in mkdocs.yml navigation under:
+
 - Getting Started → Beginner's Guide
 
 ### In README:
 
 Consider adding:
+
 ```markdown
 ## Quick Start
 

@@ -42,6 +42,7 @@ poetry run python -m omega_kg.capture_server
 ```
 
 Verify server is running:
+
 ```powershell
 Invoke-WebRequest http://127.0.0.1:8765/health
 # Should return: {"status":"healthy","vault_accessible":true,"neo4j_connected":true}
@@ -52,6 +53,7 @@ Invoke-WebRequest http://127.0.0.1:8765/health
 ### Automatic Capture
 
 The extension automatically captures conversations:
+
 - When page loads (after 3 seconds)
 - When you switch tabs (on tab hide)
 - When you close/refresh the page
@@ -72,11 +74,13 @@ Click the floating **Ω** button (bottom-right corner) to force immediate captur
 ### Service Worker Becomes Inactive
 
 **This is normal Chrome behavior!** Service workers go inactive to save resources. The extension will automatically wake up when:
+
 - You visit an AI chat page
 - A message is sent from content script
 - The periodic health check alarm fires (every 5 minutes)
 
 To verify service worker status:
+
 1. Go to `chrome://extensions/`
 2. Find "Omega_KG Chat Capture"
 3. Click "service worker" link
@@ -87,15 +91,18 @@ To verify service worker status:
 **Check these in order:**
 
 1. **Is the capture server running?**
+
    ```powershell
    Invoke-WebRequest http://127.0.0.1:8765/health
    ```
 
 2. **Are you on a supported platform?**
+
    - Look for the floating Ω button (bottom-right)
    - If no button appears, platform is not supported
 
 3. **Check browser console (F12)**
+
    ```
    [Omega_KG] Initialized for Claude.ai  ✅ Good
    [Omega_KG] Extracted 4 messages       ✅ Good
@@ -103,6 +110,7 @@ To verify service worker status:
    ```
 
 4. **Check server logs**
+
    - Server should show: `INFO - Received capture request: Claude.ai (X messages)`
    - If no logs, extension isn't sending requests
 
@@ -125,11 +133,13 @@ AI platforms frequently change their HTML structure. If messages aren't being ex
 **Error**: `❌ Server error: Failed to fetch`
 
 **Causes**:
+
 - Capture server not running on port 8765
 - Firewall blocking localhost connections
 - CORS issues (should not happen with localhost)
 
 **Fix**:
+
 ```powershell
 # Restart server
 poetry run python -m omega_kg.capture_server
@@ -144,7 +154,7 @@ Get-NetTCPConnection -LocalPort 8765
 Chrome Extension (content.js)
     ↓ Extract messages from DOM
     ↓ Send to background.js
-Background Service Worker (background.js)  
+Background Service Worker (background.js)
     ↓ POST to http://localhost:8765/capture
 Capture Server (capture_server.py)
     ↓ Format as markdown
@@ -169,6 +179,7 @@ Knowledge Graph (Neo4j)
 All logs are prefixed with `[Omega_KG]` for easy filtering.
 
 **Content script logs** (F12 on AI chat page):
+
 ```javascript
 [Omega_KG] Initialized for Claude.ai
 [Omega_KG] Found 6 message elements on Claude.ai
@@ -177,6 +188,7 @@ All logs are prefixed with `[Omega_KG]` for easy filtering.
 ```
 
 **Service worker logs** (`chrome://extensions/` → service worker):
+
 ```javascript
 [Omega_KG] Service worker received message: CAPTURE_CONVERSATION
 [Omega_KG] Attempting to save to localhost...
@@ -206,6 +218,7 @@ Part of the Omega_KG project. See root LICENSE file.
 ## Version History
 
 - **1.1.0** (2025-10-28)
+
   - Fixed service worker inactive issue with better logging
   - Updated DOM selectors for current Claude.ai structure
   - Added manual capture button (floating Ω)

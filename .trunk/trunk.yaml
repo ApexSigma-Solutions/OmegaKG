@@ -4,12 +4,13 @@ cli:
 lint:
   enabled:
     # Python linting via Poetry (not Trunk - Windows compatibility)
-    # poetry run ruff check
-    # poetry run mypy
-    # poetry run isort
-    # poetry run bandit
+    - ruff@0.6.9
+    - mypy@1.11.2
+    - isort@5.13.2
+    - bandit@1.8.0
     
     # Reliable cross-platform tools via Trunk
+    - trufflehog@3.90.11
     - git-diff-check      # Built-in git checking
     - prettier@3.4.2      # Code formatting
     - markdownlint@0.39.0 # Markdown linting

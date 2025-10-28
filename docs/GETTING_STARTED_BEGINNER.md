@@ -1084,10 +1084,10 @@ poetry run mypy omega_kg/
 
 ### Important URLs
 
-| Service       | URL                                             | Login               |
-| ------------- | ----------------------------------------------- | ------------------- |
+| Service       | URL                                               | Login               |
+| ------------- | ------------------------------------------------- | ------------------- |
 | Neo4j Browser | <http://localhost:7474>                           | neo4j / password    |
-| Obsidian      | localhost or app                                | Your vault          |
+| Obsidian      | localhost or app                                  | Your vault          |
 | GitHub        | <https://github.com/ApexSigma-Solutions/omega_kg> | Your GitHub account |
 
 ### Key Files

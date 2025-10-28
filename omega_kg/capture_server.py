@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Omega_KG Capture Server
 

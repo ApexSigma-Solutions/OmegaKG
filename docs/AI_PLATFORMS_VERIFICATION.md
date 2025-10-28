@@ -40,14 +40,14 @@ The verification script now displays detailed folder structure with AI platforms
 
 ## Current Vault Structure Status
 
-| Folder | Status | Files | Sub-folders |
-|--------|--------|-------|-------------|
-| Plans | ✅ Found | 13 | N/A |
-| Tasks | ✅ Found | 5 | N/A |
-| Archive | ✅ Found | 0 | N/A |
-| **AI_Conversations** | ✅ Found | 0 | **6 AI platforms** |
-| Daily | ✅ Found | 0 | N/A |
-| Sessions | ✅ Found | 2 | N/A |
+| Folder               | Status   | Files | Sub-folders        |
+| -------------------- | -------- | ----- | ------------------ |
+| Plans                | ✅ Found | 13    | N/A                |
+| Tasks                | ✅ Found | 5     | N/A                |
+| Archive              | ✅ Found | 0     | N/A                |
+| **AI_Conversations** | ✅ Found | 0     | **6 AI platforms** |
+| Daily                | ✅ Found | 0     | N/A                |
+| Sessions             | ✅ Found | 2     | N/A                |
 
 ## Running the Script
 

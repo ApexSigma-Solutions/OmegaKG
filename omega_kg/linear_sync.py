@@ -7,7 +7,7 @@ with updates reflected back to Obsidian vault files.
 
 import logging
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
 
 from neo4j import GraphDatabase
 from pydantic import BaseModel
