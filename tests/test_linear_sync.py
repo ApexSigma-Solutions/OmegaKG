@@ -140,3 +140,28 @@ class TestHandleIssueDeletion:
 
             sync._handle_issue_deletion(issue)
             mock_session.run.assert_called_once()
+    @patch("omega_kg.linear_sync.GraphDatabase.driver")
+    def test_handle_issue_deletion_updates_db(self, mock_driver_class):
+        """_handle_issue_deletion should archive the task in Neo4j."""
+        driver = MagicMock()
+        session = MagicMock()
+        driver.session.return_value.__enter__.return_value = session
+        mock_driver_class.return_value = driver
+
+        with patch("omega_kg.linear_sync.settings") as mock_settings:
+            mock_settings.neo4j_uri = "bolt://localhost:7687"
+            mock_settings.neo4j_user = "neo4j"
+            mock_settings.neo4j_password = "password"
+            mock_settings.obsidian_vault_path = "./vault"
+
+            sync = LinearSync()
+            issue = {"identifier": "LIN-123"}
+            sync._handle_issue_deletion(issue)
+
+        # Validate Cypher and parameters
+        cypher = session.run.call_args[0][0]
+        params = session.run.call_args.kwargs
+        assert "MATCH (t:Task {linear_id: $linear_id})" in cypher
+        assert "SET t.status = 'archived'" in cypher
+        assert "t.linear_status = 'Canceled'" in cypher
+        assert params["linear_id"] == "LIN-123"

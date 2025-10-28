@@ -157,3 +157,19 @@ class TestCLI:
         assert result.exit_code == 0
         assert "(none)" in result.output
         mock_sync.close.assert_called_once()
+    @patch('omega_kg.cli.TaskLifecycle')
+    def test_lifecycle_command_no_email(self, mock_lifecycle_class):
+        """Test the lifecycle command with --no-email flag (no email should be sent)."""
+        mock_lc = Mock()
+        mock_report = "Report without email"
+        mock_lc.generate_report.return_value = mock_report
+        mock_lifecycle_class.return_value = mock_lc
+
+        result = self.runner.invoke(cli, ['lifecycle', '--no-email'])
+
+        assert result.exit_code == 0
+        # Should run lifecycle normally (not dry-run)
+        mock_lc.enforce_lifecycle.assert_called_once_with(dry_run=False)
+        # But must not send email due to --no-email
+        mock_lc.send_email_report.assert_not_called()
+        mock_lc.close.assert_called_once()
