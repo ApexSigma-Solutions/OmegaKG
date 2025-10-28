@@ -104,7 +104,11 @@ jobs:
           path: ~/.cache/pypoetry
           key: ${{ runner.os }}-poetry-${{ hashFiles('**/poetry.lock') }}
       - name: Install dependencies
-        run: poetry install --with dev
+        run: |
+          poetry install --with dev
+          poetry check
+      - name: Verify httpx installation
+        run: poetry run python -c "import httpx; print('httpx version:', httpx.__version__)"
       - name: Run pytest with coverage
         run: poetry run pytest --cov=omega_kg --cov-report=xml --cov-report=term --junitxml=junit.xml
       - name: Upload test results to Trunk
