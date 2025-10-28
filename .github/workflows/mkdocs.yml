@@ -1,3 +1,4 @@
+---
 name: Deploy MkDocs Documentation
 
 on:
@@ -5,6 +6,9 @@ on:
     branches:
       - alpha
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   deploy:
@@ -16,7 +20,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.14'
+          python-version: "3.12"
 
       - name: Install Poetry
         run: |
@@ -28,6 +32,8 @@ jobs:
 
       - name: Deploy MkDocs to GitHub Pages
         run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
           poetry run mkdocs gh-deploy --force
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
