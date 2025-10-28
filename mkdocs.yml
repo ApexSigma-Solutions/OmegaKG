@@ -21,6 +21,7 @@ plugins:
 nav:
   - Home: index.md
   - Getting Started:
+      - Beginner's Guide: GETTING_STARTED_BEGINNER.md
       - Installation: TESTING_SETUP.md
       - Configuration: SETTINGS_FIX.md
       - Neo4j Setup: NEO4J_SETUP.md
