@@ -29,6 +29,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 });
 
+/**
+ * Send capture data to the local capture endpoint and return the parsed JSON response.
+ *
+ * @param {Object} data - Payload to send. Expected properties include:
+ *   - platform {string} — source platform identifier.
+ *   - messages {Array} — captured message objects.
+ *   - url {string} — URL where the capture originated.
+ * @returns {Object} The JSON-decoded response from the capture server.
+ * @throws {Error} If the network request fails or the server responds with a non-OK status; the error message includes the HTTP status and server response text.
+ */
 async function saveToLocalhost(data) {
   console.log('[Omega_KG] Attempting to save to localhost... - background.js:33', {
     platform: data.platform,

@@ -19,7 +19,12 @@ except ImportError as e:
 
 
 def check_capture_server():
-    """Check if capture server is running and responding."""
+    """
+    Verify the local capture server at http://127.0.0.1:8765/health is running and responding.
+    
+    Returns:
+        bool: `True` if the server returned HTTP 200 and a JSON payload, `False` otherwise.
+    """
     print("1️⃣  Checking capture server... - troubleshoot_extension.py:23")
     try:
         response = requests.get("http://127.0.0.1:8765/health", timeout=2)
@@ -40,7 +45,14 @@ def check_capture_server():
 
 
 def check_vault_accessible():
-    """Check if Obsidian vault is accessible."""
+    """
+    Verify the Obsidian vault is accessible and ensure the AI_Conversations directory and expected platform subfolders exist.
+    
+    If the AI_Conversations platform subfolders are missing, this function will create them.
+    
+    Returns:
+        bool: `True` if the vault and AI_Conversations directory are accessible (platform folders present or created), `False` otherwise.
+    """
     print("\n2️⃣  Checking Obsidian vault... - troubleshoot_extension.py:44")
     vault_path = Path(settings.obsidian_vault_path)
     
@@ -73,7 +85,12 @@ def check_vault_accessible():
 
 
 def check_neo4j():
-    """Check Neo4j connectivity."""
+    """
+    Verify connectivity to the configured Neo4j instance and report basic node counts.
+    
+    Returns:
+        bool: `true` if a connection to the Neo4j server can be established and a simple query succeeds, `false` otherwise.
+    """
     print("\n3️⃣  Checking Neo4j... - troubleshoot_extension.py:77")
     try:
         driver = GraphDatabase.driver(
@@ -101,7 +118,11 @@ def check_neo4j():
 
 
 def check_recent_captures():
-    """Check for recently captured conversations."""
+    """
+    Summarizes recent captured conversations found under the vault's AI_Conversations folder.
+    
+    Prints warnings if the vault or AI_Conversations directory is missing, reports the total number of Markdown capture files, and lists up to the five most recent captures with their platform (parent folder), filename, and modification timestamp.
+    """
     print("\n4️⃣  Checking recent captures... - troubleshoot_extension.py:105")
     vault_path = Path(settings.obsidian_vault_path)
     ai_conv_path = vault_path / "AI_Conversations"
@@ -130,7 +151,11 @@ def check_recent_captures():
 
 
 def print_extension_instructions():
-    """Print instructions for checking chrome extension."""
+    """
+    Print a concise checklist and tip to help troubleshoot the Omega_KG Chrome extension.
+    
+    Prints a series of human-readable steps to verify the extension is loaded, in developer mode, visible as "Omega_KG Chat Capture", present on supported AI platforms, showing the floating Ω button, and emitting logs in the service worker and browser console, followed by a tip to force a manual capture.
+    """
     print("\n5️⃣  Chrome Extension Checklist: - troubleshoot_extension.py:134")
     print("□ Extension loaded in chrome://extensions/ - troubleshoot_extension.py:135")
     print("□ Developer mode enabled - troubleshoot_extension.py:136")
@@ -144,7 +169,11 @@ def print_extension_instructions():
 
 
 def main():
-    """Run all diagnostic checks."""
+    """
+    Run a suite of diagnostic checks for the Omega_KG Chrome Extension capture workflow and report results to the console.
+    
+    This function executes health checks for the local capture server, Obsidian vault accessibility (including required AI_Conversations subfolders), and Neo4j connectivity, then lists recent captured conversation files and prints a checklist of extension troubleshooting steps. All results and guidance are written to standard output.
+    """
     print("= - troubleshoot_extension.py:148" * 60)
     print("Omega_KG Chrome Extension Diagnostics - troubleshoot_extension.py:149")
     print("= - troubleshoot_extension.py:150" * 60)
