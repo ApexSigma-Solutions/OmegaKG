@@ -35,9 +35,11 @@ app = FastAPI(
 )
 
 # Add CORS middleware for chrome extension
+# SECURITY NOTE: Using wildcard origin for development/testing purposes.
+# In production, restrict to specific Chrome extension ID: chrome-extension://<extension-id>
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Chrome extension origin
+    allow_origins=["*"],  # Allows all origins for Chrome extension development
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

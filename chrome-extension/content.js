@@ -161,7 +161,7 @@ class ChatCapture {
         });
       } catch (err) {
         console.warn(
-          `[Omega_KG] Error extracting message ${index}: - content.js:142`,
+          "[Omega_KG] Error extracting message " + index + ": - content.js:142",
           err,
         );
       }
