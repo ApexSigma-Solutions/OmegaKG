@@ -63,3 +63,13 @@ class TestCheckNodes:
         # The script should run without syntax errors (connection errors are expected)
         # It will fail with connection errors, but should not have syntax errors
         assert result.returncode != 2  # Not a syntax error
+    @patch('omega_kg.check_nodes.GraphDatabase.driver')
+    def test_query_constant_shape(self, mock_driver):
+        """Ensure the node inspection query matches expected structure."""
+        import importlib
+        # Prevent real connections
+        mock_driver.return_value = Mock()
+        import omega_kg.check_nodes as mod
+        importlib.reload(mod)
+        assert hasattr(mod, "query")
+        assert mod.query.strip() == "MATCH (n) RETURN count(n) as count, labels(n) as labels LIMIT 10"

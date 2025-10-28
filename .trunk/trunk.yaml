@@ -22,10 +22,10 @@ lint:
     - trufflehog
     - codespell
     - gitleaks
-  enabled:
-    - go@1.19.5
-    - node@18.12.1
-    - python@3.10.8
+runtimes:
+  - go@1.19.5
+  - node@18.12.1
+  - python@3.10.8
 plugins:
   sources:
     - id: trunk

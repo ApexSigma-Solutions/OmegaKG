@@ -88,3 +88,23 @@ class TestKnowledgeGraphSchema:
 
             assert status["connected"] is True
             assert status["mock_mode"] is False
+
+    @patch("omega_kg.neo4j_schema.GraphDatabase.driver")
+    def test_initialize_schema_statements_emitted(self, mock_driver_class, mock_neo4j_driver):
+        """initialize_schema should emit expected constraint and index statements."""
+        # Health check during __init__
+        session = mock_neo4j_driver.session.return_value.__enter__.return_value
+        session.run.return_value.single.return_value = {"status": 1}
+        mock_driver_class.return_value = mock_neo4j_driver
+
+        schema = KnowledgeGraphSchema(mock_mode=False)
+        # Ensure subsequent calls use our mock driver
+        schema.driver = mock_neo4j_driver
+        schema.initialize_schema()
+
+        queries = [call.args[0] for call in session.run.call_args_list]
+        joined = "\n".join(queries)
+        assert "CREATE CONSTRAINT task_uid IF NOT EXISTS" in joined
+        assert "CREATE CONSTRAINT plan_id IF NOT EXISTS" in joined
+        assert "CREATE INDEX task_status IF NOT EXISTS" in joined
+        assert "CREATE INDEX task_created IF NOT EXISTS" in joined
