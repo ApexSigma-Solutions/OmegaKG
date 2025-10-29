@@ -7,7 +7,7 @@ const CAPTURE_ENDPOINT = "http://localhost:8765/capture";
 // Listen for messages from content scripts
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   console.log(
-    "[Omega_KG] Service worker received message: - background.js:9",
+    "[Omega_KG] Service worker received message:",
     message.type,
   );
 
@@ -15,14 +15,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     saveToLocalhost(message.data)
       .then((response) => {
         console.log(
-          "[Omega_KG] ✅ Captured successfully: - background.js:14",
+          "[Omega_KG] ✅ Captured successfully:",
           response,
         );
         sendResponse({ success: true, response });
       })
       .catch((error) => {
         console.error(
-          "[Omega_KG] ❌ Capture failed: - background.js:18",
+          "[Omega_KG] ❌ Capture failed:",
           error,
         );
         sendResponse({ success: false, error: error.message });
@@ -32,7 +32,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 
   if (message.type === "PING") {
-    console.log("[Omega_KG] Service worker is alive - background.js:26");
+    console.log("[Omega_KG] Service worker is alive - background.js:35");
     sendResponse({ alive: true, timestamp: new Date().toISOString() });
     return true;
   }
@@ -47,7 +47,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
  */
 async function saveToLocalhost(data) {
   console.log(
-    "[Omega_KG] Attempting to save to localhost... - background.js:33",
+    "[Omega_KG] Attempting to save to localhost...",
     {
       platform: data.platform,
       messageCount: data.messages?.length,
@@ -70,11 +70,11 @@ async function saveToLocalhost(data) {
     }
 
     const result = await response.json();
-    console.log("[Omega_KG] Server response: - background.js:54", result);
+    console.log("[Omega_KG] Server response: - background.js:73", result);
     return result;
   } catch (error) {
     console.error(
-      "[Omega_KG] ❌ Server error: - background.js:57",
+      "[Omega_KG] ❌ Server error:",
       error.message,
     );
     throw error;
@@ -90,12 +90,12 @@ chrome.alarms.onAlarm.addListener((alarm) => {
       .then((r) => r.json())
       .then((data) =>
         console.log(
-          "[Omega_KG] Server status: - background.js:69",
+          "[Omega_KG] Server status:",
           data.status,
         ),
       )
       .catch(() =>
-        console.warn("[Omega_KG] Server offline - background.js:70"),
+        console.warn("[Omega_KG] Server offline - background.js:98"),
       );
   }
 });
