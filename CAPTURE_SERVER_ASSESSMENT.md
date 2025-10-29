@@ -128,7 +128,7 @@ Platforms: 11 different AI platforms and services
 1. **Content Tagging & Classification**
    - Auto-tag conversations: [code], [debugging], [architecture], [research]
    - Sentiment analysis: [productive], [exploratory], [blocked]
-   - Store in metadata: \	ags: [code, architecture]\
+   - Store in metadata: tags: [code, architecture]
 
 2. **Neo4j Integration** 
    - Auto-percolate captured conversations to Neo4j
