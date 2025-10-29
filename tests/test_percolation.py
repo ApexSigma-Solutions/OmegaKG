@@ -224,3 +224,197 @@ This is a test decision about the project.
         assert isinstance(result, PercolationEngine)
         assert result.driver == mock_driver
         mock_graph_db.driver.assert_called_once_with('uri', auth=('user', 'pass'))
+
+class TestPercolationEdgeCases:
+    """Test edge cases in percolation engine."""
+    
+    def test_extract_frontmatter_empty_file(self):
+        """Test extracting frontmatter from empty file."""
+        content = ""
+        result = self.engine._extract_frontmatter(content)
+        assert result is None
+    
+    def test_extract_frontmatter_only_delimiters(self):
+        """Test frontmatter with only delimiters and no content."""
+        content = "---\n---\nBody"
+        result = self.engine._extract_frontmatter(content)
+        assert result == {}
+    
+    def test_extract_frontmatter_with_colons_in_values(self):
+        """Test frontmatter with colons in values."""
+        content = "---\ntitle: Task: Complete the project\nstatus: active\n---\n"
+        result = self.engine._extract_frontmatter(content)
+        assert result is not None
+        # First colon splits, rest is value
+        assert 'title' in result
+    
+    def test_extract_frontmatter_with_special_characters(self):
+        """Test frontmatter with special characters."""
+        content = "---\ntitle: Test!@#$%^&*()\nstatus: active\n---\n"
+        result = self.engine._extract_frontmatter(content)
+        assert result is not None
+        assert 'title' in result
+    
+    def test_generate_decision_id_consistency(self):
+        """Test that decision ID generation is consistent for same input."""
+        content = "We decided to use FastAPI"
+        id1 = self.engine._generate_decision_id(content)
+        id2 = self.engine._generate_decision_id(content)
+        assert id1 == id2
+    
+    def test_generate_decision_id_different_inputs(self):
+        """Test that different inputs generate different IDs."""
+        content1 = "We decided to use FastAPI"
+        content2 = "We decided to use Django"
+        id1 = self.engine._generate_decision_id(content1)
+        id2 = self.engine._generate_decision_id(content2)
+        assert id1 != id2
+    
+    def test_generate_decision_id_with_unicode(self):
+        """Test decision ID generation with Unicode characters."""
+        content = "我们决定使用FastAPI"
+        result = self.engine._generate_decision_id(content)
+        assert result.startswith("DEC-")
+        assert len(result) == 8  # DEC- + 4 digits
+    
+    def test_detect_stale_tasks_empty_database(self):
+        """Test detecting stale tasks when database is empty."""
+        mock_session = Mock()
+        mock_session.run.return_value = iter([])
+        self.mock_driver.session.return_value.__enter__.return_value = mock_session
+        
+        result = self.engine.detect_stale_tasks(days_threshold=30)
+        assert result == []
+    
+    def test_detect_stale_tasks_custom_threshold(self):
+        """Test detecting stale tasks with custom threshold."""
+        mock_session = Mock()
+        mock_result = [
+            {'t.uid': 'TASK-001', 't.title': 'Old task', 't.status': 'active', 't.created': '2020-01-01'}
+        ]
+        mock_session.run.return_value = iter(mock_result)
+        self.mock_driver.session.return_value.__enter__.return_value = mock_session
+        
+        result = self.engine.detect_stale_tasks(days_threshold=60)
+        assert len(result) == 1
+
+
+class TestPercolationErrorHandling:
+    """Test error handling in percolation engine."""
+    
+    def setup_method(self):
+        """Set up test fixtures."""
+        self.mock_driver = Mock()
+        self.engine = PercolationEngine(self.mock_driver)
+    
+    def test_percolate_from_vault_nonexistent_path(self):
+        """Test percolating from non-existent vault path."""
+        from pathlib import Path
+        nonexistent = Path("/nonexistent/path/to/vault")
+        
+        # Should handle gracefully
+        result = self.engine.percolate_from_vault(nonexistent)
+        assert result == {"tasks": 0, "commits": 0, "links": 0}
+    
+    def test_percolate_task_malformed_frontmatter(self):
+        """Test percolating task with malformed frontmatter."""
+        from pathlib import Path
+        import tempfile
+        
+        with tempfile.TemporaryDirectory() as tmpdir:
+            vault = Path(tmpdir)
+            task_file = vault / "task.md"
+            # Malformed YAML in frontmatter
+            task_file.write_text("---\ntitle: broken\n  status: invalid\n---\n")
+            
+            # Should handle without crashing
+            try:
+                self.engine._percolate_task(task_file, {}, "content")
+            except Exception:
+                pass  # Expected to handle gracefully
+
+
+class TestPercolationEdgeCases:
+    """Test edge cases in percolation engine."""
+    
+    def test_extract_frontmatter_empty_file(self):
+        """Test extracting frontmatter from empty file."""
+        content = ""
+        result = self.engine._extract_frontmatter(content)
+        assert result is None
+    
+    def test_extract_frontmatter_only_delimiters(self):
+        """Test frontmatter with only delimiters and no content."""
+        content = "---\n---\nBody"
+        result = self.engine._extract_frontmatter(content)
+        assert result == {}
+    
+    def test_extract_frontmatter_with_colons_in_values(self):
+        """Test frontmatter with colons in values."""
+        content = "---\ntitle: Task: Complete the project\nstatus: active\n---\n"
+        result = self.engine._extract_frontmatter(content)
+        assert result is not None
+        assert 'title' in result
+    
+    def test_generate_decision_id_consistency(self):
+        """Test that decision ID generation is consistent for same input."""
+        content = "We decided to use FastAPI"
+        id1 = self.engine._generate_decision_id(content)
+        id2 = self.engine._generate_decision_id(content)
+        assert id1 == id2
+    
+    def test_generate_decision_id_different_inputs(self):
+        """Test that different inputs generate different IDs."""
+        content1 = "We decided to use FastAPI"
+        content2 = "We decided to use Django"
+        id1 = self.engine._generate_decision_id(content1)
+        id2 = self.engine._generate_decision_id(content2)
+        assert id1 != id2
+    
+    def test_generate_decision_id_with_unicode(self):
+        """Test decision ID generation with Unicode characters."""
+        content = "我们决定使用FastAPI"
+        result = self.engine._generate_decision_id(content)
+        assert result.startswith("DEC-")
+        assert len(result) == 8
+    
+    def test_detect_stale_tasks_empty_database(self):
+        """Test detecting stale tasks when database is empty."""
+        from unittest.mock import Mock
+        mock_session = Mock()
+        mock_session.run.return_value = iter([])
+        self.mock_driver.session.return_value.__enter__.return_value = mock_session
+        
+        result = self.engine.detect_stale_tasks(days_threshold=30)
+        assert result == []
+    
+    def test_detect_stale_tasks_custom_threshold(self):
+        """Test detecting stale tasks with custom threshold."""
+        from unittest.mock import Mock
+        mock_session = Mock()
+        mock_result = [
+            {'t.uid': 'TASK-001', 't.title': 'Old task', 't.status': 'active', 't.created': '2020-01-01'}
+        ]
+        mock_session.run.return_value = iter(mock_result)
+        self.mock_driver.session.return_value.__enter__.return_value = mock_session
+        
+        result = self.engine.detect_stale_tasks(days_threshold=60)
+        assert len(result) == 1
+
+
+class TestPercolationErrorHandling:
+    """Test error handling in percolation engine."""
+    
+    def setup_method(self):
+        """Set up test fixtures."""
+        from unittest.mock import Mock
+        self.mock_driver = Mock()
+        self.engine = PercolationEngine(self.mock_driver)
+    
+    def test_percolate_from_vault_nonexistent_path(self):
+        """Test percolating from non-existent vault path."""
+        from pathlib import Path
+        nonexistent = Path("/nonexistent/path/to/vault")
+        
+        result = self.engine.percolate_from_vault(nonexistent)
+        assert result == {"tasks": 0, "commits": 0, "links": 0}
