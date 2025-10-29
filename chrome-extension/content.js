@@ -10,11 +10,13 @@ class ChatCapture {
 
   detectPlatform() {
     const hostname = window.location.hostname;
+    const pathname = window.location.pathname;
     
     if (hostname.includes('claude.ai')) return 'claude';
     if (hostname.includes('openai.com')) return 'chatgpt';
     if (hostname.includes('gemini.google.com')) return 'gemini';
     if (hostname.includes('perplexity.ai')) return 'perplexity';
+    if (hostname.includes('github.com') && pathname.includes('/copilot/')) return 'github_copilot';
     
     return 'unknown';
   }
@@ -44,6 +46,12 @@ class ChatCapture {
         container: '[class*="thread"]',
         userMsg: '[class*="question"]',
         assistantMsg: '[class*="answer"]',
+        timestamp: null
+      },
+      github_copilot: {
+        container: '[class*="TaskChat-module"]',
+        userMsg: '.UserInitialMessage-module__container--j2mCV',
+        assistantMsg: '.markdown-body.MarkdownRenderer-module__container--dNKcF:not(.UserInitialMessage-module__markdown--adqIo)',
         timestamp: null
       }
     };
@@ -143,7 +151,7 @@ class ChatCapture {
       }
     });
 
-    console.log(`[Omega_KG] Captured ${messages.length} messages from ${this.platform} - content.js:146`);
+    console.log(`[Omega_KG] Captured ${messages.length} messages from ${this.platform} - content.js:154`);
   }
 
   hashConversation(messages) {

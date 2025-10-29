@@ -164,12 +164,43 @@ def write_to_obsidian(data: ConversationCapture) -> Path:
     
     # Skip if already exists (idempotent)
     if filepath.exists():
-    return filepath
+        return filepath
     
-    return filepath
     # Format as markdown
     markdown = format_conversation_markdown(data)
     filepath.write_text(markdown, encoding='utf-8')
+    return filepath
+def detect_query_type(query: str) -> str:
+    """
+    Detect query category from content.
+
+    Categories:
+        - 'code': Matches keywords like 'implement', 'code', 'function', 'debug', 'error', 'fix'.
+        - 'research': Matches phrases such as 'what is', 'explain', 'how does', 'research', 'latest'.
+        - 'planning': Matches 'plan', 'roadmap', 'architecture', 'design', 'strategy'.
+        - 'debugging': Matches 'error', 'bug', 'not working', 'issue', 'problem'.
+        - 'learning': Matches 'learn', 'tutorial', 'teach', 'understand', 'example'.
+        - 'general': Used if no keywords match.
+
+    Matching logic:
+        The function checks if any keyword for each category is present in the lowercased query string.
+        The first matching category is returned; otherwise, 'general' is returned.
+    """
+    query_lower = query.lower()
+    
+    patterns = {
+        'code': ['implement', 'code', 'function', 'debug', 'fix'],
+        'research': ['what is', 'explain', 'how does', 'research', 'latest'],
+        'planning': ['plan', 'roadmap', 'architecture', 'design', 'strategy'],
+        'debugging': ['error', 'bug', 'not working', 'issue', 'problem'],
+        'learning': ['learn', 'tutorial', 'teach', 'understand', 'example']
+    }
+    
+    for category, keywords in patterns.items():
+        if any(kw in query_lower for kw in keywords):
+            return category
+    
+    return 'general'
 def format_conversation_markdown(data: ConversationCapture) -> str:
     """
     Format conversation as markdown with rich metadata.
@@ -213,62 +244,11 @@ def format_conversation_markdown(data: ConversationCapture) -> str:
     return "\n".join(lines)
 
 
-def detect_query_type(query: str) -> str:
-    """
-    Detect query category from content.
-
-    Categories:
-        - 'code': Matches keywords like 'implement', 'code', 'function', 'debug', 'error', 'fix'.
-        - 'research': Matches phrases such as 'what is', 'explain', 'how does', 'research', 'latest'.
-        - 'planning': Matches 'plan', 'roadmap', 'architecture', 'design', 'strategy'.
-        - 'debugging': Matches 'error', 'bug', 'not working', 'issue', 'problem'.
-        - 'learning': Matches 'learn', 'tutorial', 'teach', 'understand', 'example'.
-        - 'general': Used if no keywords match.
-
-    Matching logic:
-        The function checks if any keyword for each category is present in the lowercased query string.
-        The first matching category is returned; otherwise, 'general' is returned.
-    """
-    query_lower = query.lower()
-    
-    patterns = {
-        'code': ['implement', 'code', 'function', 'debug', 'fix'],
-        'research': ['what is', 'explain', 'how does', 'research', 'latest'],
-        'planning': ['plan', 'roadmap', 'architecture', 'design', 'strategy'],
-        'debugging': ['error', 'bug', 'not working', 'issue', 'problem'],
-        'learning': ['learn', 'tutorial', 'teach', 'understand', 'example']
-    }
-    
-    for category, keywords in patterns.items():
-        if any(kw in query_lower for kw in keywords):
-            return category
-    
-    return 'general'
-
-
 @app.get("/health")
 async def health():
-    """
-    Health check endpoint.
-
-    Returns:
-        dict: {
-            "status": "ok",      # Service status
-            "service": "omega_kg_capture"  # Service name
-        }
-    """
     return {"status": "ok", "service": "omega_kg_capture"}
 @app.get("/stats")
 async def stats():
-    """
-    Get capture statistics.
-
-    Returns:
-        {
-            "total_conversations": int,
-            "by_platform": {platform: int}
-        }
-    """
     vault_path = Path(settings.obsidian_vault_path)
     conv_dir = vault_path / "AI Conversations"
 
