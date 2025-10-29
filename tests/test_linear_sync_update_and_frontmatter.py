@@ -2,7 +2,6 @@
 Additional tests for omega_kg.linear_sync update flow and frontmatter writes.
 """
 from unittest.mock import MagicMock, patch
-from pathlib import Path
 import frontmatter
 from omega_kg.linear_sync import LinearSync
 
