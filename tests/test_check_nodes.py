@@ -6,6 +6,7 @@ import importlib
 import subprocess
 import sys
 from unittest.mock import Mock, patch
+import pytest
 
 
 class TestCheckNodes:
@@ -40,6 +41,7 @@ class TestCheckNodes:
             auth=expected_auth
         )
 
+    @pytest.mark.requires_neo4j
     def test_check_nodes_script_execution(self):
         """Test that check_nodes.py can be executed as a script."""
         # Run the script as a subprocess
