@@ -6,6 +6,14 @@ from omega_kg.obsidian_sync import ObsidianNeo4jSync
 
 
 def test_sync_task_note_uid_fallback_and_status_strip(tmp_path):
+    """
+    Unit test for ObsidianNeo4jSync.sync_task_note that verifies UID fallback to filename, status normalization, and filepath parameter mapping.
+    
+    Creates a temporary vault with a Tasks/mytask.md containing YAML front matter where `uid` is a template placeholder and `status` is "[ready]". Patches settings and the Neo4j driver, calls sync_task_note, and asserts that the executed Cypher contains a MERGE for a Task and that the parameters include `uid` == "mytask", `status` == "ready", and `filepath` == "Tasks/mytask.md".
+    
+    Parameters:
+    	tmp_path (pathlib.Path): pytest temporary directory fixture used to create the test vault and files.
+    """
     vault = tmp_path / "vault"
     tasks = vault / "Tasks"
     tasks.mkdir(parents=True)
