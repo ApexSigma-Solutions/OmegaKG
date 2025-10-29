@@ -1,7 +1,6 @@
 """
 Additional tests for omega_kg.lifecycle focusing on report formatting and note updates.
 """
-from pathlib import Path
 from unittest.mock import patch
 import frontmatter
 from omega_kg.lifecycle import TaskLifecycle, LifecycleRule, TaskStatus

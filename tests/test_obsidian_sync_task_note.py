@@ -2,7 +2,6 @@
 Tests for omega_kg.obsidian_sync.sync_task_note UID/status normalization and parameter mapping.
 """
 from unittest.mock import MagicMock, patch
-from pathlib import Path
 from omega_kg.obsidian_sync import ObsidianNeo4jSync
 
 
