@@ -127,7 +127,7 @@ class TestCheckNodes:
         session.run.side_effect = run_side_effect
 
         # Act: import (executes module code)
-        import importlib, omega_kg.check_nodes as mod
+        import omega_kg.check_nodes as mod
         importlib.reload(mod)
 
         # Assert: sample query executed
