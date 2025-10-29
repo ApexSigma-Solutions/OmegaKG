@@ -118,6 +118,29 @@ class ChatCapture {
         isUser: (el) => el.closest('[class*="user"]') !== null,
         getText: (el) => el.textContent,
       },
+      GitHub_Copilot: {
+        // GitHub Copilot Tasks - Oct 2025
+        // Messages are in TaskChat with UserInitialMessage and response containers
+        messages:
+          '.UserInitialMessage-module__container--j2mCV, [class*="TaskChat-module"][class*="message"], .markdown-body.MarkdownRenderer-module__container--dNKcF',
+        isUser: (el) => {
+          // User messages have UserInitialMessage class or started task message
+          return (
+            el.classList.contains("UserInitialMessage-module__container--j2mCV") ||
+            el.querySelector(".UserInitialMessage-module__startedTaskMessage--Llm_V") !== null ||
+            el.closest('[class*="UserInitialMessage"]') !== null
+          );
+        },
+        getText: (el) => {
+          // Try to extract from markdown content first
+          const markdown = el.querySelector(".markdown-body.MarkdownRenderer-module__container--dNKcF");
+          if (markdown) return markdown.textContent;
+          
+          // Otherwise get from the message container
+          const content = el.querySelector('[class*="message"]') || el;
+          return content.textContent;
+        },
+      },
     };
 
     const config = selectors[this.platform];
