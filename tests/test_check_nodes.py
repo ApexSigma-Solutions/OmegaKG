@@ -70,7 +70,6 @@ class TestCheckNodes:
     @patch('omega_kg.check_nodes.GraphDatabase.driver')
     def test_query_constant_shape(self, mock_driver):
         """Ensure the node inspection query matches expected structure."""
-        import importlib
         # Prevent real connections
         mock_driver.return_value = Mock()
         import omega_kg.check_nodes as mod
