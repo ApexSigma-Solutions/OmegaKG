@@ -101,10 +101,10 @@ Platforms: 11 different AI platforms and services
    - Validate message sender is 'user' or 'assistant'
 
 3. **Metadata Enrichment**
-   - Add \	itle\: extracted from first user message
-   - Add \summary\: first 100 chars of first user message
-   - Add \conversation_length\: categorize as 'short', 'medium', 'long'
-   - Add \last_message_time\: timestamp of final message
+   - Add title: extracted from first user message
+   - Add summary: first 100 chars of first user message
+   - Add conversation_length: categorize as 'short', 'medium', 'long'
+   - Add last_message_time: timestamp of final message
 
 ### PRIORITY 2: Data Quality (Medium Impact, Medium Effort)
 
