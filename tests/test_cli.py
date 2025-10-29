@@ -228,14 +228,28 @@ class TestCLI:
         assert "✓ Yes" in result.output
         assert "development" in result.output
 
-    def test_status_command_mock_mode(self, monkeypatch):
+    @patch('omega_kg.settings.settings')
+    @patch('omega_kg.lifecycle.settings')
+    def test_status_command_mock_mode(self, mock_lifecycle_settings, mock_cli_settings, monkeypatch):
         """Test the status command in mock mode."""
-        # Set minimal environment variables
-        monkeypatch.setenv("NEO4J_URI", "bolt://localhost:7687")
-        monkeypatch.setenv("NEO4J_USER", "neo4j")
-        monkeypatch.setenv("NEO4J_PASSWORD", "password")
-        monkeypatch.setenv("OBSIDIAN_VAULT_PATH", "./vault")
-        monkeypatch.setenv("APP_ENV", "test")
+        # Mock settings to return invalid Neo4j config to force mock mode
+        mock_lifecycle_settings.neo4j_uri = "bolt://invalid:9999"
+        mock_lifecycle_settings.neo4j_user = "invalid"
+        mock_lifecycle_settings.neo4j_password = "invalid"
+        mock_lifecycle_settings.obsidian_vault_path = "./vault"
+        mock_lifecycle_settings.app_env = "test"
+        
+        mock_cli_settings.neo4j_uri = "bolt://invalid:9999"
+        mock_cli_settings.neo4j_user = "invalid"
+        mock_cli_settings.neo4j_password = "invalid"
+        mock_cli_settings.obsidian_vault_path = "./vault"
+        mock_cli_settings.app_env = "test"
+        
+        # Mock email settings to None to show as not configured
+        mock_cli_settings.smtp_host = None
+        mock_cli_settings.smtp_user = None
+        mock_cli_settings.email_to = None
+        mock_cli_settings.linear_api_key = None
 
         result = self.runner.invoke(cli, ['status'])
 
