@@ -70,7 +70,6 @@ class TestCheckNodes:
     @patch('omega_kg.check_nodes.GraphDatabase.driver')
     def test_query_constant_shape(self, mock_driver):
         """Ensure the node inspection query matches expected structure."""
-        import importlib
         # Prevent real connections
         mock_driver.return_value = Mock()
         import omega_kg.check_nodes as mod
@@ -106,16 +105,16 @@ class TestCheckNodes:
             Return a mock result appropriate for the supplied Cypher query string.
             
             Parameters:
-            	query (str): Cypher query text used to choose which mock result to return.
-            	*args: Unused positional arguments forwarded by the caller.
-            	**kwargs: Unused keyword arguments forwarded by the caller.
+                query (str): Cypher query text used to choose which mock result to return.
+                *args: Unused positional arguments forwarded by the caller.
+                **kwargs: Unused keyword arguments forwarded by the caller.
             
             Returns:
-            	Mock: One of `count_result`, `sample_result`, `empty_result`, or a new generic Mock depending on which query pattern `query` matches:
-            	- `count_result` when `query` starts with "MATCH (t:Task) RETURN count"
-            	- `sample_result` when `query` starts with "MATCH (t:Task) RETURN t LIMIT 5"
-            	- `empty_result` when `query` (after stripping leading/trailing whitespace) starts with "MATCH (n) RETURN"
-            	- a new generic Mock for any other query
+                Mock: One of `count_result`, `sample_result`, `empty_result`, or a new generic Mock depending on which query pattern `query` matches:
+                - `count_result` when `query` starts with "MATCH (t:Task) RETURN count"
+                - `sample_result` when `query` starts with "MATCH (t:Task) RETURN t LIMIT 5"
+                - `empty_result` when `query` (after stripping leading/trailing whitespace) starts with "MATCH (n) RETURN"
+                - a new generic Mock for any other query
             """
             if query.startswith("MATCH (t:Task) RETURN count"):
                 return count_result
@@ -128,7 +127,7 @@ class TestCheckNodes:
         session.run.side_effect = run_side_effect
 
         # Act: import (executes module code)
-        import importlib, omega_kg.check_nodes as mod
+        import omega_kg.check_nodes as mod
         importlib.reload(mod)
 
         # Assert: sample query executed
