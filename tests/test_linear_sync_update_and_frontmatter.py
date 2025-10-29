@@ -9,9 +9,9 @@ from omega_kg.linear_sync import LinearSync
 
 def test_sync_issue_update_updates_frontmatter(tmp_path):
     """
-    Verifies that syncing a Linear issue update writes expected frontmatter fields to the linked task file.
+    Verify that syncing a Linear issue update updates the linked task's frontmatter.
     
-    Creates a temporary Obsidian vault with a Tasks/TASK-001.md file, patches settings and the Neo4j GraphDatabase to return that file path for the issue, invokes LinearSync._sync_issue_update with a sample issue, and asserts that the task's frontmatter contains `linear_status`, `linear_priority`, `linear_updated`, and that `status` is mapped by the update routine.
+    Asserts that after invoking LinearSync._sync_issue_update with an issue linked to a task file, the task's frontmatter contains `linear_status`, `linear_priority`, and `linear_updated`, and that `status` is mapped to `"active"`.
     
     Parameters:
         tmp_path (pathlib.Path): Pytest temporary directory fixture used to create the mock vault and task file.

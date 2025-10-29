@@ -121,7 +121,11 @@ class TestHandleIssueDeletion:
 
     @patch("omega_kg.linear_sync.GraphDatabase.driver")
     def test_handle_issue_deletion(self, mock_driver_class):
-        """Test handling issue deletion"""
+        """
+        Validate that _handle_issue_deletion triggers a database update for the given issue identifier.
+        
+        Sets up a mocked Neo4j driver and session plus patched settings, instantiates LinearSync, calls _handle_issue_deletion with an issue containing an `identifier`, and asserts that a Cypher query was executed exactly once via the session.
+        """
         mock_driver = MagicMock()
         mock_session = MagicMock()
 
