@@ -111,10 +111,10 @@ class TestCheckNodes:
 
             Returns:
                 Mock: One of `count_result`, `sample_result`, `empty_result`, or a new generic Mock depending on which query pattern `query` matches:
-                - `count_result` when `query` starts with "MATCH (t:Task) RETURN count"
-                - `sample_result` when `query` starts with "MATCH (t:Task) RETURN t LIMIT 5"
-                - `empty_result` when `query` (after stripping leading/trailing whitespace) starts with "MATCH (n) RETURN"
-                - a new generic Mock for any other query
+                    - `count_result` when `query` starts with "MATCH (t:Task) RETURN count"
+                    - `sample_result` when `query` starts with "MATCH (t:Task) RETURN t LIMIT 5"
+                    - `empty_result` when `query` (after stripping leading/trailing whitespace) starts with "MATCH (n) RETURN"
+                    - a new generic Mock for any other query
             """
             if query.startswith("MATCH (t:Task) RETURN count"):
                 return count_result
