@@ -69,9 +69,9 @@ class TestKnowledgeGraphSchema:
         self, mock_driver_class, mock_neo4j_driver
     ):
         """
-        Verify that KnowledgeGraphSchema reports a successful connection when the Neo4j driver responds with a healthy status.
+        Check that KnowledgeGraphSchema reports a successful connection when the Neo4j driver health check indicates success.
         
-        Creates a KnowledgeGraphSchema with a patched driver whose session health check returns {"status": 1}, then asserts that get_connection_status() reports `connected` as `True` and `mock_mode` as `False`.
+        Sets up a patched driver whose session health check returns {"status": 1}, instantiates KnowledgeGraphSchema with mock_mode=False, and verifies that get_connection_status() reports the schema as connected and not in mock mode.
         """
         mock_driver_class.return_value = mock_neo4j_driver
 
