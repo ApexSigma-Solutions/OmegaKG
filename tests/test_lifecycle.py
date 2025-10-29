@@ -233,3 +233,335 @@ class TestTaskLifecycleMockMode:
                 assert status["connected"] is True
                 assert status["mock_mode"] is False
                 assert status["uri"] == mock_settings.neo4j_uri
+
+class TestLifecycleLoggingToConsole:
+    """Test that lifecycle uses print statements instead of logging."""
+
+    @patch('omega_kg.lifecycle.GraphDatabase.driver')
+    @patch('builtins.print')
+    def test_initialization_prints_connection_status(self, mock_print, mock_driver_class):
+        """Verify initialization prints connection status instead of logging."""
+        mock_driver = Mock()
+        mock_session = Mock()
+        mock_session.__enter__ = Mock(return_value=mock_session)
+        mock_session.__exit__ = Mock(return_value=None)
+        
+        mock_result = Mock()
+        mock_result.single.return_value = {'status': 1}
+        mock_session.run.return_value = mock_result
+        
+        mock_driver.session.return_value = mock_session
+        mock_driver_class.return_value = mock_driver
+        
+        with patch('omega_kg.lifecycle.settings') as mock_settings:
+            mock_settings.neo4j_uri = "bolt://localhost:7687"
+            mock_settings.neo4j_user = "neo4j"
+            mock_settings.neo4j_password = "password"
+            mock_settings.obsidian_vault_path = "./vault"
+            
+            lifecycle = TaskLifecycle(mock_mode=False)
+            
+            # Should print success message
+            print_calls = [str(call) for call in mock_print.call_args_list]
+            assert any("✓ Neo4j connection established" in call for call in print_calls)
+            
+            lifecycle.close()
+
+    @patch('omega_kg.lifecycle.GraphDatabase.driver')
+    @patch('builtins.print')
+    def test_connection_failure_prints_error(self, mock_print, mock_driver_class):
+        """Verify connection failures print error messages."""
+        from neo4j.exceptions import ServiceUnavailable
+        
+        mock_driver_class.side_effect = ServiceUnavailable("Connection failed")
+        
+        with patch('omega_kg.lifecycle.settings') as mock_settings:
+            mock_settings.neo4j_uri = "bolt://localhost:7687"
+            mock_settings.neo4j_user = "neo4j"
+            mock_settings.neo4j_password = "password"
+            mock_settings.obsidian_vault_path = "./vault"
+            
+            lifecycle = TaskLifecycle(mock_mode=False)
+            
+            # Should print error and fallback messages
+            print_calls = [str(call) for call in mock_print.call_args_list]
+            assert any("✗ Failed to connect to Neo4j" in call for call in print_calls)
+            assert any("⚠ Falling back to mock mode" in call for call in print_calls)
+            assert lifecycle.mock_mode is True
+            
+            lifecycle.close()
+
+    @patch('builtins.print')
+    def test_enforce_lifecycle_dry_run_prints_actions(self, mock_print):
+        """Verify dry-run mode prints intended actions."""
+        lifecycle = TaskLifecycle(mock_mode=True)
+        
+        # Run in dry-run mode
+        results = lifecycle.enforce_lifecycle(dry_run=True)
+        
+        # Should print dry-run warnings
+        print_calls = [str(call) for call in mock_print.call_args_list]
+        assert any("⚠ Running in mock mode" in call for call in print_calls)
+        
+        lifecycle.close()
+
+    @patch('omega_kg.lifecycle.GraphDatabase.driver')
+    @patch('builtins.print')
+    def test_transition_task_prints_success(self, mock_print, mock_driver_class):
+        """Verify successful task transitions are printed."""
+        mock_driver = Mock()
+        mock_session = Mock()
+        mock_session.__enter__ = Mock(return_value=mock_session)
+        mock_session.__exit__ = Mock(return_value=None)
+        mock_driver.session.return_value = mock_session
+        mock_driver_class.return_value = mock_driver
+        
+        # Mock the run method to return minimal result
+        mock_result = Mock()
+        mock_result.single.return_value = {'status': 1}
+        mock_session.run.return_value = mock_result
+        
+        with patch('omega_kg.lifecycle.settings') as mock_settings:
+            mock_settings.neo4j_uri = "bolt://localhost:7687"
+            mock_settings.neo4j_user = "neo4j"
+            mock_settings.neo4j_password = "password"
+            mock_settings.obsidian_vault_path = "./vault"
+            
+            lifecycle = TaskLifecycle(mock_mode=False)
+            lifecycle.driver = mock_driver
+            
+            rule = LifecycleRule(
+                from_status=TaskStatus.DRAFT,
+                to_status=TaskStatus.ARCHIVED,
+                days_threshold=14
+            )
+            
+            # Mock file operations
+            with patch.object(lifecycle, '_update_task_file'):
+                lifecycle._transition_task(mock_session, 'TASK-001', rule)
+            
+            # Should print transition success
+            print_calls = [str(call) for call in mock_print.call_args_list]
+            assert any("✓ Transitioned TASK-001" in call for call in print_calls)
+            assert any("draft → archived" in call for call in print_calls)
+            
+            lifecycle.close()
+
+
+class TestLifecycleDocstringUpdates:
+    """Test that lifecycle docstrings were updated."""
+
+    def test_init_docstring_updated(self):
+        """Verify __init__ docstring has new format."""
+        assert TaskLifecycle.__init__.__doc__ is not None
+        doc = TaskLifecycle.__init__.__doc__
+        
+        # Should mention creation/initialization
+        assert "Create" in doc or "Initialize" in doc
+        # Should describe mock_mode parameter
+        assert "mock_mode" in doc
+        assert "If True" in doc or "If False" in doc
+
+    def test_check_connection_docstring_updated(self):
+        """Verify _check_connection docstring is concise."""
+        assert TaskLifecycle._check_connection.__doc__ is not None
+        doc = TaskLifecycle._check_connection.__doc__
+        
+        assert "Check" in doc or "Verify" in doc
+        assert "Neo4j driver" in doc
+
+    def test_get_connection_status_docstring_updated(self):
+        """Verify get_connection_status docstring describes return value."""
+        assert TaskLifecycle.get_connection_status.__doc__ is not None
+        doc = TaskLifecycle.get_connection_status.__doc__
+        
+        # Should describe return dict structure
+        assert "connected" in doc
+        assert "mock_mode" in doc
+        assert "uri" in doc
+
+    def test_transition_task_docstring_updated(self):
+        """Verify _transition_task docstring is more descriptive."""
+        assert TaskLifecycle._transition_task.__doc__ is not None
+        doc = TaskLifecycle._transition_task.__doc__
+        
+        # Should mention both database and file updates
+        assert "Neo4j" in doc
+        assert "Obsidian" in doc or "vault" in doc
+
+
+class TestLifecycleErrorHandling:
+    """Test improved error handling in lifecycle module."""
+
+    @patch('omega_kg.lifecycle.GraphDatabase.driver')
+    @patch('builtins.print')
+    def test_enforce_lifecycle_handles_service_unavailable(self, mock_print, mock_driver_class):
+        """Test handling of ServiceUnavailable during enforcement."""
+        from neo4j.exceptions import ServiceUnavailable
+        
+        mock_driver = Mock()
+        mock_session = Mock()
+        mock_session.__enter__ = Mock(return_value=mock_session)
+        mock_session.__exit__ = Mock(return_value=None)
+        mock_driver.session.return_value = mock_session
+        
+        # Mock connection check success
+        mock_result = Mock()
+        mock_result.single.return_value = {'status': 1}
+        mock_session.run.return_value = mock_result
+        mock_driver_class.return_value = mock_driver
+        
+        with patch('omega_kg.lifecycle.settings') as mock_settings:
+            mock_settings.neo4j_uri = "bolt://localhost:7687"
+            mock_settings.neo4j_user = "neo4j"
+            mock_settings.neo4j_password = "password"
+            mock_settings.obsidian_vault_path = "./vault"
+            
+            lifecycle = TaskLifecycle(mock_mode=False)
+            
+            # Make session.run raise ServiceUnavailable during enforcement
+            mock_session.run.side_effect = ServiceUnavailable("Connection lost")
+            
+            results = lifecycle.enforce_lifecycle(dry_run=False)
+            
+            # Should handle gracefully and add to skipped
+            assert "skipped" in results
+            assert len(results["skipped"]) > 0
+            
+            # Should print helpful error messages
+            print_calls = [str(call) for call in mock_print.call_args_list]
+            assert any("✗ Database connection lost" in call for call in print_calls)
+            
+            lifecycle.close()
+
+    @patch('omega_kg.lifecycle.GraphDatabase.driver')
+    @patch('builtins.print')
+    def test_enforce_lifecycle_handles_unexpected_errors(self, mock_print, mock_driver_class):
+        """Test handling of unexpected errors during enforcement."""
+        mock_driver = Mock()
+        mock_session = Mock()
+        mock_session.__enter__ = Mock(return_value=mock_session)
+        mock_session.__exit__ = Mock(return_value=None)
+        mock_driver.session.return_value = mock_session
+        
+        # Mock connection check success
+        mock_result = Mock()
+        mock_result.single.return_value = {'status': 1}
+        mock_session.run.return_value = mock_result
+        mock_driver_class.return_value = mock_driver
+        
+        with patch('omega_kg.lifecycle.settings') as mock_settings:
+            mock_settings.neo4j_uri = "bolt://localhost:7687"
+            mock_settings.neo4j_user = "neo4j"
+            mock_settings.neo4j_password = "password"
+            mock_settings.obsidian_vault_path = "./vault"
+            
+            lifecycle = TaskLifecycle(mock_mode=False)
+            
+            # Make session.run raise unexpected error
+            mock_session.run.side_effect = RuntimeError("Unexpected error")
+            
+            results = lifecycle.enforce_lifecycle(dry_run=False)
+            
+            # Should handle gracefully
+            assert "failed" in results
+            assert len(results["failed"]) > 0
+            
+            # Should print error message
+            print_calls = [str(call) for call in mock_print.call_args_list]
+            assert any("✗ Unexpected error" in call for call in print_calls)
+            
+            lifecycle.close()
+
+
+class TestLifecycleMockResults:
+    """Test mock results generation."""
+
+    def test_get_mock_results_structure(self):
+        """Verify _get_mock_results returns expected structure."""
+        lifecycle = TaskLifecycle(mock_mode=True)
+        
+        results = lifecycle._get_mock_results()
+        
+        # Should have all expected keys
+        assert "archived" in results
+        assert "warned" in results
+        assert "blocked" in results
+        assert "failed" in results
+        assert "skipped" in results
+        
+        # Should have realistic mock data
+        assert isinstance(results["archived"], list)
+        assert len(results["archived"]) > 0
+        
+        # Mock tasks should have expected structure
+        if len(results["archived"]) > 0:
+            task = results["archived"][0]
+            assert "t.uid" in task
+            assert "t.title" in task
+            assert "days_old" in task
+        
+        lifecycle.close()
+
+    def test_mock_mode_returns_mock_results(self):
+        """Verify mock mode returns mock results."""
+        lifecycle = TaskLifecycle(mock_mode=True)
+        
+        results = lifecycle.enforce_lifecycle(dry_run=False)
+        
+        # Should return mock data
+        assert len(results["archived"]) > 0
+        assert all("MOCK" in task.get("t.uid", "") for task in results["archived"])
+        
+        lifecycle.close()
+
+
+class TestLifecycleConnectionRecovery:
+    """Test connection recovery and fallback behavior."""
+
+    @patch('omega_kg.lifecycle.GraphDatabase.driver')
+    def test_auth_error_triggers_mock_mode(self, mock_driver_class):
+        """Verify AuthError triggers fallback to mock mode."""
+        from neo4j.exceptions import AuthError
+        
+        mock_driver_class.side_effect = AuthError("Invalid credentials")
+        
+        with patch('omega_kg.lifecycle.settings') as mock_settings:
+            mock_settings.neo4j_uri = "bolt://localhost:7687"
+            mock_settings.neo4j_user = "neo4j"
+            mock_settings.neo4j_password = "wrong"
+            mock_settings.obsidian_vault_path = "./vault"
+            
+            with patch('builtins.print'):
+                lifecycle = TaskLifecycle(mock_mode=False)
+                
+                assert lifecycle.mock_mode is True
+                assert lifecycle.driver is None
+                
+                lifecycle.close()
+
+    @patch('omega_kg.lifecycle.GraphDatabase.driver')
+    @patch('builtins.print')
+    def test_no_database_connection_available_message(self, mock_print, mock_driver_class):
+        """Test message when no database connection is available."""
+        mock_driver_class.side_effect = Exception("Cannot connect")
+        
+        with patch('omega_kg.lifecycle.settings') as mock_settings:
+            mock_settings.neo4j_uri = "bolt://localhost:7687"
+            mock_settings.neo4j_user = "neo4j"
+            mock_settings.neo4j_password = "password"
+            mock_settings.obsidian_vault_path = "./vault"
+            
+            lifecycle = TaskLifecycle(mock_mode=False)
+            
+            # Now try to enforce without a driver
+            lifecycle.driver = None
+            lifecycle.mock_mode = False  # Force non-mock mode
+            
+            results = lifecycle.enforce_lifecycle(dry_run=False)
+            
+            # Should print error message
+            print_calls = [str(call) for call in mock_print.call_args_list]
+            assert any("✗ No database connection available" in call for call in print_calls)
+            
+            lifecycle.close()
