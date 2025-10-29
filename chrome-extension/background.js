@@ -32,7 +32,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 
   if (message.type === "PING") {
-    console.log("[Omega_KG] Service worker is alive - background.js:35");
+    console.log("[Omega_KG] Service worker is alive");
     sendResponse({ alive: true, timestamp: new Date().toISOString() });
     return true;
   }
@@ -70,7 +70,7 @@ async function saveToLocalhost(data) {
     }
 
     const result = await response.json();
-    console.log("[Omega_KG] Server response: - background.js:73", result);
+    console.log("[Omega_KG] Server response:", result);
     return result;
   } catch (error) {
     console.error(
@@ -95,7 +95,7 @@ chrome.alarms.onAlarm.addListener((alarm) => {
         ),
       )
       .catch(() =>
-        console.warn("[Omega_KG] Server offline - background.js:98"),
+        console.warn("[Omega_KG] Server offline"),
       );
   }
 });
