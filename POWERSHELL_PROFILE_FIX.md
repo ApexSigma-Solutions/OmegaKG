@@ -197,6 +197,9 @@ function Add-OmegaCommand {
 
 "@
 
+    # NOTE: The backticks above are literal backticks for markdown code formatting
+    # They should NOT have dollar signs escaped with them
+
     Add-Content -Path $env:OMEGA_SESSION_LOG -Value $entry
 }
 
