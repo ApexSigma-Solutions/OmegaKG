@@ -1,16 +1,19 @@
 // Background service worker - sends to localhost server
+// Handles message passing with retry logic and context invalidation recovery
 
 const CAPTURE_ENDPOINT = 'http://localhost:8765/capture';
+const MAX_RETRIES = 3;
+const RETRY_DELAY = 1000; // ms
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'CAPTURE_CONVERSATION') {
-    saveToLocalhost(message.data)
+    saveToLocalhostWithRetry(message.data, 0)
       .then(response => {
-        console.log('[Omega_KG] Captured: - background.js:9', response);
-        sendResponse({ success: true });
+        console.log('[Omega_KG] ✅ Captured: - background.js:12', response);
+        sendResponse({ success: true, data: response });
       })
       .catch(error => {
-        console.error('[Omega_KG] Capture failed: - background.js:13', error);
+        console.error('[Omega_KG] ❌ Capture failed after retries: - background.js:16', error);
         sendResponse({ success: false, error: error.message });
       });
     
@@ -18,14 +21,15 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 });
 
-async function saveToLocalhost(data) {
+async function saveToLocalhostWithRetry(data, attempt = 0) {
   try {
     const response = await fetch(CAPTURE_ENDPOINT, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(data)
+      body: JSON.stringify(data),
+      timeout: 5000
     });
     
     if (!response.ok) {
@@ -34,8 +38,15 @@ async function saveToLocalhost(data) {
     
     return await response.json();
   } catch (error) {
-    // Server might not be running - fail silently
-    console.warn('[Omega_KG] Server unavailable: - background.js:38', error.message);
+    // Retry logic for transient failures
+    if (attempt < MAX_RETRIES) {
+      console.warn(`[Omega_KG] Retry ${attempt + 1}/${MAX_RETRIES} - background.js:43`, error.message);
+      await new Promise(resolve => setTimeout(resolve, RETRY_DELAY * (attempt + 1)));
+      return saveToLocalhostWithRetry(data, attempt + 1);
+    }
+    
+    // Server might not be running - fail after all retries
+    console.warn('[Omega_KG] Server unavailable after retries - background.js:49', error.message);
     throw error;
   }
 }
@@ -47,7 +58,7 @@ chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === 'health-check') {
     fetch('http://localhost:8765/health')
       .then(r => r.json())
-      .then(data => console.log('[Omega_KG] Server status: - background.js:50', data.status))
-      .catch(() => console.warn('[Omega_KG] Server offline - background.js:51'));
+      .then(data => console.log('[Omega_KG] ✓ Server online - background.js:61', data.status))
+      .catch(() => console.warn('[Omega_KG] ✗ Server offline - background.js:62'));
   }
 });
