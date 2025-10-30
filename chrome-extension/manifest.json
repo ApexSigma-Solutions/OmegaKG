@@ -14,7 +14,10 @@
     "https://chat.openai.com/*",
     "https://gemini.google.com/*",
     "https://www.perplexity.ai/*",
-    "https://github.com/*"
+    "https://github.com/*",
+    "https://chat.qwen.ai/*",
+    "https://copilot.microsoft.com/*",
+    "https://copilot.com/*"
   ],
   "background": {
     "service_worker": "background.js"
@@ -26,7 +29,10 @@
         "https://chat.openai.com/*",
         "https://gemini.google.com/*",
         "https://www.perplexity.ai/*",
-        "https://github.com/*"
+        "https://github.com/*",
+        "https://chat.qwen.ai/*",
+        "https://copilot.microsoft.com/*",
+        "https://copilot.com/*"
       ],
       "js": ["content.js"],
       "run_at": "document_idle"

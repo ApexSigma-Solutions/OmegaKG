@@ -65,7 +65,7 @@ async def batch_percolate():
     engine = PercolationEngine()
     try:
         for note in new_notes:
-            engine.percolate_note(note)
+            engine.percolate(note)
         print(f"✓ Percolated {len(new_notes)} conversations - capture_server.py:69")
     finally:
         engine.close()
@@ -139,7 +139,7 @@ async def capture_conversation(data: ConversationCapture):
     # Percolate immediately (optional - can be async)
     # Commented out by default for performance
     # engine = PercolationEngine()
-    # engine.percolate_note(filepath)
+    # engine.percolate(filepath)
     # engine.close()
     
     return {
@@ -201,85 +201,76 @@ def detect_query_type(query: str) -> str:
             return category
     
     return 'general'
+
+
 def format_conversation_markdown(data: ConversationCapture) -> str:
     """
     Format conversation as markdown with rich metadata.
+    """
+    import yaml
+
+    # Map platform slugs to user-friendly display names
+    platform_display_names = {
+        "chatgpt": "ChatGPT",
+        "claude": "Claude",
+        "bard": "Google Bard",
+        "gemini": "Gemini",
+        "copilot": "GitHub Copilot",
+        "bing": "Bing Chat",
+        "openai": "OpenAI",
+        "perplexity": "Perplexity",
+        # Add more as needed
+    }
+    display_platform = platform_display_names.get(
+        data.platform.lower(), data.platform.title()
+    )
 
     # Extract query categories
     user_messages = [m for m in data.messages if m.role == 'user']
-    first_query = user_messages[0].content if user_messages else ""
-    
+    first_query = (
+        user_messages[0].content if user_messages else ""
+    )
+
     # Detect query type
     query_type = detect_query_type(first_query)
-    
+
+    # Prepare frontmatter as a dict for YAML serialization,
+    # including conversation_hash
+    frontmatter = {
+        "type": "ai-conversation",
+        "platform": data.platform,
+        "url": data.url,
+        "captured": data.timestamp,
+        "conversation_hash": data.conversation_hash,
+        "query_type": query_type,
+        "message_count": len(data.messages),
+        "tags": ["ai", data.platform, "conversation", query_type],
+    }
+    yaml_frontmatter = yaml.safe_dump(frontmatter, sort_keys=False).strip()
+
     lines = [
         "---",
-        "type: ai-conversation",
-        f"platform: {data.platform}",
-        f"url: {data.url}",
-        f"captured: {data.timestamp}",
-        f"query_type: {query_type}",
-        f"message_count: {len(data.messages)}",
-        f"tags: [ai, {data.platform}, conversation, {query_type}]",
+        yaml_frontmatter,
         "---",
-        "",
-        f"# {data.platform.title()} - {query_type.title()}",
-        "",
-        f"**Captured:** {datetime.fromisoformat(data.timestamp).strftime('%Y-%m-%d %H:%M')}",
-        f"**URL:** {data.url}",
-        "",
-        "## Conversation",
-        ""
     ]
-    
     for msg in data.messages:
         role_emoji = "💭" if msg.role == 'user' else "🤖"
-        role_label = "You" if msg.role == 'user' else data.platform.title()
-        
+        role_label = "You" if msg.role == 'user' else display_platform
         lines.append(f"### {role_emoji} {role_label}")
         lines.append("")
         lines.append(msg.content)
         lines.append("")
-    
+
     return "\n".join(lines)
 
-
-@app.get("/health")
-async def health():
-    return {"status": "ok", "service": "omega_kg_capture"}
-@app.get("/stats")
-async def stats():
-    vault_path = Path(settings.obsidian_vault_path)
-    conv_dir = vault_path / "AI Conversations"
-
-    if not conv_dir.exists():
-        return {"total_conversations": 0, "by_platform": {}}
-
-    by_platform = {}
-    total_conversations = 0
-
-    for platform_dir in conv_dir.iterdir():
-        if platform_dir.is_dir():
-            count = sum(1 for f in platform_dir.glob("*.md"))
-            by_platform[platform_dir.name] = count
-            total_conversations += count
-
-    return {
-        "total_conversations": total_conversations,
-        "by_platform": by_platform
-    }
-    uvicorn.run(
-        app,
-        host="127.0.0.1",
-        port=8765,
-        log_level="info"
-    )
+def main():
+    """
     Starts the Omega_KG Capture Server on port 8765.
     Health check endpoint available at /health.
     """
-    print("🚀 Starting Omega_KG Capture Server - capture_server.py:300")
-    print("Listening on: http://localhost:8765 - capture_server.py:301")
-    print("Health check: http://localhost:8765/health - capture_server.py:302")
+    print("🚀 Starting Omega_KG Capture Server - capture_server.py:271")
+    print("Listening on: http://localhost:8765 - capture_server.py:272")
+    print("Health check: http://localhost:8765/health - capture_server.py:273")
     
     uvicorn.run(
         app,
