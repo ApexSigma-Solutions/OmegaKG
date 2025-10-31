@@ -1,131 +1,218 @@
-// AI Chat Capture with Retry Logic
-// Supports: Claude, ChatGPT, Gemini, Perplexity, GitHub Copilot, Qwen, Microsoft Copilot
-// Features: Auto-retry on context invalidation, exponential backoff, error recovery
+// Universal AI Chat Capture
+// Detects which platform and extracts conversations
 
 class ChatCapture {
   constructor() {
-    this.capturedHashes = new Set();
     this.platform = this.detectPlatform();
     this.observer = null;
     this.conversationCache = new Map();
-    this.hasShownAutoNotification = false;
-    this.initializeCapture();
   }
 
   detectPlatform() {
     const hostname = window.location.hostname;
-    const pathname = window.location.pathname;
-    
-    if (hostname.includes('claude.ai')) return 'claude';
-    if (hostname.includes('openai.com')) return 'chatgpt';
-    if (hostname.includes('gemini.google.com')) return 'gemini';
-    if (hostname.includes('perplexity.ai')) return 'perplexity';
-    if (hostname.includes('github.com') && pathname.includes('/copilot/')) return 'github_copilot';
-    if (hostname.includes('chat.qwen.ai')) return 'qwen';
-    if (hostname.includes('copilot.microsoft.com') || hostname.includes('copilot.com')) return 'microsoft_copilot';
-    
-    return 'unknown';
+    const url = window.location.href;
+
+    if (hostname.includes("claude.ai")) return "Claude.ai";
+    if (hostname.includes("openai.com") || hostname.includes("chatgpt.com"))
+      return "ChatGPT";
+    if (hostname.includes("gemini.google.com")) return "Gemini";
+    if (hostname.includes("perplexity.ai")) return "Perplexity";
+    if (hostname.includes("github.com") && url.includes("copilot"))
+      return "GitHub_Copilot";
+    if (hostname.includes("qwen.ai") || hostname.includes("tongyi.aliyun.com"))
+      return "Qwen";
+    if (hostname.includes("z.ai")) return "Z.ai";
+    if (hostname.includes("kimi.com") || hostname.includes("kimi.moonshot"))
+      return "Kimi";
+    if (hostname.includes("deepseek.com")) return "DeepSeek";
+    if (hostname.includes("mistral.ai")) return "Mistral";
+
+    console.log(
+      `[Omega_KG] Unknown platform  hostname: ${hostname}`,
+    );
+    return "unknown";
   }
 
   extractMessages() {
-    // Platform-specific selectors
+    // Platform-specific selectors (updated for current DOM structure - Oct 2025)
     const selectors = {
-      claude: {
-        container: '[data-testid="conversation"]',
-        userMsg: '[data-is-streaming="false"] .font-claude-message:has(> div[data-is-streaming="false"])',
-        assistantMsg: '[data-testid="message-content"]',
-        timestamp: 'time'
+      "Claude.ai": {
+        // Claude.ai Oct 2025 - uses class-based selectors
+        messages: ".font-user-message, .font-claude-response",
+        isUser: (el) =>
+          el.classList.contains("font-user-message") ||
+          el.closest('[data-testid*="user"]') !== null,
+        getText: (el) => {
+          // Try multiple selectors for message content
+          const content =
+            el.querySelector('[class*="font-claude-message"]') ||
+            el.querySelector('div[class*="whitespace-pre-wrap"]') ||
+            el;
+          return content.textContent;
+        },
       },
-      chatgpt: {
-        container: '[role="presentation"]',
-        userMsg: '[data-message-author-role="user"]',
-        assistantMsg: '[data-message-author-role="assistant"]',
-        timestamp: null
+      ChatGPT: {
+        messages: "[data-message-author-role]",
+        isUser: (el) => el.getAttribute("data-message-author-role") === "user",
+        getText: (el) => el.textContent,
       },
-      gemini: {
-        container: '[role="main"]',
-        userMsg: '[data-blocks-role="chat-history"] [data-blocks-role="message"][data-message-role="user"]',
-        assistantMsg: '[data-blocks-role="chat-history"] [data-blocks-role="message"][data-message-role="model"]',
-        timestamp: null
+      Gemini: {
+        // Gemini Oct 2025 - uses custom web components
+        messages:
+          "message-content.model-response-text, .conversation-container, user-query",
+        isUser: (el) => {
+          return (
+            el.tagName.toLowerCase() === "user-query" ||
+            el.classList.contains("user-query") ||
+            el.closest("user-query") !== null ||
+            el.getAttribute("data-message-author-role") === "user"
+          );
+        },
+        getText: (el) => {
+          // Try to get clean text content
+          const content =
+            el.querySelector(".markdown") ||
+            el.querySelector('[class*="message-content"]') ||
+            el;
+          return content.textContent;
+        },
       },
-      perplexity: {
-        container: '[class*="thread"]',
-        userMsg: '[class*="question"]',
-        assistantMsg: '[class*="answer"]',
-        timestamp: null
+      Perplexity: {
+        messages: '[class*="Markdown"], .prose',
+        isUser: (el) =>
+          el.closest('[class*="UserMessage"]') !== null ||
+          el.closest('[class*="Query"]') !== null,
+        getText: (el) => el.textContent,
       },
-      github_copilot: {
-        container: '[class*="TaskChat-module"]',
-        userMsg: '.UserInitialMessage-module__container--j2mCV',
-        assistantMsg: '.markdown-body.MarkdownRenderer-module__container--dNKcF:not(.UserInitialMessage-module__markdown--adqIo)',
-        timestamp: null
+      Qwen: {
+        // Qwen/Tongyi uses similar patterns to other chat UIs
+        messages: '[class*="message"], [class*="chat-message"]',
+        isUser: (el) =>
+          el.closest('[class*="user"]') !== null ||
+          el.getAttribute("data-role") === "user",
+        getText: (el) => el.textContent,
       },
-      qwen: {
-        container: '[class*="content"]',
-        userMsg: '[class*="user"]',
-        assistantMsg: '[class*="bot"]',
-        timestamp: null
+      "Z.ai": {
+        // Z.ai - will use fallback until we get actual selectors
+        messages: '[class*="message"], [role="article"]',
+        isUser: (el) => el.closest('[class*="user"]') !== null,
+        getText: (el) => el.textContent,
       },
-      microsoft_copilot: {
-        container: '[class*="conversation"]',
-        userMsg: '[class*="user-message"]',
-        assistantMsg: '[class*="assistant-message"]',
-        timestamp: null
-      }
+      Kimi: {
+        // Kimi (Moonshot AI) - will use fallback until we get actual selectors
+        messages: '[class*="message"], [class*="chat"]',
+        isUser: (el) => el.closest('[class*="user"]') !== null,
+        getText: (el) => el.textContent,
+      },
+      DeepSeek: {
+        // DeepSeek - will use fallback until we get actual selectors
+        messages: '[class*="message"], [class*="conversation"]',
+        isUser: (el) =>
+          el.closest('[class*="user"]') !== null ||
+          el.getAttribute("data-role") === "user",
+        getText: (el) => el.textContent,
+      },
+      Mistral: {
+        // Mistral AI - will use fallback until we get actual selectors
+        messages: '[class*="message"], [class*="chat"]',
+        isUser: (el) => el.closest('[class*="user"]') !== null,
+        getText: (el) => el.textContent,
+      },
     };
 
     const config = selectors[this.platform];
-    if (!config) return [];
-
-    const messages = [];
-    const container = document.querySelector(config.container);
-    if (!container) return [];
-
-    // Extract user messages
-    const userMessages = container.querySelectorAll(config.userMsg);
-    const assistantMessages = container.querySelectorAll(config.assistantMsg);
-
-    // Interleave user and assistant messages
-    const maxLength = Math.max(userMessages.length, assistantMessages.length);
-    
-    for (let i = 0; i < maxLength; i++) {
-      if (userMessages[i]) {
-        messages.push({
-          role: 'user',
-          content: this.cleanText(userMessages[i].textContent),
-          timestamp: this.extractTimestamp(userMessages[i], config.timestamp),
-          platform: this.platform
-        });
-      }
-      
-      if (assistantMessages[i]) {
-        messages.push({
-          role: 'assistant',
-          content: this.cleanText(assistantMessages[i].textContent),
-          timestamp: this.extractTimestamp(assistantMessages[i], config.timestamp),
-          platform: this.platform
-        });
-      }
+    if (!config) {
+      console.warn(
+        `[Omega_KG] No selector config for platform: ${this.platform}`,
+      );
+      return [];
     }
 
+    // FALLBACK: If no messages found with specific selectors, try generic approach
+    let messageElements = document.querySelectorAll(config.messages);
+
+    if (messageElements.length === 0) {
+      console.warn(
+        `[Omega_KG] No messages found with selectors, trying fallback...`,
+      );
+      // Try to find any text content that looks like messages
+      messageElements = this.fallbackExtraction();
+    }
+
+    const messages = [];
+    console.log(
+      `[Omega_KG] Found ${messageElements.length} message elements on ${this.platform}`,
+    );
+
+    messageElements.forEach((element, index) => {
+      try {
+        const isUser = config.isUser(element);
+        const content = config.getText(element);
+
+        if (!content || content.trim().length < 10) {
+          return; // Skip empty or very short messages
+        }
+
+        messages.push({
+          role: isUser ? "user" : "assistant",
+          content: this.cleanText(content),
+          timestamp: new Date().toISOString(),
+          index: index,
+        });
+      } catch (err) {
+        console.warn(
+          "[Omega_KG] Error extracting message " + index + ":",
+          err,
+        );
+      }
+    });
+
+    console.log(
+      `[Omega_KG] Extracted ${messages.length} messages from ${messageElements.length} elements`,
+    );
     return messages;
+  }
+
+  fallbackExtraction() {
+    // Generic fallback: look for common patterns across AI chat UIs
+    const candidates = [];
+
+    // Try common wrapper patterns
+    const wrappers = document.querySelectorAll(
+      '[class*="message"], [class*="chat"], [class*="conversation"], ' +
+        '[data-testid*="message"], [data-testid*="chat"], ' +
+        '[role="article"], [role="region"]',
+    );
+
+    wrappers.forEach((wrapper) => {
+      // Look for text content > 20 characters
+      const textContent = wrapper.textContent?.trim();
+      if (textContent && textContent.length > 20) {
+        candidates.push(wrapper);
+      }
+    });
+
+    console.log(
+      `[Omega_KG] Fallback found ${candidates.length} potential message containers`,
+    );
+    return candidates.slice(0, 50); // Limit to prevent overwhelming
   }
 
   cleanText(text) {
     // Remove UI artifacts, normalize whitespace
     return text
-      .replace(/\s+/g, ' ')
-      .replace(/Copy code/g, '')
-      .replace(/\d+\/\d+/g, '')  // Remove message counters
+      .replace(/\s+/g, " ")
+      .replace(/Copy code/g, "")
+      .replace(/\d+\/\d+/g, "") // Remove message counters
       .trim();
   }
 
   extractTimestamp(element, selector) {
     if (!selector) return new Date().toISOString();
-    
+
     const timeEl = element.querySelector(selector);
     if (timeEl) {
-      return timeEl.getAttribute('datetime') || new Date().toISOString();
+      return timeEl.getAttribute("datetime") || new Date().toISOString();
     }
     return new Date().toISOString();
   }
@@ -139,302 +226,268 @@ class ChatCapture {
       // Debounce: only capture after user stops typing
       clearTimeout(this.captureTimeout);
       this.captureTimeout = setTimeout(() => {
-        this.captureConversationWithRetry();
-      }, 2000);  // 2 second delay after last change
+        this.captureConversation();
+      }, 2000); // 2 second delay after last change
     });
 
     this.observer.observe(targetNode, config);
   }
 
-  async captureConversationWithRetry(maxAttempts = 3, forceCapture = false) {
-    for (let attempt = 0; attempt < maxAttempts; attempt++) {
-      try {
-        return await this.captureConversation(forceCapture);
-      } catch (error) {
-        const isContextInvalid = error.message.includes('Extension context invalidated') || 
-                                error.message.includes('Message channel closed');
-        
-        if (isContextInvalid && attempt < maxAttempts - 1) {
-          console.warn(`[Omega_KG] Retry ${attempt + 1}/${maxAttempts} - content.js:167`, error.message);
-          // Exponential backoff: 100ms, 200ms, 400ms, 800ms, 1600ms
-          const delay = 100 * Math.pow(2, attempt) + Math.random() * 50;
-          await new Promise(resolve => setTimeout(resolve, delay));
-          continue;
-        }
-        
-        // Log error but don't crash - MutationObserver should continue
-        if (attempt === maxAttempts - 1) {
-          console.error('[Omega_KG] Failed to capture after retries (observer continues) - content.js:176', error.message);
-        }
-        return null;
-      }
-    }
-  }
-
-  async captureConversation(forceCapture = false) {
+  async captureConversation() {
     const messages = this.extractMessages();
-    if (messages.length === 0) return null;
+
+    console.log(`[Omega_KG] Attempting capture: - content.js:239`, {
+      platform: this.platform,
+      messageCount: messages.length,
+      url: window.location.href,
+    });
+
+    if (messages.length === 0) {
+      console.warn(
+        "[Omega_KG] No messages extracted, skipping capture",
+      );
+      return;
+    }
 
     // Generate conversation hash (to detect duplicates)
     const conversationHash = this.hashConversation(messages);
-    
-    // Skip if already captured (unless forcing manual capture)
-    if (!forceCapture && this.conversationCache.has(conversationHash)) return null;
-    this.conversationCache.set(conversationHash, true);
 
-    // Validate extension context before sending
-    if (!chrome?.runtime) {
-      throw new Error('Extension context invalidated - chrome.runtime unavailable');
+    // Skip if already captured in this session
+    if (this.conversationCache.has(conversationHash)) {
+      console.log(
+        "[Omega_KG] Conversation already captured (hash collision), skipping",
+      );
+      return;
     }
 
+    // Prepare data payload matching capture_server.py expectations
+    const data = {
+      platform: this.platform,
+      url: window.location.href,
+      title: document.title || `${this.platform} Conversation`,
+      messages: messages.map((m) => ({
+        role: m.role,
+        content: m.content,
+        timestamp: m.timestamp,
+      })),
+      captured_at: new Date().toISOString(),
+      test: false,
+    };
+
+    // Send to background script for persistence
     try {
-      // Send to background script for persistence with error handling
-      return new Promise((resolve, reject) => {
-        const timeout = setTimeout(() => {
-          reject(new Error('Message channel closed - extension context lost'));
-        }, 5000);
-
-        chrome.runtime.sendMessage({
-          type: 'CAPTURE_CONVERSATION',
-          data: {
-            messages,
-            platform: this.platform,
-            url: window.location.href,
-            timestamp: new Date().toISOString(),
-            conversationHash
-          }
-        }, (response) => {
-          clearTimeout(timeout);
-          
-          // Check for chrome.runtime.lastError
-          if (chrome.runtime.lastError) {
-            reject(new Error(`Chrome API error: ${chrome.runtime.lastError.message}`));
-            return;
-          }
-
-          if (response?.success) {
-            console.log(`[Omega_KG] ✅ Captured ${messages.length} messages from ${this.platform} - content.js:219`);
-            this.lastCaptureTime = new Date().toLocaleTimeString();
-            // Only show auto-capture notification if forced (manual) or first capture of the session
-            if (forceCapture || !this.hasShownAutoNotification) {
-              this.showNotification(`🎯 Captured ${messages.length} messages`, 'success', 2000);
-              this.hasShownAutoNotification = true;
-            }
-            resolve(response);
-          } else {
-            reject(new Error(response?.error || 'Server error'));
-          }
-        });
+      const response = await chrome.runtime.sendMessage({
+        type: "CAPTURE_CONVERSATION",
+        data: data,
       });
+
+      if (response?.success) {
+        this.conversationCache.set(conversationHash, true);
+        console.log(
+          `[Omega_KG] ✅ Captured ${messages.length} messages from ${this.platform}`,
+        );
+        this.showNotification("Conversation captured!", "success");
+      } else {
+        console.error(
+          "[Omega_KG] ❌ Capture failed:",
+          response?.error,
+        );
+        this.showNotification("Capture failed - check server", "error");
+      }
     } catch (error) {
-      // Re-throw for retry logic to handle
-      throw error;
+      console.error(
+        "[Omega_KG] ❌ Error sending to background:",
+        error,
+      );
+      this.showNotification("Extension error - check console", "error");
     }
   }
 
   hashConversation(messages) {
     // Simple hash: last user message + length
-    const lastUser = messages.filter(m => m.role === 'user').pop();
+    const lastUser = messages.filter((m) => m.role === "user").pop();
     return `${this.platform}-${messages.length}-${lastUser?.content.substring(0, 50)}`;
   }
 
-  initializeCapture() {
-    if (this.platform === 'unknown') {
-      console.log('[Omega_KG] Platform not supported - content.js:233');
-      return;
-    }
+  showNotification(message, type = "info") {
+    // Remove existing notification
+    const existing = document.getElementById("omega-kg-notification");
+    if (existing) existing.remove();
 
-    console.log(`[Omega_KG] Started capturing: ${this.platform} - content.js:237`);
-    
-    // Create floating UI elements
-    this.createFloatingButton();
-    this.createNotificationContainer();
-    
-    // Initial capture
-    this.captureConversationWithRetry();
-    
-    // Start observing for changes
-    this.startObserving();
+    // Create notification element
+    const notification = document.createElement("div");
+    notification.id = "omega-kg-notification";
+    notification.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 12px 20px;
+      border-radius: 8px;
+      background: ${type === "success" ? "#10b981" : type === "error" ? "#ef4444" : "#3b82f6"};
+      color: white;
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      z-index: 999999;
+      animation: slideIn 0.3s ease-out;
+    `;
+    notification.textContent = `Ω_KG: ${message}`;
+
+    // Add animation
+    const style = document.createElement("style");
+    style.textContent = `
+      @keyframes slideIn {
+        from { transform: translateX(400px); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+      }
+    `;
+    document.head.appendChild(style);
+    document.body.appendChild(notification);
+
+    // Auto-remove after 3 seconds
+    setTimeout(() => notification.remove(), 3000);
   }
 
-  createFloatingButton() {
-    // Create floating capture button with Omega symbol
-    this.floatingButton = document.createElement('div');
-    this.floatingButton.innerHTML = 'Ω';
-    this.floatingButton.style.cssText = `
+  addCaptureButton() {
+    // Add floating capture button
+    const button = document.createElement("button");
+    button.id = "omega-kg-capture-btn";
+    button.innerHTML = "Ω";
+    button.title = "Capture conversation to Omega_KG (Right-click for debug)";
+    button.style.cssText = `
       position: fixed;
       bottom: 20px;
       right: 20px;
       width: 50px;
       height: 50px;
-      background: linear-gradient(135deg, #019387 0%, #017a70 100%);
-      color: white;
       border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
       font-size: 24px;
       font-weight: bold;
       cursor: pointer;
-      box-shadow: 0 4px 12px rgba(1,147,135,0.4);
-      z-index: 10000;
-      transition: all 0.3s ease;
-      user-select: none;
-      font-family: 'Times New Roman', serif;
-      border: 2px solid #FF7C87;
-    `;
-
-    // Hover effects
-    this.floatingButton.addEventListener('mouseenter', () => {
-      this.floatingButton.style.transform = 'scale(1.1)';
-      this.floatingButton.style.boxShadow = '0 6px 16px rgba(255,124,135,0.6)';
-      this.floatingButton.style.borderColor = '#FF7C87';
-      this.floatingButton.style.borderWidth = '3px';
-    });
-
-    this.floatingButton.addEventListener('mouseleave', () => {
-      this.floatingButton.style.transform = 'scale(1)';
-      this.floatingButton.style.boxShadow = '0 4px 12px rgba(1,147,135,0.4)';
-      this.floatingButton.style.borderColor = '#FF7C87';
-      this.floatingButton.style.borderWidth = '2px';
-    });
-
-    // Click handler - manual capture
-    this.floatingButton.addEventListener('click', () => {
-      this.floatingButton.style.transform = 'scale(0.95)';
-      setTimeout(() => {
-        this.floatingButton.style.transform = 'scale(1)';
-      }, 150);
-      this.manualCapture();
-    });
-
-    // Right-click handler - debug info
-    this.floatingButton.addEventListener('contextmenu', (e) => {
-      e.preventDefault();
-      this.showDebugInfo();
-    });
-
-    document.body.appendChild(this.floatingButton);
-  }
-
-  createNotificationContainer() {
-    // Container for success/error notifications
-    this.notificationContainer = document.createElement('div');
-    this.notificationContainer.style.cssText = `
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      z-index: 10001;
-      pointer-events: none;
-    `;
-    document.body.appendChild(this.notificationContainer);
-  }
-
-  async manualCapture() {
-    this.showNotification('🔄 Capturing conversation...', 'info', 1000);
-    
-    try {
-      // Force capture even if already cached (manual override)
-      const result = await this.captureConversationWithRetry(3, true); // forceCapture = true
-      if (result) {
-        this.showNotification('🎯 Conversation captured successfully!', 'success', 3000);
-      } else {
-        this.showNotification('⚠️ No messages found to capture', 'warning', 2000);
-      }
-    } catch (error) {
-      this.showNotification('❌ Capture failed: ' + error.message, 'error', 4000);
-    }
-  }
-
-  showDebugInfo() {
-    const messages = this.extractMessages();
-    const info = {
-      platform: this.platform,
-      messagesFound: messages.length,
-      url: window.location.href,
-      cacheSize: this.conversationCache.size,
-      lastCapture: this.lastCaptureTime || 'Never'
-    };
-    
-    console.group('[Omega_KG] Debug Info');
-    console.table(info);
-    console.log('Sample messages:', messages.slice(0, 3));
-    console.groupEnd();
-    
-    this.showNotification(`🔍 Debug: ${messages.length} messages found`, 'info', 3000);
-  }
-
-  showNotification(message, type = 'success', duration = 3000) {
-    const notification = document.createElement('div');
-    
-    const colors = {
-      success: '#019387',
-      error: '#FF7C87', 
-      warning: '#ff9800',
-      info: '#2196F3'
-    };
-    
-    notification.textContent = message;
-    notification.style.cssText = `
-      background: ${colors[type]};
-      color: white;
-      padding: 12px 20px;
-      border-radius: 8px;
-      margin-bottom: 10px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      font-size: 14px;
-      font-weight: 500;
-      max-width: 300px;
-      word-wrap: break-word;
-      animation: slideIn 0.3s ease-out;
-      pointer-events: auto;
-      cursor: pointer;
+      z-index: 999998;
+      transition: transform 0.2s, box-shadow 0.2s;
     `;
 
-    // Add slide-in animation
-    const style = document.createElement('style');
-    style.textContent = `
-      @keyframes slideIn {
-        from { transform: translateX(100%); opacity: 0; }
-        to { transform: translateX(0); opacity: 1; }
-      }
-      @keyframes slideOut {
-        from { transform: translateX(0); opacity: 1; }
-        to { transform: translateX(100%); opacity: 0; }
-      }
-    `;
-    if (!document.head.querySelector('[data-omega-styles]')) {
-      style.setAttribute('data-omega-styles', '');
-      document.head.appendChild(style);
-    }
-
-    this.notificationContainer.appendChild(notification);
-
-    // Click to dismiss
-    notification.addEventListener('click', () => {
-      notification.style.animation = 'slideOut 0.3s ease-in';
-      setTimeout(() => notification.remove(), 300);
+    button.addEventListener("mouseover", () => {
+      button.style.transform = "scale(1.1)";
+      button.style.boxShadow = "0 6px 16px rgba(0,0,0,0.3)";
     });
 
-    // Auto-remove after duration
-    setTimeout(() => {
-      if (notification.parentNode) {
-        notification.style.animation = 'slideOut 0.3s ease-in';
-        setTimeout(() => notification.remove(), 300);
+    button.addEventListener("mouseout", () => {
+      button.style.transform = "scale(1)";
+      button.style.boxShadow = "0 4px 12px rgba(0,0,0,0.2)";
+    });
+
+    button.addEventListener("click", () => {
+      button.style.transform = "scale(0.95)";
+      setTimeout(() => (button.style.transform = "scale(1)"), 100);
+      this.captureConversation();
+    });
+
+    // Right-click for debug mode
+    button.addEventListener("contextmenu", (e) => {
+      e.preventDefault();
+      this.debugDOM();
+    });
+
+    document.body.appendChild(button);
+  }
+
+  debugDOM() {
+    // Debug helper to find message selectors
+    console.log("=== Omega_KG Debug Mode === - content.js:403");
+    console.log("Platform: - content.js:404", this.platform);
+    console.log("URL: - content.js:405", window.location.href);
+
+    // Find all elements with "message" in class or data attributes
+    const messageElements = document.querySelectorAll(
+      '[class*="message" i], [class*="chat" i], [class*="response" i], ' +
+        '[data-testid*="message" i], [data-test-id*="message" i]',
+    );
+    console.log(
+      `Found ${messageElements.length} elements with messagerelated attributes`,
+    );
+
+    // Group by selector patterns
+    const patterns = new Map();
+    messageElements.forEach((el) => {
+      const classes = Array.from(el.classList).join(" ");
+      const testId =
+        el.getAttribute("data-testid") || el.getAttribute("data-test-id") || "";
+      const key = `${el.tagName}.${classes} [${testId}]`;
+
+      if (!patterns.has(key)) {
+        patterns.set(key, { count: 0, example: el });
       }
-    }, duration);
+      patterns.get(key).count++;
+    });
+
+    console.log("\n=== Selector Patterns Found === - content.js:430");
+    Array.from(patterns.entries())
+      .sort((a, b) => b[1].count - a[1].count)
+      .slice(0, 10)
+      .forEach(([pattern, data]) => {
+        console.log(`${data.count}x: ${pattern} - content.js:435`);
+        console.log(
+          "Example text:",
+          data.example.textContent.substring(0, 100),
+        );
+      });
+
+    console.log(
+      "\n💡 Copy these selectors and update  extractMessages()",
+    );
+    console.log("=== End Debug === - content.js:445");
+
+    this.showNotification("Debug info logged to console (F12)", "info");
   }
 }
 
 // Initialize
 const capture = new ChatCapture();
 
-// Capture on visibility change (tab switch)
-document.addEventListener('visibilitychange', () => {
+// Add capture button
+if (capture.platform !== "unknown") {
+  capture.addCaptureButton();
+  console.log(
+    `[Omega_KG] Initialized for ${capture.platform}`,
+  );
+} else {
+  console.warn(
+    "[Omega_KG] Unknown platform, capture disabled",
+  );
+}
+
+// Start observing DOM changes
+capture.startObserving();
+
+// Capture on page load (delayed to allow content to render)
+window.addEventListener("load", () => {
+  console.log(
+    "[Omega_KG] Page loaded, scheduling initial capture",
+  );
+  setTimeout(() => capture.captureConversation(), 3000);
+});
+
+// Capture on visibility change (tab switch) - user is leaving the tab
+document.addEventListener("visibilitychange", () => {
   if (document.hidden) {
-    capture.captureConversationWithRetry().catch(() => {
-      // Error already logged in retry function
-    });
+    console.log(
+      "[Omega_KG] Tab hidden, capturing conversation",
+    );
+    capture.captureConversation();
   }
+});
+
+// Capture before page unload
+window.addEventListener("beforeunload", () => {
+  console.log(
+    "[Omega_KG] Page unloading, capturing conversation",
+  );
+  capture.captureConversation();
 });
