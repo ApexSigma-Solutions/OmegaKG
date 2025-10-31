@@ -321,7 +321,7 @@ class TaskLifecycle:
         self._update_task_file(uid, rule.to_status.value, rule)
 
         logger.info("Transitioned %s: %s → %s",
-                    uid, rule.from_status.value, rule.to_status.value)
+                   uid, rule.from_status.value, rule.to_status.value)
 
     def _warn_task(self, session: Any, uid: str, rule: LifecycleRule) -> None:
         """
