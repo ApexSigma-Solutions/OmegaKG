@@ -79,7 +79,7 @@ function Backup-Neo4jVolume {
                         Remove-Item -LiteralPath $item.FullName -Force -ErrorAction Stop
                     } catch {
                         Write-Err "Failed to remove old backup '$($item.FullName)': $_"
-                        throw
+                        continue
                     }
                 }
             }
@@ -88,29 +88,24 @@ function Backup-Neo4jVolume {
         Write-Err "Retention policy encountered an error: $_"
         throw
     }
+}
 
-    $timestamp = Get-Date -Format 'yyyyMMdd_HHmmss'
-    $archiveName = "neo4j_backup_${timestamp}.tar.gz"
-    $archivePathHost = Join-Path $backupDir $archiveName
-
-    Write-Info "Backing up named volume '$NamedVolume' to '$archivePathHost'"
-
-    $tarCmd = "tar czf /backup/$archiveName ."
-    if ($DryRun) { Write-Info "(DryRun) Would run: docker compose down --remove-orphans" } else { docker compose down --remove-orphans }
-
-    Write-Info "Bringing docker compose stack up (detached, rebuild)"
-    if ($DryRun) { Write-Info "(DryRun) Would run: docker compose up -d --build --remove-orphans" } else { docker compose up -d --build --remove-orphans }
-
-    Write-Info "Showing 'docker compose ps'"
-    if ($DryRun) { Write-Info "(DryRun) Would run: docker compose down --remove-orphans" } else { docker compose down --remove-orphans }
-
-    Write-Info "Bringing docker compose stack up (detached, rebuild)"
-    if ($DryRun) { Write-Info "(DryRun) Would run: docker compose up -d --build --remove-orphans" } else { docker compose up -d --build --remove-orphans }
+# Call the backup function outside its definition
 try {
     if (-not $DryRun) {
         $null = Backup-Neo4jVolume
     } else {
         Write-Info "DryRun: skipping actual volume backup, but running poetry checks."
+    $tarCmd = "tar czf /backup/$archiveName ."
+    if ($DryRun) {
+        Write-Info "(DryRun) Would run: docker run --rm -v ${NamedVolume}:/data -v `"$backupDir`":/backup alpine sh -c 'cd /data && $tarCmd'"
+    } else {
+        Write-Info "Running backup: docker run --rm -v ${NamedVolume}:/data -v `"$backupDir`":/backup alpine sh -c 'cd /data && $tarCmd'"
+        docker run --rm -v ${NamedVolume}:/data -v "$backupDir":/backup alpine sh -c "cd /data && $tarCmd"
+        if ($LASTEXITCODE -ne 0) {
+            Write-Err "Backup command failed with exit code $LASTEXITCODE"
+            throw "Backup failed"
+        }
     }
 
     Restart-ComposeStack
