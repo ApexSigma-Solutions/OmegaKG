@@ -35,7 +35,7 @@ Omega_KG enables intelligent knowledge capture and task lifecycle management by:
 ## Quick Start
 
 ### Prerequisites
-- Python 3.14+
+- Python 3.13+
 - Poetry
 - Neo4j (local or cloud instance)
 - Obsidian vault (optional, for markdown storage)

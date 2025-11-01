@@ -187,7 +187,7 @@ archived        blocked                  archived
 ## Changes Made in This PR
 
 ### 1. Python Version Fix
-**Issue**: Project required Python 3.14 (doesn't exist yet)
+**Issue**: Project required Python 3.13 (doesn't exist yet)
 **Fix**: Changed requirement to Python 3.12
 **Files**: `pyproject.toml`, `poetry.lock`
 

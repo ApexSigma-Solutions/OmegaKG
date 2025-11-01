@@ -17,7 +17,7 @@ The system creates an intelligent knowledge graph that links decisions, tasks, c
 5. Send email notifications before auto-transitions and for stale tasks
 
 ## Tech Stack
-- **Language**: Python 3.12+ (requires >=3.12, recommended 3.14+)
+- **Language**: Python 3.12+ (requires >=3.12, recommended 3.13+)
 - **Package manager**: Poetry
 - **Database**: Neo4j (local or cloud)
 - **API**: FastAPI + Uvicorn
