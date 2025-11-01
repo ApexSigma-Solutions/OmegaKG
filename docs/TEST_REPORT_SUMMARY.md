@@ -61,7 +61,7 @@
 
 ### Environment
 
-- Python: 3.14.0
+- Python: 3.13.0
 - Poetry: 2.1.4
 - Neo4j: Connected (bolt://localhost:7687)
 - OS: Windows with PowerShell
