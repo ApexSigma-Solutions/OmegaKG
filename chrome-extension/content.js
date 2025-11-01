@@ -362,25 +362,30 @@ class ChatCapture {
       width: 50px;
       height: 50px;
       border-radius: 50%;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: linear-gradient(135deg, #019387 0%, #017a70 100%);
       color: white;
       border: none;
+      border: 2px solid #FF7C87;
       font-size: 24px;
       font-weight: bold;
       cursor: pointer;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      box-shadow: 0 4px 12px rgba(1,147,135,0.4);
       z-index: 999998;
       transition: transform 0.2s, box-shadow 0.2s;
     `;
 
     button.addEventListener("mouseover", () => {
       button.style.transform = "scale(1.1)";
-      button.style.boxShadow = "0 6px 16px rgba(0,0,0,0.3)";
+      button.style.boxShadow = "0 6px 16px rgba(255,124,135,0.6)";
+      button.style.borderColor = '#FF7C87';
+      button.style.borderWidth = '3px';
     });
 
     button.addEventListener("mouseout", () => {
       button.style.transform = "scale(1)";
-      button.style.boxShadow = "0 4px 12px rgba(0,0,0,0.2)";
+      button.style.boxShadow = "0 4px 12px rgba(1,147,135,0.4)";
+      button.style.borderColor = '#FF7C87';
+      button.style.borderWidth = '2px';
     });
 
     button.addEventListener("click", () => {
@@ -400,9 +405,9 @@ class ChatCapture {
 
   debugDOM() {
     // Debug helper to find message selectors
-    console.log("=== Omega_KG Debug Mode === - content.js:403");
-    console.log("Platform: - content.js:404", this.platform);
-    console.log("URL: - content.js:405", window.location.href);
+    console.log("=== Omega_KG Debug Mode === - content.js:408");
+    console.log("Platform: - content.js:409", this.platform);
+    console.log("URL: - content.js:410", window.location.href);
 
     // Find all elements with "message" in class or data attributes
     const messageElements = document.querySelectorAll(
@@ -427,12 +432,12 @@ class ChatCapture {
       patterns.get(key).count++;
     });
 
-    console.log("\n=== Selector Patterns Found === - content.js:430");
+    console.log("\n=== Selector Patterns Found === - content.js:435");
     Array.from(patterns.entries())
       .sort((a, b) => b[1].count - a[1].count)
       .slice(0, 10)
       .forEach(([pattern, data]) => {
-        console.log(`${data.count}x: ${pattern} - content.js:435`);
+        console.log(`${data.count}x: ${pattern} - content.js:440`);
         console.log(
           "Example text:",
           data.example.textContent.substring(0, 100),
@@ -442,7 +447,7 @@ class ChatCapture {
     console.log(
       "\n💡 Copy these selectors and update  extractMessages()",
     );
-    console.log("=== End Debug === - content.js:445");
+    console.log("=== End Debug === - content.js:450");
 
     this.showNotification("Debug info logged to console (F12)", "info");
   }
