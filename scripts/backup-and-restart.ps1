@@ -64,6 +64,31 @@ function Backup-Neo4jVolume {
         [string]$NamedVolume = 'apexsigma.neo4j.data'
     )
 
+    # Retention policy: keep only the last 7 backups
+    try {
+        $existingBackups = Get-ChildItem -Path $backupDir -Filter "neo4j_backup_*.tar.gz" -File -ErrorAction SilentlyContinue |
+                           Sort-Object LastWriteTime -Descending
+        if ($existingBackups -and $existingBackups.Count -gt 7) {
+            $toDelete = $existingBackups | Select-Object -Skip 7
+            foreach ($item in $toDelete) {
+                Write-Info "Removing old backup: $($item.FullName)"
+                if ($DryRun) {
+                    Write-Info "(DryRun) Would remove: $($item.FullName)"
+                } else {
+                    try {
+                        Remove-Item -LiteralPath $item.FullName -Force -ErrorAction Stop
+                    } catch {
+                        Write-Err "Failed to remove old backup '$($item.FullName)': $_"
+                        throw
+                    }
+                }
+            }
+        }
+    } catch {
+        Write-Err "Retention policy encountered an error: $_"
+        throw
+    }
+
     $timestamp = Get-Date -Format 'yyyyMMdd_HHmmss'
     $archiveName = "neo4j_backup_${timestamp}.tar.gz"
     $archivePathHost = Join-Path $backupDir $archiveName
@@ -71,47 +96,16 @@ function Backup-Neo4jVolume {
     Write-Info "Backing up named volume '$NamedVolume' to '$archivePathHost'"
 
     $tarCmd = "tar czf /backup/$archiveName ."
-
-    if ($DryRun) {
-        # Use ${} to safely expand variables that are followed by punctuation (colon)
-        Write-Info "(DryRun) Would run: docker run --rm -v ${NamedVolume}:/data -v \"${backupDir}:/backup\" alpine sh -c '$tarCmd'"
-        return $archivePathHost
-    }
-
-    # Run ephemeral container to create the archive
-    # Delimit variables with ${} when followed by punctuation
-    & docker run --rm -v "${NamedVolume}:/data" -v "${backupDir}:/backup" alpine sh -c $tarCmd
-    if ($LASTEXITCODE -ne 0) {
-        Write-Err "Backup command failed with exit code $LASTEXITCODE"; exit 3
-    }
-
-    if (-not (Test-Path $archivePathHost)) {
-        Write-Err "Expected archive was not created: $archivePathHost"; exit 4
-    }
-
-    $size = (Get-Item $archivePathHost).Length
-    if ($size -lt 1024) {
-        Write-Warn "Archive exists but is very small ($size bytes). Verify contents before proceeding."
-    } else {
-        Write-Info "Backup created: $archivePathHost ($size bytes)"
-    }
-
-    return $archivePathHost
-}
-
-# Function: restart compose stack
-function Restart-ComposeStack {
-    Write-Info "Bringing docker-compose stack down (remove orphans)"
-    if ($DryRun) { Write-Info "(DryRun) Would run: docker-compose down --remove-orphans" } else { docker-compose down --remove-orphans }
+    if ($DryRun) { Write-Info "(DryRun) Would run: docker compose down --remove-orphans" } else { docker compose down --remove-orphans }
 
     Write-Info "Bringing docker compose stack up (detached, rebuild)"
     if ($DryRun) { Write-Info "(DryRun) Would run: docker compose up -d --build --remove-orphans" } else { docker compose up -d --build --remove-orphans }
 
     Write-Info "Showing 'docker compose ps'"
-    if ($DryRun) { Write-Info "(DryRun) Would run: docker compose ps" } else { docker compose ps }
-}
+    if ($DryRun) { Write-Info "(DryRun) Would run: docker compose down --remove-orphans" } else { docker compose down --remove-orphans }
 
-# Perform actions
+    Write-Info "Bringing docker compose stack up (detached, rebuild)"
+    if ($DryRun) { Write-Info "(DryRun) Would run: docker compose up -d --build --remove-orphans" } else { docker compose up -d --build --remove-orphans }
 try {
     if (-not $DryRun) {
         $null = Backup-Neo4jVolume
