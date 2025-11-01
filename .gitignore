@@ -24,3 +24,11 @@ junit.xml
 .pytest_cache/
 *.cover
 .hypothesis/
+#
+# BACKUPS & DATA
+#
+*.tar.gz
+docker_backups/
+
+# Bevel graph data
+.bevel/

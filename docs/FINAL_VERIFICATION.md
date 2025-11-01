@@ -54,7 +54,7 @@ $ poetry run python -m omega_kg.obsidian_sync
 ## Test Suite Results
 
 ```
-Platform: Windows (Python 3.14.0)
+Platform: Windows (Python 3.13.0)
 Test Framework: pytest 8.4.2
 Execution Time: 0.55 seconds
 
