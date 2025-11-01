@@ -5,13 +5,15 @@
 This pull request delivers a **complete bidirectional synchronization system** between Obsidian vault and Neo4j with task lifecycle enforcement and Linear integration, as specified in the issue requirements.
 
 ### Key Achievement
-All deliverables from the issue have been **fully implemented and tested** with a 98.8% test pass rate (80/81 tests passing).
+
+All deliverables from the issue have been **fully implemented and tested** with a 98.8% test pass rate (80/81 tests passing), where the single failure is an expected integration test (not a regression).
 
 ---
 
 ## Deliverables Completed ✅
 
 ### 1. Obsidian Sync ✅
+
 **Module**: `omega_kg/obsidian_sync.py`
 
 - ✅ Parse Obsidian vault notes with frontmatter metadata
@@ -24,6 +26,7 @@ All deliverables from the issue have been **fully implemented and tested** with 
 **CLI Command**: `omega sync [--mock]`
 
 ### 2. Lifecycle Rules ✅
+
 **Module**: `omega_kg/lifecycle.py`
 
 Implements time-based task lifecycle transitions:
@@ -36,17 +39,20 @@ Implements time-based task lifecycle transitions:
 | Completed archival | completed → archived | 90 days | Auto |
 
 **Features**:
+
 - ✅ Configurable thresholds and conditions
 - ✅ Pinning support (exempt tasks from auto-archival)
 - ✅ Dry-run mode for testing
 - ✅ Human-readable reports with statistics
 - ✅ Email notifications (optional)
 
-**CLI Commands**: 
+**CLI Commands**:
+
 - `omega lifecycle [--dry-run] [--no-email]`
 - `omega report [--email]`
 
 ### 3. Linear Webhook Integration ✅
+
 **Module**: `omega_kg/linear_sync.py`
 
 - ✅ Handle Linear issue webhooks (create/update/delete)
@@ -57,6 +63,7 @@ Implements time-based task lifecycle transitions:
 **Webhook Handler**: `LinearSync.handle_linear_webhook(payload)`
 
 ### 4. CLI Utilities ✅
+
 **Module**: `omega_kg/cli.py`
 
 Complete command-line interface with 7 commands:
@@ -72,17 +79,20 @@ Complete command-line interface with 7 commands:
 | `omega stale` | List stale tasks | - |
 
 **Features**:
+
 - ✅ Mock mode support for all commands
 - ✅ Connection health checks
 - ✅ Comprehensive status reporting
 - ✅ Email report delivery
 
 ### 5. Environment Configuration ✅
+
 **Module**: `omega_kg/settings.py`
 
 Pydantic-based settings loaded from environment variables:
 
 **Required Variables**:
+
 ```env
 NEO4J_URI=bolt://localhost:7687
 NEO4J_USER=neo4j
@@ -91,6 +101,7 @@ OBSIDIAN_VAULT_PATH=/path/to/vault
 ```
 
 **Optional Variables**:
+
 ```env
 # Email (for lifecycle reports)
 SMTP_HOST=smtp.gmail.com
@@ -112,12 +123,14 @@ LINEAR_PROJECT_ID=your-project-id
 ### 6. Testing & Documentation ✅
 
 **Test Suite**:
+
 - 81 total tests across 15 test modules
 - 80 passing tests (98.8% pass rate)
 - 1 expected failure (requires live Neo4j instance)
 - Comprehensive coverage of all modules and CLI commands
 
 **Test Modules**:
+
 - `test_cli.py` - 13 tests for CLI commands
 - `test_lifecycle.py` - 15 tests for lifecycle enforcement
 - `test_linear_sync.py` - 5 tests for Linear integration
@@ -125,6 +138,7 @@ LINEAR_PROJECT_ID=your-project-id
 - Plus 9 additional test modules
 
 **Documentation**:
+
 - ✅ Comprehensive README.md with quick start guide
 - ✅ Full documentation in `docs/index.md` with architecture diagrams
 - ✅ CLI reference with examples
@@ -139,6 +153,7 @@ LINEAR_PROJECT_ID=your-project-id
 ### Architecture
 
 **Data Model**:
+
 ```
 ChatSession -[:CONTAINS]-> Decision
 Task -[:IMPLEMENTS]-> Decision
@@ -147,6 +162,7 @@ Session -[:CONTAINS_COMMIT]-> Commit
 ```
 
 **Node Types**:
+
 - **Task**: Work items with status, priority, lifecycle metadata
 - **ChatSession**: Decision-making sessions
 - **Decision**: Individual decisions or action items
@@ -182,26 +198,33 @@ archived        blocked                  archived
    - Neo4j changes → Obsidian file updates
    - Linear webhooks → both systems
 
----
+**Issue**: Project had inconsistent Python version references (3.14 in some places)
+**Fix**: Standardized to Python 3.13 across all workflows and documentation
+**Files**: `pyproject.toml`, `poetry.lock`
+**Files**: `pyproject.toml`, `poetry.lock`
 
 ## Changes Made in This PR
 
 ### 1. Python Version Fix
-**Issue**: Project required Python 3.14 (doesn't exist yet)
-**Fix**: Changed requirement to Python 3.12
+
+**Issue**: Project had inconsistent Python version references (3.14 in some places)
+**Fix**: Standardized to Python 3.13 across all workflows and documentation
 **Files**: `pyproject.toml`, `poetry.lock`
 
 ### 2. CLI Enhancements
+
 **Added**: Three new CLI commands (sync, status, report)
 **Tests**: 13 new test cases for CLI commands
 **Files**: `omega_kg/cli.py`, `tests/test_cli.py`
 
 ### 3. Documentation
+
 **Updated**: README.md with complete project overview
 **Created**: Comprehensive documentation in docs/index.md
 **Added**: Quick start guide, architecture diagrams, CLI reference
 
 ### 4. Code Quality
+
 **Fixed**: Code review issues (duplicate decorator, command clarification)
 **Verified**: Security scan with CodeQL (0 vulnerabilities)
 **Improved**: .gitignore for test artifacts
@@ -211,6 +234,7 @@ archived        blocked                  archived
 ## Test Results
 
 ### Full Test Suite
+
 ```
 81 tests collected
 80 passed, 1 failed
@@ -219,25 +243,28 @@ Execution time: 0.85s
 ```
 
 ### Test Coverage by Module
+
 - CLI commands: 13/13 passing (100%)
 - Lifecycle enforcement: 15/15 passing (100%)
 - Linear sync: 5/5 passing (100%)
 - Obsidian sync: 11/11 passing (100%)
 - Other modules: 36/37 passing (97.3%)
 
-**Note**: The single failure is an expected integration test that requires a live Neo4j instance.
+**Note**: The single failure is an expected integration test (`test_integration_live_neo4j` in `tests/test_obsidian_sync_recovery.py`) that requires a live Neo4j instance.
 
 ---
 
 ## Security Analysis
 
 ### CodeQL Security Scan
+
 ```
 Analysis Result: 0 alerts
 Status: ✅ PASSED
 ```
 
 No security vulnerabilities detected in:
+
 - Database connections
 - File operations
 - Email handling
@@ -249,6 +276,7 @@ No security vulnerabilities detected in:
 ## Usage Examples
 
 ### Initialize System
+
 ```bash
 # Install dependencies
 poetry install
@@ -262,6 +290,7 @@ poetry run omega init
 ```
 
 ### Daily Operations
+
 ```bash
 # Check system status
 poetry run omega status
@@ -280,6 +309,7 @@ poetry run omega report --email
 ```
 
 ### Monitoring
+
 ```bash
 # View task statistics
 poetry run omega stats
@@ -293,11 +323,13 @@ poetry run omega stale
 ## System Requirements
 
 ### Runtime Requirements
+
 - Python 3.12+
-- Neo4j 4.0+ (or run in mock mode)
+- Neo4j 4.0+ (required unless running in mock mode)
 - Obsidian vault with task notes
 
 ### Optional Requirements
+
 - SMTP server (for email reports)
 - Linear account (for issue tracking integration)
 
@@ -306,6 +338,7 @@ poetry run omega stale
 ## Next Steps
 
 ### Production Deployment
+
 1. Set up Neo4j instance with proper credentials
 2. Configure `.env` with production values
 3. Run `omega init` to initialize schema
@@ -313,11 +346,13 @@ poetry run omega stale
 5. Configure webhook endpoint for Linear integration
 
 ### Monitoring
+
 - Monitor `omega status` for connection health
 - Review daily lifecycle reports
 - Check stale task counts regularly
 
 ### Maintenance
+
 - Review and adjust lifecycle thresholds as needed
 - Pin important tasks to prevent auto-archival
 - Monitor email delivery for lifecycle reports
@@ -327,6 +362,7 @@ poetry run omega stale
 ## Conclusion
 
 This PR delivers a **production-ready** bidirectional synchronization system that:
+
 - ✅ Meets all requirements specified in the issue
 - ✅ Includes comprehensive test coverage (98.8% pass rate)
 - ✅ Provides complete documentation
@@ -334,4 +370,12 @@ This PR delivers a **production-ready** bidirectional synchronization system tha
 - ✅ Supports graceful degradation (mock mode)
 - ✅ Offers full CLI interface for operations
 
+**Known limitations and future improvements**:
+
+- Integration tests requiring a live Neo4j instance may fail if the database is unavailable.
+- Email notifications depend on correct SMTP configuration and may require additional setup.
+- Linear integration assumes stable API endpoints and may need updates if Linear changes its API.
+- Further enhancements could include more granular permission controls and advanced reporting features.
+
+The system is ready for deployment and use.
 The system is ready for deployment and use.

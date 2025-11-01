@@ -73,7 +73,7 @@ ORDER BY t.created DESC
 
 ## Development Workflow
 
-**Dependency Management**: Poetry with Python 3.14+ requirement
+**Dependency Management**: Poetry with Python 3.13+ requirement
 ```bash
 poetry install --with dev    # Development dependencies (Black, Ruff, Pytest-Cov, Pre-Commit)
 poetry install --with docs   # Documentation (MkDocs, mkdocstrings)
