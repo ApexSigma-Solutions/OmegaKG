@@ -12,7 +12,7 @@ A Neo4j-powered knowledge management system that captures AI conversations, sync
 ## 1️⃣ Setup (5 minutes)
 
 ### Prerequisites
-- Python 3.12+ (tested on 3.14)
+- Python 3.12+ (tested on 3.13)
 - Poetry (package manager)
 - Neo4j instance (local or cloud; we use `localhost:7474` in a Docker container)
 - Git

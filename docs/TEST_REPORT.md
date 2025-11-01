@@ -212,7 +212,7 @@ poetry install --with dev
 
 **Results**:
 - ✅ Poetry version: 2.1.4
-- ✅ Python version: 3.14.0
+- ✅ Python version: 3.13.0
 - ✅ All dependencies installed
 - ✅ Development tools available
 - ✅ No unresolved conflicts
@@ -245,7 +245,7 @@ poetry install --with dev
 
 | Component | Test | Status | Notes |
 |-----------|------|--------|-------|
-| Python 3.14 | ✅ Verified | ✅ Functional | Version correct |
+| Python 3.13 | ✅ Verified | ✅ Functional | Version correct |
 | Poetry | ✅ Verified | ✅ Functional | v2.1.4 installed |
 | Neo4j Connection | ✅ Tested | ✅ Functional | Connection established |
 | Lifecycle Module | ✅ Tested | ✅ Functional | Dry-run works perfectly |

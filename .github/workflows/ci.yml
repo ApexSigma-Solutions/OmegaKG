@@ -1,4 +1,4 @@
-name: Code Scanning, Linting, and Testing
+name: Omega_KG CI Pipeline
 
 on:
   pull_request:
@@ -13,7 +13,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.14'
+          python-version: '3.13'
       - name: Cache Poetry dependencies
         uses: actions/cache@v4
         with:
@@ -34,7 +34,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.14'
+          python-version: '3.13'
       - name: Install Poetry
         run: pip install poetry
       - name: Restore Poetry cache
@@ -94,7 +94,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.14'
+          python-version: '3.13'
       - name: Install Poetry
         run: pip install poetry
       - name: Restore Poetry cache
@@ -105,14 +105,45 @@ jobs:
       - name: Install dependencies
         run: poetry install --with dev
       - name: Run pytest with coverage
-        run: poetry run pytest --cov=omega_kg --cov-report=xml --cov-report=term --junitxml=junit.xml -m "not requires_neo4j"
-        continue-on-error: false
+        run: poetry run pytest \
+             --cov=omega_kg \
+             --cov-report=xml \
+             --cov-report=term \
+             --junitxml=junit.xml \
+             -m "not requires_neo4j" \
+             --cov-fail-under=50
+
+      - name: Install Trunk CLI
+        run: curl -fsSL https://get.trunk.io -o install-trunk.sh && bash install-trunk.sh
       - name: Upload test results to Trunk
-        run: |
-          curl -fsSL https://get.trunk.io -o install-trunk.sh && bash install-trunk.sh
-          trunk upload-test-results junit.xml
+        run: trunk upload-test-results junit.xml
       - name: Upload coverage to PR
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report
           path: coverage.xml
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: coverage.xml
+          fail_ci_if_error: true
+
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install Poetry
+        run: pip install poetry
+      - name: Restore Poetry cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pypoetry
+          key: ${{ runner.os }}-poetry-${{ hashFiles('**/poetry.lock') }}
+      - name: Install docs dependencies
+        run: poetry install --with docs
+      - name: Build documentation
+        run: poetry run mkdocs build --strict
