@@ -112,6 +112,7 @@ jobs:
              --junitxml=junit.xml \
              -m "not requires_neo4j" \
              --cov-fail-under=50
+
       - name: Install Trunk CLI
         run: curl -fsSL https://get.trunk.io -o install-trunk.sh && bash install-trunk.sh
       - name: Upload test results to Trunk
