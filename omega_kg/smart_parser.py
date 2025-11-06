@@ -6,6 +6,8 @@ import frontmatter
 from pathlib import Path
 from typing import Dict, Any, Optional
 
+from .vault_utils import VaultUtils, VaultUtilsError
+
 logger = logging.getLogger(__name__)
 
 
@@ -17,6 +19,30 @@ class LinearAPIError(Exception):
 class TaskParsingError(Exception):
     """Exception raised when task parsing fails."""
     pass
+
+
+def _detect_vault_path(task_file_path: Path) -> Path:
+    """
+    Detect the Obsidian vault path by looking for .obsidian folder or using parent directory.
+    
+    Args:
+        task_file_path (Path): Path to the task file
+        
+    Returns:
+        Path: Detected vault path
+    """
+    current_path = task_file_path.parent
+    
+    # Look for .obsidian folder up to 5 levels up
+    for _ in range(5):
+        if (current_path / '.obsidian').exists():
+            return current_path
+        if current_path.parent == current_path:  # Reached root
+            break
+        current_path = current_path.parent
+    
+    # Fallback: assume parent directory is the vault
+    return task_file_path.parent
 
 
 async def parse_and_create_task(task_file_path: Path) -> Dict[str, Any]:
@@ -42,10 +68,22 @@ async def parse_and_create_task(task_file_path: Path) -> Dict[str, Any]:
     if not task_file_path.exists():
         raise TaskParsingError(f"Task file not found: {task_file_path}")
     
-    # Step 2: Load and parse the frontmatter
+    # Step 2: Initialize VaultUtils and read note once
     try:
-        with open(task_file_path, 'r', encoding='utf-8') as f:
-            post = frontmatter.load(f)
+        vault_path = _detect_vault_path(task_file_path)
+        vault = VaultUtils(vault_path)
+        
+        # Get relative path for VaultUtils
+        relative_path = task_file_path.relative_to(vault_path)
+        
+        # Read file once using VaultUtils
+        metadata, content = vault.read_note(relative_path)
+        
+        # Create frontmatter post object for compatibility
+        post = frontmatter.Post(content, **metadata)
+        
+    except (VaultUtilsError, ValueError) as e:
+        raise TaskParsingError(f"Failed to read task file {task_file_path}: {e}")
     except Exception as e:
         raise TaskParsingError(f"Failed to read task file {task_file_path}: {e}")
     
@@ -109,16 +147,20 @@ async def parse_and_create_task(task_file_path: Path) -> Dict[str, Any]:
     except Exception as e:
         # Step 9: Cleanup on failure - remove pending status
         try:
-            # Reload the file in case it was modified elsewhere
-            with open(task_file_path, 'r', encoding='utf-8') as f:
-                post = frontmatter.load(f)
+            # Reload the file using VaultUtils in case it was modified elsewhere
+            vault_path = _detect_vault_path(task_file_path)
+            vault = VaultUtils(vault_path)
+            relative_path = task_file_path.relative_to(vault_path)
+            
+            metadata, content = vault.read_note(relative_path)
+            cleanup_post = frontmatter.Post(content, **metadata)
             
             # Remove pending status
-            if post.metadata.get('linear_status') == 'pending':
-                del post.metadata['linear_status']
+            if cleanup_post.metadata.get('linear_status') == 'pending':
+                del cleanup_post.metadata['linear_status']
                 
             with open(task_file_path, 'w', encoding='utf-8') as f:
-                f.write(frontmatter.dumps(post))
+                f.write(frontmatter.dumps(cleanup_post))
                 
             logger.info(f"Cleaned up pending status after failure: {task_file_path}")
         except Exception as cleanup_error:
