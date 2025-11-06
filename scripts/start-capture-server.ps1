@@ -1,7 +1,7 @@
 # Start capture server in background
 
 # Check if already running
-$existing = Get-CimInstance Win32_Process -Filter "Name = 'python.exe'" |
+$existing = Get-CimInstance Win32_Process -Filter "Name = 'uvicorn.exe'" |
     Where-Object { $_.CommandLine -match "omega_kg.capture_server" }
 
 if ($existing) {
@@ -12,7 +12,7 @@ if ($existing) {
 # Start in background
 $job = Start-Job -ScriptBlock {
     Set-Location $using:PWD
-    poetry run python -m omega_kg.capture_server
+    poetry run uvicorn omega_kg.capture_server:app --host 127.0.0.1 --port 8765
 }
 
 Write-Host "✓ Capture server started (Job ID: $($job.Id))"

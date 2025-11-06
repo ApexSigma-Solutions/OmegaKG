@@ -3,6 +3,7 @@
 // The extension will wake up when messages arrive or alarms fire
 
 const CAPTURE_ENDPOINT = "http://localhost:8765/capture";
+const OMEGA_API_KEY = "N7F6JKUecfl69WTC83rN7qJTMr2H6cylDyIDNM6Npu8y5KczFaAXQoPFYovlQQAP";
 
 // Listen for messages from content scripts
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -32,7 +33,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 
   if (message.type === "PING") {
-    console.log("[Omega_KG] Service worker is alive - background.js:35");
+    console.log("[Omega_KG] Service worker is alive - background.js:36");
     sendResponse({ alive: true, timestamp: new Date().toISOString() });
     return true;
   }
@@ -60,6 +61,7 @@ async function saveToLocalhost(data) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        "X-API-Key": OMEGA_API_KEY // <-- ADD THIS LINE
       },
       body: JSON.stringify(data),
     });
@@ -70,7 +72,7 @@ async function saveToLocalhost(data) {
     }
 
     const result = await response.json();
-    console.log("[Omega_KG] Server response: - background.js:73", result);
+    console.log("[Omega_KG] Server response: - background.js:75", result);
     return result;
   } catch (error) {
     console.error(
@@ -95,7 +97,7 @@ chrome.alarms.onAlarm.addListener((alarm) => {
         ),
       )
       .catch(() =>
-        console.warn("[Omega_KG] Server offline - background.js:98"),
+        console.warn("[Omega_KG] Server offline - background.js:100"),
       );
   }
 });
