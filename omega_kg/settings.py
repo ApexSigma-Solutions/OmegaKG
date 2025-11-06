@@ -1,86 +1,114 @@
-from typing import Optional
+from typing import Optional, List
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import Field
+from functools import lru_cache
+import sys
+import traceback
 
 
 class Settings(BaseSettings):
     """
     Application settings loaded from environment variables.
-
-    WARNING: Sensitive default values are provided for development only and
-    MUST be overridden in production via environment variables or a .env file.
-    Sensitive fields: neo4j_password, smtp_password, smtp_user, email_to,
-    linear_api_key, linear_webhook_secret, github_token, nanogpt_api_key,
-    openrouter_api_key, perplexity_api_key, gemini_api_key
-
-    app_env: Application environment. Allowed values: "development" or
-    "production".
+    Fails fast if required secrets are missing.
     """
 
-    # App environment
-    app_env: str = "development"
-
-    # Neo4j connection
-    neo4j_uri: str = "bolt://localhost:7687"
-    neo4j_user: str = "neo4j"
-    neo4j_password: str = "please-change-this-password"
-
-    # Obsidian vault path
-    obsidian_vault_path: str = "/path/to/your/obsidian/vault"
-
-    # Email settings for lifecycle reports
-    smtp_host: Optional[str] = "smtp.gmail.com"
-    smtp_port: int = 587
-    smtp_user: Optional[str] = None
-    smtp_password: Optional[str] = None
-    email_to: Optional[str] = None
-
-    # Linear integration
-    linear_api_key: Optional[str] = None
-    linear_webhook_secret: Optional[str] = None
-    linear_team_id: Optional[str] = None
-    linear_workspace_id: Optional[str] = None
-    linear_project_id: Optional[str] = None
-
-    # GitHub integration
-    github_token: Optional[str] = None
-
-    # AI/LLM API keys
-    nanogpt_api_key: Optional[str] = None
-    openrouter_api_key: Optional[str] = None
-    perplexity_api_key: Optional[str] = None
-    gemini_api_key: Optional[str] = None
-
+    # --- Pydantic Config (Moved to top as per best practice) ---
     model_config = SettingsConfigDict(
         env_file=".env", env_file_encoding="utf-8", extra="ignore"
     )
 
+    # --- App Environment ---
+    app_env: str = Field("development", validation_alias="APP_ENV")
 
-settings = Settings()
+    # --- Core Required Settings (Fail-fast) ---
+    neo4j_uri: str = Field(
+        "bolt://localhost:7687",
+        validation_alias="NEO4J_URI"
+    )
+    neo4j_user: str = Field(
+        "neo4j",
+        validation_alias="NEO4J_USER"
+    )
+    neo4j_password: str = Field(
+        ...,  # <-- CHANGED: Now required
+        validation_alias="NEO4J_PASSWORD"
+    )
+    obsidian_vault_path: str = Field(
+        ...,  # <-- CHANGED: Now required
+        validation_alias="OBSIDIAN_VAULT_PATH"
+    )
+
+    # --- Security Settings (REQUIRED) ---
+    extension_api_key: str = Field(
+        ...,
+        validation_alias="EXTENSION_API_KEY"
+    )  # API key for browser extension authentication
+
+    linear_webhook_secret: str = Field(
+        ...,
+        validation_alias="LINEAR_WEBHOOK_SECRET"
+    )  # Secret for verifying Linear webhook payloads
+
+    chrome_extension_id: str = Field(
+        ...,
+        validation_alias="CHROME_EXTENSION_ID"
+    )  # Chrome extension ID for CORS configuration
+
+    # --- Optional Integrations ---
+
+    # Email settings for lifecycle reports
+    smtp_host: Optional[str] = Field(
+        "smtp.gmail.com",
+        validation_alias="SMTP_HOST"
+    )
+    smtp_port: int = Field(587, validation_alias="SMTP_PORT")
+    smtp_user: Optional[str] = Field(None, validation_alias="SMTP_USER")
+    smtp_password: Optional[str] = Field(None, validation_alias="SMTP_PASSWORD")
+    email_to: Optional[str] = Field(None, validation_alias="EMAIL_TO")
+
+    # Linear integration
+    linear_api_key: Optional[str] = Field(None, validation_alias="LINEAR_API_KEY")
+    linear_team_id: Optional[str] = Field(None, validation_alias="LINEAR_TEAM_ID")
+    linear_workspace_id: Optional[str] = Field(None, validation_alias="LINEAR_WORKSPACE_ID")
+    linear_project_id: Optional[str] = Field(None, validation_alias="LINEAR_PROJECT_ID")
+
+    # Keywords for decision extraction
+    decision_keywords: List[str] = Field(
+        default_factory=lambda: ["decided to", "will use", "going to", "plan is", "approach is", "solution is"],
+        validation_alias="DECISION_KEYWORDS"
+    )
+
+    # GitHub integration
+    github_token: Optional[str] = Field(None, validation_alias="GITHUB_TOKEN")
+
+    # AI/LLM API keys
+    nanogpt_api_key: Optional[str] = Field(None, validation_alias="NANOGPT_API_KEY")
+    openrouter_api_key: Optional[str] = Field(None, validation_alias="OPENROUTER_API_KEY")
+    perplexity_api_key: Optional[str] = Field(None, validation_alias="PERPLEXITY_API_KEY")
+    gemini_api_key: Optional[str] = Field(None, validation_alias="GEMINI_API_KEY")
 
 
-def validate_settings() -> None:
+@lru_cache(maxsize=1)
+def get_settings() -> Settings:
     """
-    Validate critical settings for production use.
-
-    Raises:
-        ValueError: If required settings are missing in production mode.
+    Lazily load and cache Settings instance.
+    This prevents import-time errors if env vars are missing.
     """
-    if settings.app_env == "production":
-        required_fields = [
-            "neo4j_password",
-            "obsidian_vault_path"
-        ]
+    try:
+        settings_instance = Settings()
+        # Validation is now handled by Pydantic's constructor
+        return settings_instance
+    except Exception as e:
+        # --- CHANGED: Use traceback for richer error logging ---
+        print(f"FATAL ERROR: Failed to load settings. {e} - settings.py:103", file=sys.stderr)
+        traceback.print_exc(file=sys.stderr)
+        # Re-raise the exception to stop the application
+        raise
 
-        missing = []
-        for field in required_fields:
-            value = getattr(settings, field)
-            if (not value or
-                    (isinstance(value, str) and
-                     value.startswith("please-change"))):
-                missing.append(field)
 
-        if missing:
-            raise ValueError(
-                f"Missing required production settings: {', '.join(missing)}. "
-                "Please configure these in your .env file."
-            )
+# --- REMOVED: validate_settings() is no longer needed as fields are
+# --- required by Pydantic, providing a cleaner fail-fast mechanism.
+
+# Create the global settings instance using the lazy-loader.
+# This ensures Settings() is only called once and is cached.
+settings = get_settings()
