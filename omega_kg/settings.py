@@ -109,6 +109,5 @@ def get_settings() -> Settings:
 # --- REMOVED: validate_settings() is no longer needed as fields are
 # --- required by Pydantic, providing a cleaner fail-fast mechanism.
 
-# Create the global settings instance using the lazy-loader.
-# This ensures Settings() is only called once and is cached.
-settings = get_settings()
+# The global settings instance is created lazily via get_settings()
+# This ensures Settings() is only called when needed and is cached.
