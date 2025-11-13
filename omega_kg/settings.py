@@ -54,6 +54,20 @@ class Settings(BaseSettings):
         validation_alias="CHROME_EXTENSION_ID"
     )  # Chrome extension ID for CORS configuration
 
+    # --- JWT Authentication Settings (REQUIRED) ---
+    jwt_secret_key: str = Field(
+        ...,
+        validation_alias="JWT_SECRET_KEY"
+    )  # Secret key for signing JWT tokens
+    jwt_algorithm: str = Field(
+        "HS256",
+        validation_alias="JWT_ALGORITHM"
+    )  # Algorithm for JWT token signing
+    jwt_expiration_minutes: int = Field(
+        1440,
+        validation_alias="JWT_EXPIRATION_MINUTES"
+    )  # JWT token expiration time in minutes (default: 24 hours)
+
     # --- Optional Integrations ---
 
     # Email settings for lifecycle reports
