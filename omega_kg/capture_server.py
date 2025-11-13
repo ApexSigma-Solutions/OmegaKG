@@ -8,15 +8,14 @@ saves them to Obsidian vault, and percolates to Neo4j.
 
 import hashlib
 import logging
-import hmac
+import neo4j
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, Security, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security import APIKeyHeader
 from neo4j import GraphDatabase
 from pydantic import BaseModel, Field
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -25,6 +24,11 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from omega_kg.settings import settings
 from omega_kg.percolation import PercolationEngine
 from omega_kg.linear_sync import LinearSync
+from omega_kg.auth_utils import (
+    get_static_api_key,
+    validate_access_token,
+    create_access_token,
+)
 
 # Configure logging
 logging.basicConfig(
@@ -60,34 +64,24 @@ app = FastAPI(
 
 sync_engine = LinearSync()
 
-# --- UPDATED: CORS Middleware (FIXED) ---
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         f"chrome-extension://{settings.chrome_extension_id}",
     ],
     allow_credentials=True,
-    allow_methods=["POST", "GET"],
-    allow_headers=["X-API-Key", "Content-Type"],
+    allow_methods=["POST", "GET", "OPTIONS"],
+    allow_headers=["X-API-Key", "Authorization", "Content-Type"],
 )
 
-# --- Security Dependency ---
-API_KEY_HEADER = APIKeyHeader(name="X-API-Key")
-
-async def get_api_key(api_key_header: str = Security(API_KEY_HEADER)):
-    """Validates the X-API-Key header against the one in settings."""
-    # settings.py GUARANTEES extension_api_key is a string
-    if hmac.compare_digest(api_key_header, settings.extension_api_key):
-        return api_key_header
-    else:
-        logger.warning("Invalid API key received.")
-        raise HTTPException(
-            status_code=403,
-            detail="Could not validate credentials"
-        )
-# --------------------------------
-
 # --- Pydantic Models ---
+class Token(BaseModel):
+    """JWT token response model."""
+
+    access_token: str = Field(..., description="JWT access token")
+    token_type: str = Field(default="bearer", description="Token type")
+
+
 class Message(BaseModel):
     role: str = Field(..., description="Message role (user/assistant)")
     content: str = Field(..., description="Message content")
@@ -148,8 +142,7 @@ def format_conversation_markdown(data: ConversationData) -> str:
         for key, value in data.metadata.items():
             frontmatter_lines.append(f"{key}: {value}")
     frontmatter_lines.append("---")
-    frontmatter = "\n".join(frontmatter_lines)
-    
+
     title = data.title or f"{data.platform} Conversation"
     content_lines = [
         f"\n# {title}",
@@ -371,12 +364,42 @@ async def health_check():
     
     return health_status
 
+
+@app.post("/auth/token", response_model=Token)
+async def login_for_access_token(
+    _api_key: str = Security(get_static_api_key),
+) -> Token:
+    """
+    Exchange static API key for a short-lived JWT Bearer token.
+
+    The Chrome extension calls this endpoint with the bootstrap API key (X-API-Key header)
+    to receive a short-lived JWT token for subsequent API requests.
+
+    Args:
+        _api_key: Validated static API key from X-API-Key header
+
+    Returns:
+        Token model with access_token and token_type
+
+    Raises:
+        HTTPException: 403 if API key is invalid
+    """
+    logger.info("Token request received")
+    access_token = create_access_token(data={"sub": "chrome_extension_user"})
+    return Token(access_token=access_token, token_type="bearer")
+
+
 # --- ENDPOINT 1: Chrome Extension Capture (FIXED) ---
+@app.options("/capture")
+async def capture_options():
+    """Handle CORS preflight requests for /capture endpoint"""
+    return {"message": "CORS preflight OK"}
+
 @app.post("/capture", response_model=CaptureResponse)
 async def capture_conversation(
     data: ConversationData,
-    _api_key: str = Security(get_api_key)
-):
+    _token_payload: Dict[str, Any] = Security(validate_access_token),
+) -> CaptureResponse:
     """
     Process a captured ConversationData...
     """
