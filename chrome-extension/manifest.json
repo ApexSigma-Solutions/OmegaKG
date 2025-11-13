@@ -54,5 +54,6 @@
   ],
   "action": {
     "default_title": "Omega_KG: Capture AI Conversations"
-  }
+  },
+  "options_page": "options.html"
 }
