@@ -147,3 +147,10 @@ jobs:
         run: poetry install --with docs
       - name: Build documentation
         run: poetry run mkdocs build --strict
+
+  gemini:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Gemini CLI
+        uses: google-github-actions/run-gemini-cli@v0.1.14
