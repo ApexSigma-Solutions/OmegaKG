@@ -32,3 +32,8 @@ docker_backups/
 
 # Bevel graph data
 .bevel/
+
+# Local repository instructions and editor modes
+.github/instructions/
+.roo/
+.roomodes
