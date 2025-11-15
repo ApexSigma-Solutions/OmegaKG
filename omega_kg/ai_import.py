@@ -1,4 +1,4 @@
-# src/                   
+# src/
 """
 AI Conversation Import Pipeline
 Imports exported conversations from Claude and ChatGPT into:
@@ -11,7 +11,6 @@ import re
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-from urllib.parse import quote
 
 import argparse
 from neo4j import GraphDatabase
@@ -22,8 +21,7 @@ from omega_kg.settings import settings
 class AIConversationImporter:
     def __init__(self, resources_path: Optional[Path] = None):
         self.driver = GraphDatabase.driver(
-            settings.neo4j_uri,
-            auth=(settings.neo4j_user, settings.neo4j_password)
+            settings.neo4j_uri, auth=(settings.neo4j_user, settings.neo4j_password)
         )
         self.vault_path = Path(settings.obsidian_vault_path).resolve()
         self.conversation_dir = self.vault_path / "AI Conversations"
@@ -34,8 +32,7 @@ class AIConversationImporter:
         if resources_path:
             self.resources_path = resources_path.resolve()
         elif settings.ai_conversations_path:
-            self.resources_path = Path(
-                settings.ai_conversations_path).resolve()
+            self.resources_path = Path(settings.ai_conversations_path).resolve()
         else:
             # Default to Resources folder in parent directory of the script
             script_dir = Path(__file__).parent.parent
@@ -46,19 +43,21 @@ class AIConversationImporter:
 
     def find_claude_conversations(self) -> Optional[Path]:
         """Find Claude conversations.json file"""
-        claude_path = (self.resources_path / "AI_Conversations" /
-                       "Claude" / "conversations.json")
+        claude_path = (
+            self.resources_path / "AI_Conversations" / "Claude" / "conversations.json"
+        )
         return claude_path if claude_path.exists() else None
 
     def find_chatgpt_conversations(self) -> Optional[Path]:
         """Find ChatGPT conversations.json file"""
-        chatgpt_path = (self.resources_path / "AI_Conversations" /
-                        "ChatGPT" / "conversations.json")
+        chatgpt_path = (
+            self.resources_path / "AI_Conversations" / "ChatGPT" / "conversations.json"
+        )
         return chatgpt_path if chatgpt_path.exists() else None
 
     def _sanitize_title(self, title: str) -> str:
         """Create filesystem-safe title for filename"""
-        return re.sub(r'[<>:"/\\|?*\x00-\x1f]', '_', title)[:64].strip()
+        return re.sub(r'[<>:"/\\|?*\x00-\x1f]', "_", title)[:64].strip()
 
     def _timestamp_to_iso(self, ts: Optional[float]) -> str:
         """Convert Unix timestamp to ISO 8601 UTC"""
@@ -68,78 +67,85 @@ class AIConversationImporter:
 
     def _extract_tags(self, title: str) -> List[str]:
         """Extract #tags from title (e.g., '#code #python')"""
-        tags = re.findall(r'#([a-zA-Z][a-zA-Z0-9]*)', title)
+        tags = re.findall(r"#([a-zA-Z][a-zA-Z0-9]*)", title)
         return [t.lower() for t in tags if not t.isdigit()]
 
     def import_claude_export(self, export_file: Path):
         """Import Claude JSON export"""
-        with open(export_file, encoding='utf-8') as f:
+        with open(export_file, encoding="utf-8") as f:
             data = json.load(f)
 
-        conversations = data.get('conversations', [])
+        conversations = data.get("conversations", [])
         for conv in conversations:
             messages = []
-            for msg in conv.get('chat_messages', []):
-                role = 'user' if msg.get('sender') == 'human' else 'assistant'
-                content_parts = msg.get('text', [])
-                content = ('\n\n'.join(content_parts)
-                           if isinstance(content_parts, list)
-                           else str(content_parts))
-                messages.append({
-                    'role': role,
-                    'content': content,
-                    'created_at': self._timestamp_to_iso(msg.get('created_at'))
-                })
+            for msg in conv.get("chat_messages", []):
+                role = "user" if msg.get("sender") == "human" else "assistant"
+                content_parts = msg.get("text", [])
+                content = (
+                    "\n\n".join(content_parts)
+                    if isinstance(content_parts, list)
+                    else str(content_parts)
+                )
+                messages.append(
+                    {
+                        "role": role,
+                        "content": content,
+                        "created_at": self._timestamp_to_iso(msg.get("created_at")),
+                    }
+                )
 
             self._import_conversation(
-                platform='claude',
-                conversation_id=conv['uuid'],
-                title=conv.get('title', 'Untitled'),
+                platform="claude",
+                conversation_id=conv["uuid"],
+                title=conv.get("title", "Untitled"),
                 messages=messages,
-                created_at=self._timestamp_to_iso(conv.get('created_at'))
+                created_at=self._timestamp_to_iso(conv.get("created_at")),
             )
 
     def import_chatgpt_export(self, export_file: Path):
         """Import ChatGPT conversations.json"""
-        with open(export_file, encoding='utf-8') as f:
+        with open(export_file, encoding="utf-8") as f:
             raw_data = json.load(f)
 
         # Handle both single conversation and full export formats
         conversations = raw_data if isinstance(raw_data, list) else [raw_data]
 
         for conv in conversations:
-            mapping = conv.get('mapping', {})
+            mapping = conv.get("mapping", {})
             messages = []
 
             # Build message list in order
-            current_id = conv.get('current_node')
+            current_id = conv.get("current_node")
             while current_id:
                 node = mapping.get(current_id)
                 if not node:
                     break
-                msg_data = node.get('message')
-                if msg_data and msg_data.get('content'):
-                    role = msg_data['author']['role']
-                    if role in ('user', 'assistant'):
-                        parts = msg_data['content'].get('parts', [])
-                        content = '\n\n'.join(parts) if parts else ''
-                        messages.append({
-                            'role': role,
-                            'content': content,
-                            'created_at': self._timestamp_to_iso(
-                                msg_data.get('create_time'))
-                        })
+                msg_data = node.get("message")
+                if msg_data and msg_data.get("content"):
+                    role = msg_data["author"]["role"]
+                    if role in ("user", "assistant"):
+                        parts = msg_data["content"].get("parts", [])
+                        content = "\n\n".join(parts) if parts else ""
+                        messages.append(
+                            {
+                                "role": role,
+                                "content": content,
+                                "created_at": self._timestamp_to_iso(
+                                    msg_data.get("create_time")
+                                ),
+                            }
+                        )
                 # Traverse backward (ChatGPT stores in reverse)
-                current_id = node.get('parent')
+                current_id = node.get("parent")
 
             messages.reverse()  # Restore chronological order
 
             self._import_conversation(
-                platform='chatgpt',
-                conversation_id=conv['id'],
-                title=conv.get('title', 'Untitled'),
+                platform="chatgpt",
+                conversation_id=conv["id"],
+                title=conv.get("title", "Untitled"),
                 messages=messages,
-                created_at=self._timestamp_to_iso(conv.get('create_time'))
+                created_at=self._timestamp_to_iso(conv.get("create_time")),
             )
 
     def _import_conversation(
@@ -148,7 +154,7 @@ class AIConversationImporter:
         conversation_id: str,
         title: str,
         messages: List[Dict[str, Any]],
-        created_at: str
+        created_at: str,
     ):
         """Write to Obsidian + Neo4j atomically"""
         # Generate filename
@@ -162,11 +168,11 @@ class AIConversationImporter:
             title=title,
             conversation_id=conversation_id,
             created_at=created_at,
-            messages=messages
+            messages=messages,
         )
 
         # Write to Obsidian
-        filepath.write_text(markdown, encoding='utf-8')
+        filepath.write_text(markdown, encoding="utf-8")
 
         # Write to Neo4j
         self._write_to_neo4j(
@@ -175,7 +181,7 @@ class AIConversationImporter:
             title=title,
             filepath=filepath.relative_to(self.vault_path),
             messages=messages,
-            created_at=created_at
+            created_at=created_at,
         )
 
         print(f"✓ Imported {platform} conversation - ai_import.py:181")
@@ -186,11 +192,11 @@ class AIConversationImporter:
         title: str,
         conversation_id: str,
         created_at: str,
-        messages: List[Dict[str, Any]]
+        messages: List[Dict[str, Any]],
     ) -> str:
         """Generate Dataview-compatible Markdown"""
         tags = self._extract_tags(title)
-        tag_str = ', '.join([f'"{t}"' for t in tags]) if tags else '[]'
+        tag_str = ", ".join([f'"{t}"' for t in tags]) if tags else "[]"
 
         frontmatter = f"""---
 ai-platform: "{platform}"
@@ -214,9 +220,8 @@ tags: [ai, {platform}]
 
         body = []
         for i, msg in enumerate(messages):
-            role = ("**You:**" if msg['role'] == 'user'
-                    else f"**{platform.title()}:**")
-            content = msg['content'].strip()
+            role = "**You:**" if msg["role"] == "user" else f"**{platform.title()}:**"
+            content = msg["content"].strip()
             if not content:
                 continue
             body.append(f"### {role}\n{content}\n")
@@ -230,14 +235,15 @@ tags: [ai, {platform}]
         title: str,
         filepath: Path,
         messages: List[Dict[str, Any]],
-        created_at: str
+        created_at: str,
     ):
         """Upsert conversation graph in Neo4j"""
         session_id = f"{platform}:{conversation_id}"
 
         with self.driver.session() as session:
             # Create or merge Session
-            session.run("""
+            session.run(
+                """
                 MERGE (s:Session {id: $session_id})
                 SET s.platform = $platform,
                     s.title = $title,
@@ -250,25 +256,27 @@ tags: [ai, {platform}]
                 title=title,
                 created_at=created_at,
                 filepath=str(filepath),
-                msg_count=len(messages)
+                msg_count=len(messages),
             )
 
             # Create queries and responses
             for i, msg in enumerate(messages):
-                if msg['role'] == 'user':
-                    session.run("""
+                if msg["role"] == "user":
+                    session.run(
+                        """
                         MATCH (s:Session {id: $session_id})
                         MERGE (q:AIQuery {text: $text, platform: $platform})
                         SET q.created_at = datetime($created_at)
                         MERGE (s)-[:CONTAINS]->(q)
                     """,
                         session_id=session_id,
-                        text=msg['content'],
+                        text=msg["content"],
                         platform=platform,
-                        created_at=msg['created_at']
+                        created_at=msg["created_at"],
                     )
-                elif msg['role'] == 'assistant':
-                    session.run("""
+                elif msg["role"] == "assistant":
+                    session.run(
+                        """
                         MATCH (s:Session {id: $session_id})
                         MERGE (r:AIResponse {
                             platform: $platform,
@@ -282,8 +290,8 @@ tags: [ai, {platform}]
                         session_id=session_id,
                         platform=platform,
                         idx=i,
-                        content=msg['content'],
-                        created_at=msg['created_at']
+                        content=msg["content"],
+                        created_at=msg["created_at"],
                     )
 
     def close(self):
@@ -292,13 +300,15 @@ tags: [ai, {platform}]
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Import AI conversations into Obsidian + Neo4j")
-    parser.add_argument('--claude', action='store_true',
-                        help="Import Claude conversations")
-    parser.add_argument('--chatgpt', action='store_true',
-                        help="Import ChatGPT conversations")
-    parser.add_argument('--resources', type=Path,
-                        help="Path to Resources directory")
+        description="Import AI conversations into Obsidian + Neo4j"
+    )
+    parser.add_argument(
+        "--claude", action="store_true", help="Import Claude conversations"
+    )
+    parser.add_argument(
+        "--chatgpt", action="store_true", help="Import ChatGPT conversations"
+    )
+    parser.add_argument("--resources", type=Path, help="Path to Resources directory")
     args = parser.parse_args()
 
     if not (args.claude or args.chatgpt):
