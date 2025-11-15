@@ -1,0 +1,35 @@
+# Ignore virtual environment and env files
+.venv/
+.env
+.env.*
+
+# Python caches
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# IDE/editor
+.vscode/
+.idea/
+
+# Local dev-only folders
+.kilocode/
+.roo/
+.roomodes
+.github/instructions/
+
+# Trunk artifacts (removed from project)
+.trunk/
+
+# Docker build outputs and other artifacts
+docker_backups/
+build/
+dist/
+
+# Coverage and test artifacts
+coverage.xml
+.junit.xml
+
+# Misc
+.DS_Store
+*.log
