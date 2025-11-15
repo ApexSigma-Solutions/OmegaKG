@@ -16,8 +16,8 @@ This is a general-purpose Python project managed with Poetry. The main applicati
 
 ## Workflows & Tooling
 
-- **Linting/Formatting**: Use Trunk (`trunk check`, `trunk fmt`, `trunk lint`) for all lint, format, and security checks. Trunk is installed via `install-trunk.sh` or CI. Black, Ruff, Flake8, and others are run via Trunk and pre-commit.
-- **CI/CD**: GitHub Actions run Trunk, Semgrep, Trivy, Snyk, and pytest with coverage. See `.github/workflows/ci.yml` for details.
+- **Linting/Formatting**: Use the project's configured linters and formatters (Ruff, Black, isort). These are available via `poetry` and enforced by `.pre-commit-config.yaml`.
+- **CI/CD**: GitHub Actions run Semgrep, Trivy, Snyk, and pytest with coverage. See `.github/workflows/ci.yml` for details.
 - **Pre-commit**: Enforced via `.pre-commit-config.yaml` (Black, Ruff, Flake8, Semgrep, Trivy, Snyk, ZAP, pytest, etc.).
 - **MkDocs deploy**: Docs are deployed via GitHub Actions (`.github/workflows/mkdocs.yml`).
 
@@ -25,7 +25,7 @@ This is a general-purpose Python project managed with Poetry. The main applicati
 
 - **Install dependencies**: `poetry install --with dev,docs`
 - **Run tests**: `poetry run pytest`
-- **Run linting and formatting**: `trunk check --all`, `trunk fmt --all`
+- **Run linting and formatting**: `ruff check .` and `black .`, or run `pre-commit run --all-files`
 - **Build documentation**: `mkdocs build`
 - **Serve documentation locally**: `mkdocs serve`
 
@@ -48,6 +48,6 @@ This is a general-purpose Python project managed with Poetry. The main applicati
 - `.env.example`: Reference for all required env vars
 - `pyproject.toml`: Poetry config
 - `.pre-commit-config.yaml`: Lint/test hooks
-- `.trunk/trunk.yaml`: Trunk lint/format/check config
+- (Trunk removed): use `.pre-commit-config.yaml` and CI pipeline for linting and security checks
 - `.github/workflows/ci.yml`: CI pipeline
 - `docs/`, `mkdocs.yml`: Documentation
