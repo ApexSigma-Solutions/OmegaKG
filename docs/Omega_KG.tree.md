@@ -4,7 +4,6 @@ Omega_KG
 ├── docs
 │   ├── index.md
 │   └── reference.md
-├── install-trunk.sh
 ├── mkdocs.yml
 ├── poetry.lock
 ├── pyproject.toml

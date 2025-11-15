@@ -152,13 +152,7 @@ if (-not (Get-Command activate-omega -ErrorAction SilentlyContinue)) {
 }
 Write-Success "Core Python tooling (pytest, pytest-cov, pydantic, pre-commit) is installed."
 
-# Check for Trunk.io CLI
-$trunkCheck = Get-Command trunk -ErrorAction SilentlyContinue
-if (-not $trunkCheck) {
-    Write-Failure "Trunk.io binary is not available in your PATH. (See: https://trunk.io/)"
-} else {
-    Write-Success "Trunk.io binary is available."
-}
+# Trunk.io checks removed (project no longer uses Trunk)
 
 
 # ---------------------------------
