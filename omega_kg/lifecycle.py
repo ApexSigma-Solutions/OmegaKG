@@ -21,8 +21,7 @@ from omega_kg.settings import settings
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -96,9 +95,9 @@ class TaskLifecycle:
     def __init__(self, mock_mode: bool = False):
         """
         Initialize the TaskLifecycle manager and configure persistence and vault settings.
-        
+
         Sets the Obsidian vault path and, unless mock_mode is True, attempts to establish a Neo4j driver; on connection failure the instance is switched to mock mode and the driver is cleared.
-        
+
         Parameters:
             mock_mode (bool): If True, skip connecting to Neo4j and operate using mock data.
         """
@@ -116,8 +115,7 @@ class TaskLifecycle:
                 self._check_connection()
                 logger.info("Neo4j connection established")
             except (ServiceUnavailable, AuthError, ConnectionError) as e:
-                logger.error("Failed to connect to Neo4j: %s: %s",
-                             type(e).__name__, e)
+                logger.error("Failed to connect to Neo4j: %s: %s", type(e).__name__, e)
                 logger.warning("Falling back to mock mode (dry-run only)")
                 self.mock_mode = True
                 self.driver = None
@@ -125,10 +123,10 @@ class TaskLifecycle:
     def _check_connection(self) -> bool:
         """
         Validate that the configured Neo4j driver can execute a simple health query.
-        
+
         Returns:
             True if the driver responded to the health check query.
-        
+
         Raises:
             ConnectionError: If the driver is not initialized or the health check fails.
         """
@@ -146,7 +144,7 @@ class TaskLifecycle:
     def get_connection_status(self) -> Dict[str, Any]:
         """
         Return current Neo4j connection and mock-mode status.
-        
+
         Returns:
             dict: Mapping with connection information:
                 connected: `true` if a Neo4j driver is configured and mock mode is not active, `false` otherwise.
@@ -200,8 +198,9 @@ class TaskLifecycle:
                     for task in violations:
                         try:
                             if dry_run:
-                                logger.info("[DRY RUN] Would %s: %s",
-                                            rule.action, task['t.uid'])
+                                logger.info(
+                                    "[DRY RUN] Would %s: %s", rule.action, task["t.uid"]
+                                )
                                 continue
 
                             if rule.action == "auto":
@@ -212,14 +211,12 @@ class TaskLifecycle:
                                 results["warned"].append(task)
 
                         except Exception as e:
-                            logger.error("Failed to process %s: %s",
-                                         task['t.uid'], e)
+                            logger.error("Failed to process %s: %s", task["t.uid"], e)
                             results["failed"].append({"task": task, "error": str(e)})
 
         except ServiceUnavailable as e:
             logger.error("Database connection lost: %s", e)
-            logger.info("Tip: Ensure Neo4j is running on %s",
-                        settings.neo4j_uri)
+            logger.info("Tip: Ensure Neo4j is running on %s", settings.neo4j_uri)
             results["skipped"].append(
                 {"reason": "Database unavailable", "error": str(e)}
             )
@@ -234,7 +231,7 @@ class TaskLifecycle:
     def _get_mock_results(self) -> Dict[str, List[Dict[str, Any]]]:
         """
         Return a predefined mock lifecycle results dictionary used when a real database connection is not available.
-        
+
         Returns:
             mock_results (Dict[str, List[Dict[str, Any]]]): Mapping with keys 'archived', 'warned', 'blocked', 'failed', and 'skipped'. Each value is a list of task records; task records contain the keys 't.uid', 't.title', 't.filepath', 't.status', and 'days_old'.
         """
@@ -267,10 +264,10 @@ class TaskLifecycle:
     ) -> List[Dict[str, Any]]:
         """
         Find tasks that match a lifecycle rule's status and age criteria.
-        
+
         Parameters:
             rule (LifecycleRule): Rule whose from_status, days_threshold, and optional condition determine matching tasks.
-        
+
         Returns:
             List[Dict[str, Any]]: List of task records ordered by `days_old` descending. Each dict contains the keys `'t.uid'`, `'t.title'`, `'t.filepath'`, `'t.status'`, and `days_old` (number of days since task creation).
         """
@@ -297,7 +294,7 @@ class TaskLifecycle:
     def _transition_task(self, session: Any, uid: str, rule: LifecycleRule) -> None:
         """
         Apply a lifecycle rule to a task and persist the transition to both Neo4j and its Obsidian note.
-        
+
         Sets the task's status and transition metadata in the database, updates the task's markdown frontmatter and appends a human-readable transition notice to the file, and prints a confirmation message.
         """
 
@@ -320,8 +317,12 @@ class TaskLifecycle:
         # Update Obsidian file
         self._update_task_file(uid, rule.to_status.value, rule)
 
-        logger.info("Transitioned %s: %s → %s",
-                   uid, rule.from_status.value, rule.to_status.value)
+        logger.info(
+            "Transitioned %s: %s → %s",
+            uid,
+            rule.from_status.value,
+            rule.to_status.value,
+        )
 
     def _warn_task(self, session: Any, uid: str, rule: LifecycleRule) -> None:
         """
@@ -344,9 +345,9 @@ class TaskLifecycle:
     def _update_task_file(self, uid: str, new_status: str, rule: LifecycleRule) -> None:
         """
         Update an Obsidian note's frontmatter and content to record a lifecycle transition.
-        
+
         Sets the note's frontmatter "status" to new_status, adds a "lifecycle_transition" metadata object containing from/to/reason/date, and appends a human-readable transition notice to the note body. If no matching note file for the given UID is found, the function logs a warning and returns without making changes.
-        
+
         Parameters:
             uid (str): Unique task identifier used to locate the note file in the vault.
             new_status (str): Status value to set in the note frontmatter.
@@ -460,14 +461,14 @@ class TaskLifecycle:
     def _get_stale_active_tasks(self) -> List[Dict[str, Any]]:
         """
         Find active tasks older than 30 days with no commits in the last 7 days.
-        
+
         Returns:
             A list of dictionaries representing stale active tasks. Each dictionary contains:
             - `uid`: task unique identifier
             - `title`: task title
             - `linear_id`: task linear identifier
             - `stale`: number of days since task creation
-        
+
             Returns an empty list if no database driver is available or no tasks match.
         """
 
@@ -496,9 +497,9 @@ class TaskLifecycle:
     def send_email_report(self, report: str) -> None:
         """
         Send the lifecycle report via SMTP to the configured recipient.
-        
+
         If SMTP host, user, or recipient are not configured, the call does nothing. When configured, this composes a plain-text message whose subject includes the current date, connects to the SMTP server with STARTTLS, authenticates with the configured credentials, and sends the message. Prints a confirmation on success or an error message on failure.
-        
+
         Parameters:
             report (str): Plain-text report body to include in the email.
         """
@@ -543,11 +544,11 @@ class TaskLifecycle:
 def main() -> None:
     """
     Command-line entry point that runs the TaskLifecycle enforcement flow.
-    
+
     Parses CLI flags:
       --dry-run: preview lifecycle actions without applying changes.
       --no-email: do not send the generated report via email.
-    
+
     Executes enforcement, prints connection status and the generated human-readable report, optionally sends the report by email, and ensures lifecycle resources are closed on exit.
     """
     import argparse
@@ -566,7 +567,7 @@ def main() -> None:
     # Print connection status
     status = lifecycle.get_connection_status()
     if status["connected"]:
-        logger.info("Connected to Neo4j: %s", status['uri'])
+        logger.info("Connected to Neo4j: %s", status["uri"])
     else:
         logger.warning("Running in mock mode (no Neo4j connection)")
 

@@ -32,12 +32,12 @@ from omega_kg.auth_utils import (
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
 # --- App and Engine Initialization ---
+
 
 # Lifespan for scheduler
 @asynccontextmanager
@@ -45,21 +45,19 @@ async def lifespan(app: FastAPI):
     """Lifespan event handler to schedule batch percolation on server startup."""
     scheduler = AsyncIOScheduler()
     scheduler.add_job(
-        batch_percolate_sessions,
-        'interval',
-        minutes=5,
-        id='session_percolation'
+        batch_percolate_sessions, "interval", minutes=5, id="session_percolation"
     )
     scheduler.start()
     logger.info("✓ Session percolation scheduled (every 5 minutes)")
     yield
     scheduler.shutdown()
 
+
 app = FastAPI(
     title="Omega_KG Capture Server",
     description="Receives AI conversations and integrates with Neo4j",
     version="1.0.0",
-    lifespan=lifespan
+    lifespan=lifespan,
 )
 
 sync_engine = LinearSync()
@@ -74,6 +72,7 @@ app.add_middleware(
     allow_headers=["X-API-Key", "Authorization", "Content-Type"],
 )
 
+
 # --- Pydantic Models ---
 class Token(BaseModel):
     """JWT token response model."""
@@ -87,18 +86,23 @@ class Message(BaseModel):
     content: str = Field(..., description="Message content")
     timestamp: Optional[str] = Field(None, description="Message timestamp")
 
+
 class ConversationData(BaseModel):
     platform: str = Field(..., description="AI platform name")
     url: str = Field(..., description="Conversation URL")
     title: Optional[str] = Field(None, description="Conversation title")
     messages: List[Message] = Field(..., description="List of conversation messages")
-    metadata: Optional[Dict] = Field(default_factory=dict, description="Additional metadata")
+    metadata: Optional[Dict] = Field(
+        default_factory=dict, description="Additional metadata"
+    )
+
 
 class CaptureResponse(BaseModel):
     success: bool
     file_path: str
     nodes_created: int
     message: str
+
 
 # --- Helper Functions ---
 def generate_conversation_hash(data: ConversationData) -> str:
@@ -118,12 +122,13 @@ def generate_conversation_hash(data: ConversationData) -> str:
     hash_obj = hashlib.md5(content.encode())
     return hash_obj.hexdigest()[:8]
 
+
 def format_conversation_markdown(data: ConversationData) -> str:
     now = datetime.now()
     date_str = now.strftime("%Y-%m-%d")
     timestamp_str = now.isoformat()
     conv_hash = generate_conversation_hash(data)
-    
+
     frontmatter_lines = [
         "---",
         f"platform: {data.platform}",
@@ -150,9 +155,9 @@ def format_conversation_markdown(data: ConversationData) -> str:
         f"**Platform**: {data.platform}",
         f"**URL**: [{data.url}]({data.url})",
         f"**Messages**: {len(data.messages)}\n",
-        "---\n"
+        "---\n",
     ]
-    
+
     for i, msg in enumerate(data.messages, 1):
         role_emoji = "👤" if msg.role.lower() == "user" else "🤖"
         role_title = msg.role.title()
@@ -161,7 +166,7 @@ def format_conversation_markdown(data: ConversationData) -> str:
         content_lines.append("\n")
         if msg.timestamp:
             content_lines.append(f"*Sent: {msg.timestamp}*\n")
-    
+
     return "\n".join(content_lines)
 
 
@@ -190,17 +195,19 @@ def write_to_obsidian(platform: str, content: str, conversation_hash: str) -> Pa
     """
     vault_path = Path(settings.obsidian_vault_path)
     if not vault_path.exists():
-        logger.error(f"Obsidian vault not found at: {vault_path}")
-        raise ValueError(f"Obsidian vault not found: {vault_path}")
-    
+        logger.warning(
+            f"Obsidian vault not found at: {vault_path} - creating directory for write operations."
+        )
+        vault_path.mkdir(parents=True, exist_ok=True)
+
     platform_folder = platform.replace(" ", "_")
     ai_conv_path = vault_path / "AI_Conversations" / platform_folder
     ai_conv_path.mkdir(parents=True, exist_ok=True)
-    
+
     date_str = datetime.now().strftime("%Y-%m-%d")
     filename = f"{date_str}-{conversation_hash}.md"
     file_path = ai_conv_path / filename
-    
+
     try:
         file_path.write_text(content, encoding="utf-8")
         logger.info(f"Wrote conversation to: {file_path}")
@@ -209,7 +216,12 @@ def write_to_obsidian(platform: str, content: str, conversation_hash: str) -> Pa
         logger.error(f"Failed to write file: {e}")
         raise IOError(f"Failed to write markdown file: {e}")
 
-def percolate_to_neo4j(file_path: Path, data: ConversationData, driver: Optional[GraphDatabase.driver] = None) -> int:
+
+def percolate_to_neo4j(
+    file_path: Path,
+    data: ConversationData,
+    driver: Optional[GraphDatabase.driver] = None,
+) -> int:
     """
     Percolates a captured conversation markdown file and its metadata to Neo4j.
     Creates a ChatSession node and Decision nodes for detected decisions.
@@ -219,8 +231,7 @@ def percolate_to_neo4j(file_path: Path, data: ConversationData, driver: Optional
     own_driver = False
     if driver is None:
         driver = GraphDatabase.driver(
-            settings.neo4j_uri,
-            auth=(settings.neo4j_user, settings.neo4j_password)
+            settings.neo4j_uri, auth=(settings.neo4j_user, settings.neo4j_password)
         )
         own_driver = True
     try:
@@ -237,7 +248,10 @@ def percolate_to_neo4j(file_path: Path, data: ConversationData, driver: Optional
         if own_driver:
             driver.close()
 
-def _create_chat_session(session, conv_hash: str, file_path: Path, data: ConversationData) -> int:
+
+def _create_chat_session(
+    session, conv_hash: str, file_path: Path, data: ConversationData
+) -> int:
     """Create or update a ChatSession node in Neo4j."""
     result = session.run(
         """
@@ -249,16 +263,19 @@ def _create_chat_session(session, conv_hash: str, file_path: Path, data: Convers
             s.updated_at = datetime($created_at)
         RETURN s
         """,
-        hash=conv_hash, date=datetime.now().strftime("%Y-%m-%d"),
-        platform=data.platform, filepath=str(file_path), url=data.url,
-        msg_count=len(data.messages), created_at=datetime.now().isoformat()
+        hash=conv_hash,
+        date=datetime.now().strftime("%Y-%m-%d"),
+        platform=data.platform,
+        filepath=str(file_path),
+        url=data.url,
+        msg_count=len(data.messages),
+        created_at=datetime.now().isoformat(),
     )
     return 1 if result.single() else 0
 
+
 def _create_decision_nodes(
-    session: "neo4j.work.session.Session",
-    conv_hash: str,
-    data: ConversationData
+    session: "neo4j.work.session.Session", conv_hash: str, data: ConversationData
 ) -> int:
     """
     Extract decisions from messages and create Decision nodes in Neo4j.
@@ -286,14 +303,16 @@ def _create_decision_nodes(
                             CREATE (s)-[:CONTAINS]->(d)
                             RETURN d
                             """,
-                            hash=conv_hash, content=decision_content,
+                            hash=conv_hash,
+                            content=decision_content,
                             dec_id=f"{conv_hash}-dec-{i}",
-                            created_at=datetime.now().isoformat()
+                            created_at=datetime.now().isoformat(),
                         )
                         if result.single():
                             nodes_created += 1
                         break
     return nodes_created
+
 
 def batch_percolate_sessions():
     """
@@ -305,10 +324,9 @@ def batch_percolate_sessions():
         if not sessions_path.exists():
             logger.warning(f"Sessions path does not exist: {sessions_path}")
             return
-        
+
         driver = GraphDatabase.driver(
-            settings.neo4j_uri,
-            auth=(settings.neo4j_user, settings.neo4j_password)
+            settings.neo4j_uri, auth=(settings.neo4j_user, settings.neo4j_password)
         )
         engine = PercolationEngine(driver)
         stats = engine.percolate_from_vault(sessions_path)
@@ -319,6 +337,7 @@ def batch_percolate_sessions():
         driver.close()
     except Exception as e:
         logger.error(f"Batch session percolation failed: {e}")
+
 
 # ===================================================================
 # --- ENDPOINTS ---
@@ -331,17 +350,20 @@ async def root():
         "endpoints": {
             "capture": "POST /capture",
             "health": "GET /health",
-            "linear_webhook": "POST /webhook/linear"
+            "linear_webhook": "POST /webhook/linear",
         },
         "docs": "/docs",
-        "openapi": "/openapi.json"
+        "openapi": "/openapi.json",
     }
+
 
 @app.get("/health")
 async def health_check():
     health_status = {
-        "status": "healthy", "timestamp": datetime.now().isoformat(),
-        "vault_accessible": False, "neo4j_connected": False
+        "status": "healthy",
+        "timestamp": datetime.now().isoformat(),
+        "vault_accessible": False,
+        "neo4j_connected": False,
     }
     try:
         vault_path = Path(settings.obsidian_vault_path)
@@ -351,8 +373,7 @@ async def health_check():
         logger.warning(f"Vault check failed: {e}")
     try:
         driver = GraphDatabase.driver(
-            settings.neo4j_uri,
-            auth=(settings.neo4j_user, settings.neo4j_password)
+            settings.neo4j_uri, auth=(settings.neo4j_user, settings.neo4j_password)
         )
         with driver.session() as session:
             session.run("RETURN 1")
@@ -361,7 +382,7 @@ async def health_check():
     except Exception as e:
         logger.warning(f"Neo4j check failed: {e}")
         health_status["neo4j_error"] = str(e)
-    
+
     return health_status
 
 
@@ -395,6 +416,7 @@ async def capture_options():
     """Handle CORS preflight requests for /capture endpoint"""
     return {"message": "CORS preflight OK"}
 
+
 @app.post("/capture", response_model=CaptureResponse)
 async def capture_conversation(
     data: ConversationData,
@@ -404,20 +426,19 @@ async def capture_conversation(
     Process a captured ConversationData...
     """
     logger.info(
-        f"Received capture request: {data.platform} "
-        f"({len(data.messages)} messages)"
+        f"Received capture request: {data.platform} " f"({len(data.messages)} messages)"
     )
-    
+
     try:
         markdown_content = format_conversation_markdown(data)
         conv_hash = generate_conversation_hash(data)
         file_path = write_to_obsidian(
             platform=data.platform,
             content=markdown_content,
-            conversation_hash=conv_hash
+            conversation_hash=conv_hash,
         )
         nodes_created = percolate_to_neo4j(file_path, data)
-        
+
         # --- THIS IS THE SYNTAX FIX ---
         # Changed from `success: bool = True` to `success=True`
         return CaptureResponse(
@@ -427,7 +448,7 @@ async def capture_conversation(
             message=(
                 f"Successfully captured {len(data.messages)} messages "
                 f"from {data.platform}"
-            )
+            ),
         )
         # ---------------------------------
 
@@ -440,9 +461,9 @@ async def capture_conversation(
     except Exception as e:
         logger.error(f"Capture failed: {e}")
         raise HTTPException(
-            status_code=500,
-            detail=f"Failed to capture conversation: {str(e)}"
+            status_code=500, detail=f"Failed to capture conversation: {str(e)}"
         )
+
 
 # --- ENDPOINT 2: Linear Webhook (NEW) ---
 @app.post("/webhook/linear")
@@ -452,25 +473,27 @@ async def linear_webhook_endpoint(request: Request):
     This endpoint just passes the raw request to the sync_engine.
     """
     # The sync_engine's method handles all verification and logic
-    return await sync_engine.handle_linear_webhook(request)
+    return await sync_engine.handle_linear_webhook_request(request)
 
 
 # --- Main ---
 def main():
     """Starts the Omega_KG Capture Server using Uvicorn."""
     import uvicorn
+
     logger.info("Starting Omega_KG Capture Server...")
     logger.info(f"Vault path: {settings.obsidian_vault_path}")
     logger.info(f"Neo4j URI: {settings.neo4j_uri}")
-    
+
     # Use reload only in development mode
     uvicorn.run(
         "omega_kg.capture_server:app",
         host="127.0.0.1",
         port=8765,
         log_level="info",
-        reload=False  # Disable reload for stability
+        reload=False,  # Disable reload for stability
     )
+
 
 if __name__ == "__main__":
     main()
