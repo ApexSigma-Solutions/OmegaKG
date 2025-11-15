@@ -1,39 +1,52 @@
+# Python
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
-.env/
+
+# Virtual environments
 .venv/
 venv/
+.env
+.envrc
+
+# Build and packaging
 build/
 dist/
 .eggs/
 *.egg-info/
-.env
-.venv
-.envrc
-*.egg
+
+# Logs and misc
 *.log
 .DS_Store
-.idea/
+
+# IDEs
 .vscode/
-.genkit/
+.idea/
+
+# Test Reports
 junit.xml
+coverage.xml
 .coverage
+
+# Pytest cache and test artifacts
 .pytest_cache/
+test_vault/
 *.cover
 .hypothesis/
-#
-# BACKUPS & DATA
-#
-*.tar.gz
+
+# MkDocs
+site/
+
+# Docker / backups
 docker_backups/
+*.tar.gz
 
-# Bevel graph data
-.bevel/
-
-# Local repository instructions and editor modes
+# Local repo artifacts
 .github/instructions/
 .roo/
 .roomodes
 .kilocode/
+
+# Bevel graph data
+.bevel/
