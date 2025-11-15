@@ -1,5 +1,6 @@
 import re
 from pathlib import Path
+from typing import List
 
 from omega_kg.settings import Settings  # Imports your Pydantic class
 
@@ -10,11 +11,12 @@ def get_settings_keys() -> set:
     supporting both Pydantic v1 and v2.
     """
     try:
-        # Pydantic v1: __fields__ is a dict of FieldInfo
-        return set(Settings.__fields__.keys())
+        # Pydantic v1: __fields__ is a dict of FieldInfo - return uppercase env alias names
+        return set(k.upper() for k in Settings.__fields__.keys())
     except AttributeError:
         # Pydantic v2: model_fields is a dict of FieldInfo
-        return set(Settings.model_fields.keys())
+        # Pydantic v2: return uppercase model field names as env variable names
+        return set(k.upper() for k in Settings.model_fields.keys())
 
 
 def test_config_drift() -> None:
@@ -37,13 +39,11 @@ def test_config_drift() -> None:
     error_messages: List[str] = []
     if missing_in_template:
         error_messages.append(
-            f"Keys in Settings but NOT in .env.example: "
-            f"{missing_in_template}"
+            f"Keys in Settings but NOT in .env.example: " f"{missing_in_template}"
         )
     if missing_in_settings:
         error_messages.append(
-            f"Keys in .env.example but NOT in Settings: "
-            f"{missing_in_settings}"
+            f"Keys in .env.example but NOT in Settings: " f"{missing_in_settings}"
         )
 
     if error_messages:

@@ -85,12 +85,14 @@ def run_poc():
                 print(
                     "❓ Running validation query: 'What decisions were made since Oct 20th?'"
                 )
-                result = session.run("""
+                result = session.run(
+                    """
                     MATCH (s:ChatSession)-[:CONTAINS]->(d:Decision)
                     WHERE s.date >= date('2025-10-20')
                     RETURN s.topic AS topic, s.date AS date, collect(d.content) AS decisions
                     ORDER BY date
-                """)
+                """
+                )
 
                 # 4. Display Results: Print the answer from the graph.
                 print("\n--- QUERY RESULTS ---")

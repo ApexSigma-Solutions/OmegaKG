@@ -21,7 +21,7 @@ class PercolationEngine:
     def __init__(self, driver: Driver):
         """
         Create a PercolationEngine bound to the provided Neo4j driver.
-        
+
         Parameters:
             driver (neo4j.Driver): Neo4j driver used for database operations by the engine.
         """
@@ -68,7 +68,7 @@ class PercolationEngine:
     def _extract_frontmatter(self, content: str) -> Optional[Dict]:
         """
         Extract top-level YAML frontmatter keys and values from the start of a Markdown string.
-        
+
         Returns a dictionary of key-value pairs if frontmatter is present and well-formed, or None otherwise.
         """
         if not content.startswith("---"):
@@ -140,9 +140,9 @@ class PercolationEngine:
     def _percolate_commits(self, path: Path, metadata: Dict, content: str) -> int:
         """
         Create or update Commit nodes from markdown commit blocks and link them to Task nodes when a Linear ID is present.
-        
+
         Links each discovered commit (by hash) to an existing Task using the Linear ID when available.
-        
+
         Returns:
             int: Number of commit entries processed.
         """
@@ -255,10 +255,10 @@ class PercolationEngine:
     def _generate_decision_id(content: str) -> str:
         """
         Generate a compact decision identifier from decision text.
-        
+
         Parameters:
             content (str): Decision text used to derive the identifier; the function uses the first three words to compute the suffix.
-        
+
         Returns:
             str: Identifier in the form "DEC-XXXX" where "XXXX" is a zero-padded 4-digit numeric suffix derived deterministically from the initial words of the content.
         """
@@ -270,7 +270,7 @@ class PercolationEngine:
     def detect_stale_tasks(self, days_threshold: int = 30) -> List[Dict]:
         """
         Finds tasks with status 'active' or 'ready' created more than a given number of days ago.
-        
+
         Parameters:
             days_threshold (int): Number of days since creation after which a task is considered stale. Defaults to 30.
 
@@ -310,12 +310,12 @@ class PercolationEngine:
 def create_percolation_engine(uri: str, user: str, password: str) -> PercolationEngine:
     """
     Create a PercolationEngine configured with a Neo4j driver.
-    
+
     Parameters:
         uri (str): Neo4j connection URI.
         user (str): Neo4j username.
         password (str): Neo4j password.
-    
+
     Returns:
         PercolationEngine: Engine instance initialized with a Neo4j driver.
     """

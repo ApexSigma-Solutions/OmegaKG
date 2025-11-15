@@ -13,7 +13,7 @@ from omega_kg.neo4j_schema import KnowledgeGraphSchema
 def cli():
     """
     Omega_KG: Neo4j-powered knowledge management with Obsidian sync and task lifecycle enforcement.
-    
+
     Available commands:
     - init: Initialize Neo4j schema
     - sync: Sync Obsidian vault to Neo4j
@@ -30,7 +30,7 @@ def cli():
 def init():
     """
     Initialize the Neo4j schema and populate example relationships.
-    
+
     Sets up the required schema (nodes, constraints) and creates sample relationships for demonstration. Ensures the schema connection is closed when finished.
     """
     click.echo("🔧 Initializing Neo4j schema...")
@@ -72,7 +72,7 @@ def lifecycle(dry_run, no_email):
 def stats():
     """
     Show aggregated counts of Task nodes in the knowledge graph and print them to the console.
-    
+
     Connects to the configured Neo4j instance (or uses mock mode if no connection) and prints counts for total, draft, active, completed, and archived tasks. Ensures opened sync client and database driver are closed before returning.
     """
     from omega_kg.obsidian_sync import ObsidianNeo4jSync
@@ -98,7 +98,8 @@ def stats():
         )
 
         with driver.session() as session:
-            result = session.run("""
+            result = session.run(
+                """
                 MATCH (t:Task)
                 RETURN count(t) as total,
                        count(CASE WHEN t.status = 'draft'
@@ -109,7 +110,8 @@ def stats():
                              THEN 1 END) as completed,
                        count(CASE WHEN t.status = 'archived'
                              THEN 1 END) as archived
-            """)
+            """
+            )
             record = result.single()
 
         driver.close()
@@ -131,7 +133,7 @@ def stats():
 def stale():
     """
     Print tasks older than 7 days to the console, showing each task's UID, title, and creation date.
-    
+
     If stale tasks exist, prints a header and one line per task in the format "uid: title (created: date)". If no stale tasks are found, prints "(none)". The function closes the sync client before returning.
     """
     from omega_kg.obsidian_sync import ObsidianNeo4jSync
@@ -156,26 +158,26 @@ def stale():
 def sync(mock):
     """
     Synchronize all task notes from Obsidian vault to Neo4j.
-    
+
     Scans the vault's Tasks directory and creates/updates Task nodes in Neo4j
     with metadata from frontmatter and content. Supports mock mode for testing.
     """
     from omega_kg.obsidian_sync import ObsidianNeo4jSync
-    
+
     click.echo("🔄 Syncing Obsidian vault to Neo4j...")
-    
+
     syncer = ObsidianNeo4jSync(mock_mode=mock)
-    
+
     try:
         status = syncer.get_connection_status()
         if status["connected"]:
             click.echo(f"✓ Connected to Neo4j: {status['uri']}")
         else:
             click.echo("⚠ Running in mock mode (no Neo4j connection)")
-        
+
         count = syncer.sync_all_tasks()
         click.echo(f"\n✓ Synced {count} tasks")
-        
+
     finally:
         syncer.close()
 
@@ -184,28 +186,28 @@ def sync(mock):
 def status():
     """
     Check and display connection status for Neo4j and system components.
-    
+
     Reports on database connectivity, configuration, and system health.
     """
     from omega_kg.lifecycle import TaskLifecycle
     from omega_kg.settings import settings
-    
+
     click.echo("🔍 System Status Check")
     click.echo("=" * 50)
-    
+
     # Check lifecycle connection
     lc = TaskLifecycle()
     lc_status = lc.get_connection_status()
-    
+
     click.echo("\n📊 Neo4j Connection:")
     click.echo(f"  URI:         {lc_status['uri']}")
     click.echo(f"  Connected:   {'✓ Yes' if lc_status['connected'] else '✗ No'}")
     click.echo(f"  Mock Mode:   {'Yes' if lc_status['mock_mode'] else 'No'}")
-    
+
     click.echo("\n📁 Configuration:")
     click.echo(f"  Environment: {settings.app_env}")
     click.echo(f"  Vault Path:  {settings.obsidian_vault_path}")
-    
+
     click.echo("\n📧 Email Settings:")
     if settings.smtp_host and settings.smtp_user and settings.email_to:
         click.echo(f"  SMTP Host:   {settings.smtp_host}:{settings.smtp_port}")
@@ -214,14 +216,14 @@ def status():
         click.echo("  Status:      ✓ Configured")
     else:
         click.echo("  Status:      ✗ Not configured")
-    
+
     click.echo("\n🔗 Linear Integration:")
     if settings.linear_api_key:
         click.echo("  API Key:     ✓ Configured")
         click.echo(f"  Team ID:     {settings.linear_team_id or 'Not set'}")
     else:
         click.echo("  Status:      ✗ Not configured")
-    
+
     lc.close()
 
 
@@ -230,32 +232,32 @@ def status():
 def report(email):
     """
     Generate and display a lifecycle report with task statistics and actions.
-    
+
     Shows auto-archived tasks, warnings, stale active tasks, and summary counts.
     Can optionally send the report via email. This command does not apply any
     lifecycle changes - it only reports on current state.
     """
     lc = TaskLifecycle()
-    
+
     try:
         click.echo("📊 Generating lifecycle report...")
-        
+
         status = lc.get_connection_status()
         if status["connected"]:
             click.echo(f"✓ Connected to Neo4j: {status['uri']}")
         else:
             click.echo("⚠ Running in mock mode (generating sample report)")
-        
+
         # Run enforcement in dry-run mode to get current state without changes
         results = lc.enforce_lifecycle(dry_run=True)
-        
+
         # Generate report
         report_text = lc.generate_report(results)
         click.echo(f"\n{report_text}")
-        
+
         if email:
             lc.send_email_report(report_text)
-        
+
     finally:
         lc.close()
 

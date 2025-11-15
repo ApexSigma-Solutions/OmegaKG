@@ -14,6 +14,7 @@ import neo4j
 
 logger = logging.getLogger(__name__)
 
+
 class LinearSync:
     """
     Contains all business logic for processing Linear webhooks.
@@ -25,8 +26,7 @@ class LinearSync:
         """
         self.vault = Path(settings.obsidian_vault_path)
         self.driver = GraphDatabase.driver(
-            settings.neo4j_uri,
-            auth=(settings.neo4j_user, settings.neo4j_password)
+            settings.neo4j_uri, auth=(settings.neo4j_user, settings.neo4j_password)
         )
         logger.info("LinearSync engine initialized.")
 
@@ -41,42 +41,72 @@ class LinearSync:
             raise HTTPException(status_code=400, detail="Missing X-Linear-Signature")
 
         raw_body = await request.body()
-        
+
         if not raw_body:
-             logger.warning("Received Linear webhook with empty body.")
-             raise HTTPException(status_code=400, detail="Empty request body")
+            logger.warning("Received Linear webhook with empty body.")
+            raise HTTPException(status_code=400, detail="Empty request body")
 
         # settings.py now GUARANTEES linear_webhook_secret is a string
         secret = settings.linear_webhook_secret.encode("utf-8")
-        
+
         hashed_body = hmac.new(secret, raw_body, hashlib.sha256).hexdigest()
-        
+
         if not hmac.compare_digest(hashed_body, signature):
-            logger.error(f"Invalid signature. Expected: {hashed_body}, Got: {signature}")
+            logger.error(
+                f"Invalid signature. Expected: {hashed_body}, Got: {signature}"
+            )
             raise HTTPException(status_code=403, detail="Invalid signature")
-            
+
         return raw_body
 
-    async def handle_linear_webhook(self, request: Request):
+    async def handle_linear_webhook_request(self, request: Request):
         """
         Validates and routes a Linear webhook payload.
         This is called BY the FastAPI endpoint.
         """
         # 1. Verify signature and get raw body
         raw_body = await self.verify_linear_signature(request)
-        
-        # 2. Now it's safe to parse the JSON
+
+        # 2. Parse incoming JSON
         payload: Dict[str, Any] = json.loads(raw_body)
-        
+
         # 3. Continue with existing logic
         action = payload.get("action")
         issue = payload.get("data")
-        
+
         if not issue or not action:
-            logger.warning(f"Invalid Linear payload structure. Action: {action}, Issue: {issue}")
+            logger.warning(
+                f"Invalid Linear payload structure. Action: {action}, Issue: {issue}"
+            )
             raise HTTPException(status_code=400, detail="Invalid payload structure")
 
-        logger.info(f"Processing Linear webhook. Action: {action}, Issue ID: {issue.get('id')}")
+        logger.info(
+            f"Processing Linear webhook. Action: {action}, Issue ID: {issue.get('id')}"
+        )
+
+        # Delegate to the synchronous payload handler for the actual logic
+        self.handle_linear_webhook(payload)
+
+        # handle_linear_webhook returns the status dict
+        # This return is for safety and consistency with FastAPI expectations.
+        return {"status": f"action '{action}' processed"}
+
+    def handle_linear_webhook(self, payload: Dict[str, Any]):
+        """
+        Synchronously handle a parsed Linear webhook payload (used by unit tests).
+        """
+        action = payload.get("action")
+        issue = payload.get("data")
+
+        if not issue or not action:
+            logger.warning(
+                f"Invalid Linear payload structure. Action: {action}, Issue: {issue}"
+            )
+            raise ValueError("Invalid payload structure")
+
+        logger.info(
+            f"Processing Linear webhook. Action: {action}, Issue ID: {issue.get('id')}"
+        )
 
         if action == "update":
             self._sync_issue_update(issue)
@@ -84,9 +114,8 @@ class LinearSync:
             self._handle_issue_deletion(issue)
         else:
             logger.info(f"Received unhandled Linear action: {action}")
-            
-        return {"status": f"action '{action}' processed"}
 
+        return {"status": f"action '{action}' processed"}
 
     def _sync_issue_update(self, issue: Dict[str, Any]):
         """
@@ -125,7 +154,7 @@ class LinearSync:
         if not filepath:
             logger.error(f"Neo4j task {linear_id} has no filepath attribute.")
             return
-            
+
         task_path = self.vault / filepath
         self._update_task_file(task_path, issue)
 
@@ -135,8 +164,8 @@ class LinearSync:
         (This is your logic from linear_sync_old.py)
         """
         if not path.is_file():
-             logger.error(f"Cannot update task file: File not found at {path}")
-             return
+            logger.error(f"Cannot update task file: File not found at {path}")
+            return
 
         try:
             with open(path, "r", encoding="utf-8") as f:
@@ -175,7 +204,7 @@ class LinearSync:
         if not linear_id:
             logger.error("Linear delete payload missing 'identifier'.")
             return
-            
+
         logger.info(f"Archiving task for Linear issue {linear_id}")
 
         # Update Neo4j to mark as archived
@@ -189,5 +218,5 @@ class LinearSync:
             """,
                 linear_id=linear_id,
             )
-        
+
         logger.info(f"✓ Archived task for Linear issue {linear_id}")
