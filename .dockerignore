@@ -18,8 +18,7 @@ __pycache__/
 .roomodes
 .github/instructions/
 
-# Trunk artifacts (removed from project)
-.trunk/
+# Trunk artifacts removed
 
 # Docker build outputs and other artifacts
 docker_backups/
