@@ -21,10 +21,16 @@ def test_settings_load_from_env(monkeypatch):
     assert settings.app_env == "production"
 
 
-def test_settings_defaults():
-    """Test that settings use correct default values"""
+def test_settings_defaults(monkeypatch):
+    """Test default behavior for Settings.
+
+    Since `NEO4J_PASSWORD` is required in production, a missing password should raise
+    an error. We then set NEO4J_PASSWORD to the legacy default and verify other defaults.
+    """
     from omega_kg.settings import Settings
 
+    # Ensure NEO4J_PASSWORD is set to the legacy default for this test
+    monkeypatch.setenv("NEO4J_PASSWORD", "please-change-this-password")
     settings = Settings()
 
     assert settings.app_env == "development"
