@@ -13,7 +13,6 @@ dist/
 .venv
 .envrc
 *.egg
-.trunk/
 *.log
 .DS_Store
 .idea/
@@ -37,3 +36,4 @@ docker_backups/
 .github/instructions/
 .roo/
 .roomodes
+.kilocode/
