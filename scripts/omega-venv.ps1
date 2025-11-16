@@ -1,23 +1,24 @@
 # ============================================================
-# Omega_KG Virtual Environment Auto-Activation Script
+# Omega_KG Virtual Environment Auto-Activation Script (v2 - Relative)
 # ============================================================
-# Source this from your PowerShell profile to enable auto-activation
-# Add this line to your profile: . "$PSScriptRoot\..\scripts\omega-venv.ps1"
+# Source this from your PowerShell profile.
+# v2: Uses relative paths to fix context-bleed.
 
-function Activate-OmegaVenv {
+function Enable-OmegaVenv {
     <#
     .SYNOPSIS
-    Activate the Omega_KG virtual environment
-    
-    .DESCRIPTION
-    Activates the .venv for Omega_KG and adds Poetry to PATH
+    Enables the virtual environment in the CURRENT directory.
     #>
-    $venvPath = "C:\Users\steyn\OneDrive\ApexSigma\Omega_KG\.venv"
+    
+    # --- FIX: Use relative path from current directory ---
+    # $venvPath = "C:\Users\steyn\OneDrive\ApexSigma\Omega_KG\.venv" # OLD HARDCODED PATH
+    $venvPath = Join-Path (Get-Location).Path ".venv" # NEW RELATIVE PATH
+    
     $activateScript = Join-Path $venvPath "Scripts\Activate.ps1"
     
     if (Test-Path $activateScript) {
         & $activateScript
-        Write-Host "✅ Activated .venv for Omega_KG" -ForegroundColor Green
+        Write-Host "✅ Activated .venv for $(Split-Path (Get-Location).Path -Leaf)" -ForegroundColor Green
         Write-Host "   Python: $(python --version)" -ForegroundColor Gray
         Write-Host "   Poetry: $(poetry --version)" -ForegroundColor Gray
     } else {
@@ -26,10 +27,10 @@ function Activate-OmegaVenv {
     }
 }
 
-function Deactivate-OmegaVenv {
+function Disable-OmegaVenv {
     <#
     .SYNOPSIS
-    Deactivate the Omega_KG virtual environment
+    Disables the Omega_KG virtual environment
     #>
     if ($env:VIRTUAL_ENV) {
         deactivate
@@ -40,8 +41,8 @@ function Deactivate-OmegaVenv {
 }
 
 # Create convenient aliases
-Set-Alias -Name activate-omega -Value Activate-OmegaVenv -Force -Scope Global
-Set-Alias -Name deactivate-omega -Value Deactivate-OmegaVenv -Force -Scope Global
+Set-Alias -Name activate-omega -Value Enable-OmegaVenv -Force -Scope Global
+Set-Alias -Name deactivate-omega -Value Disable-OmegaVenv -Force -Scope Global
 
 # Add Poetry to PATH if not already present
 if ($env:PATH -notmatch "Python\\Scripts") {
@@ -49,10 +50,9 @@ if ($env:PATH -notmatch "Python\\Scripts") {
     Write-Host "✨ Added Poetry to PATH" -ForegroundColor Cyan
 }
 
-# Auto-activate if we're in the Omega_KG directory
-$currentPath = (Get-Location).Path
-if ($currentPath -match "Omega_KG|omega_kg") {
-    Activate-OmegaVenv
+# --- FIX: Auto-activate if a .venv is present, not based on name ---
+if (Test-Path (Join-Path (Get-Location).Path ".venv")) {
+    Enable-OmegaVenv
 }
 
 Write-Host "✨ Omega_KG venv automation ready:" -ForegroundColor Green

@@ -9,10 +9,7 @@ This test suite validates the complete authentication flow:
 5. Error handling and graceful degradation
 """
 
-import asyncio
-import json
 from datetime import datetime, timedelta, timezone
-from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
@@ -103,8 +100,6 @@ class TestJwtAuthenticationFlow:
         """Test JWT token validation with expired token"""
         # Create a token with past expiration
         past_time = (datetime.now(timezone.utc) - timedelta(hours=1)).timestamp()
-        import json
-        import base64
         from jose import jwt
 
         payload = {
@@ -196,7 +191,9 @@ class TestJwtAuthenticationFlow:
         # Should return 200 (or 422 for validation, but not 401/403)
         assert response.status_code in [200, 422]
 
-    def test_capture_endpoint_rejects_old_auth_header(self, client, sample_capture_data):
+    def test_capture_endpoint_rejects_old_auth_header(
+        self, client, sample_capture_data
+    ):
         """Test /capture endpoint rejects old X-API-Key header"""
         response = client.post(
             "/capture",
@@ -241,7 +238,10 @@ class TestJwtAuthenticationFlow:
         )
         # CORS should allow the extension origin
         assert response.status_code == 200
-        assert response.headers.get("access-control-allow-origin") == f"chrome-extension://{settings.chrome_extension_id}"
+        assert (
+            response.headers.get("access-control-allow-origin")
+            == f"chrome-extension://{settings.chrome_extension_id}"
+        )
         assert response.headers.get("access-control-allow-credentials") == "true"
 
     # ===== Test 6: Health Check Endpoint =====
@@ -279,6 +279,7 @@ class TestJwtAuthenticationFlow:
     def test_token_refresh_creates_new_token(self):
         """Test that refreshing creates a new token"""
         import time
+
         token1 = create_access_token(data={"sub": "chrome_extension_user"})
         # Small delay to ensure different timestamp
         time.sleep(0.1)
@@ -375,7 +376,9 @@ class TestExtensionIntegration:
 
     def test_multiple_tokens_are_independent(self):
         """Test multiple tokens can be created and validated independently"""
-        tokens = [create_access_token(data={"sub": "chrome_extension_user"}) for _ in range(3)]
+        tokens = [
+            create_access_token(data={"sub": "chrome_extension_user"}) for _ in range(3)
+        ]
         payloads = [validate_access_token(t) for t in tokens]
 
         # All should be valid
