@@ -5,6 +5,7 @@
 print("\n✓ Test 1: Module imports")
 try:
     from omega_kg.capture_server import app
+
     print("  ✅ capture_server module imports successfully")
 except ImportError as e:
     print(f"  ❌ Failed to import: {e}")
@@ -23,6 +24,7 @@ except AssertionError:
 print("\n✓ Test 3: Settings validation")
 try:
     from omega_kg.settings import settings
+
     assert settings.obsidian_vault_path
     print(f"  ✅ Obsidian path: {settings.obsidian_vault_path}")
 except Exception as e:  # noqa: BLE001
@@ -43,4 +45,3 @@ print("\nTo run capture-server live:")
 print("  poetry run capture-server")
 print("\nThen test with:")
 print("  curl http://localhost:8765/health")
-

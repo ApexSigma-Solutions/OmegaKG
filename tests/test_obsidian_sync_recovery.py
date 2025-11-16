@@ -160,10 +160,10 @@ class TestObsidianSyncOperations:
                 def run_side_effect(query, **kwargs):
                     """
                     Simulate a session.run behavior that returns a successful health-check result once, then raises ServiceUnavailable on subsequent calls.
-                    
+
                     Returns:
                         mock_result: The successful result returned on the first invocation.
-                    
+
                     Raises:
                         ServiceUnavailable: On the second and any later invocation to simulate a lost connection.
                     """

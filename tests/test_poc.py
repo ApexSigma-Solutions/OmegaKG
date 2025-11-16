@@ -61,7 +61,7 @@ class TestProofOfConcept:
     def test_data_ingestion(self, mock_driver_class):
         """
         Ensure a Cypher ingestion statement is executed within a Neo4j session.
-        
+
         Parameters:
             mock_driver_class (MagicMock): Patched GraphDatabase.driver that returns a mock driver whose session context manager yields a mock session; the test asserts the session's `run` method is called once with the ingestion statement.
         """
