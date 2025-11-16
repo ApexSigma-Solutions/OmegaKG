@@ -21,60 +21,43 @@ class Settings(BaseSettings):
     app_env: str = Field("development", validation_alias="APP_ENV")
 
     # --- Core Required Settings (Fail-fast) ---
-    neo4j_uri: str = Field(
-        "bolt://localhost:7687",
-        validation_alias="NEO4J_URI"
-    )
-    neo4j_user: str = Field(
-        "neo4j",
-        validation_alias="NEO4J_USER"
-    )
+    neo4j_uri: str = Field("bolt://localhost:7687", validation_alias="NEO4J_URI")
+    neo4j_user: str = Field("neo4j", validation_alias="NEO4J_USER")
     neo4j_password: str = Field(
-        ...,  # <-- CHANGED: Now required
-        validation_alias="NEO4J_PASSWORD"
+        ..., validation_alias="NEO4J_PASSWORD"  # <-- CHANGED: Now required
     )
     obsidian_vault_path: str = Field(
-        ...,  # <-- CHANGED: Now required
-        validation_alias="OBSIDIAN_VAULT_PATH"
+        ..., validation_alias="OBSIDIAN_VAULT_PATH"  # <-- CHANGED: Now required
     )
 
     # --- Security Settings (REQUIRED) ---
     extension_api_key: str = Field(
-        ...,
-        validation_alias="EXTENSION_API_KEY"
+        ..., validation_alias="EXTENSION_API_KEY"
     )  # API key for browser extension authentication
 
     linear_webhook_secret: str = Field(
-        ...,
-        validation_alias="LINEAR_WEBHOOK_SECRET"
+        ..., validation_alias="LINEAR_WEBHOOK_SECRET"
     )  # Secret for verifying Linear webhook payloads
 
     chrome_extension_id: str = Field(
-        ...,
-        validation_alias="CHROME_EXTENSION_ID"
+        ..., validation_alias="CHROME_EXTENSION_ID"
     )  # Chrome extension ID for CORS configuration
 
     # --- JWT Authentication Settings (REQUIRED) ---
     jwt_secret_key: str = Field(
-        ...,
-        validation_alias="JWT_SECRET_KEY"
+        ..., validation_alias="JWT_SECRET_KEY"
     )  # Secret key for signing JWT tokens
     jwt_algorithm: str = Field(
-        "HS256",
-        validation_alias="JWT_ALGORITHM"
+        "HS256", validation_alias="JWT_ALGORITHM"
     )  # Algorithm for JWT token signing
     jwt_expiration_minutes: int = Field(
-        1440,
-        validation_alias="JWT_EXPIRATION_MINUTES"
+        1440, validation_alias="JWT_EXPIRATION_MINUTES"
     )  # JWT token expiration time in minutes (default: 24 hours)
 
     # --- Optional Integrations ---
 
     # Email settings for lifecycle reports
-    smtp_host: Optional[str] = Field(
-        "smtp.gmail.com",
-        validation_alias="SMTP_HOST"
-    )
+    smtp_host: Optional[str] = Field("smtp.gmail.com", validation_alias="SMTP_HOST")
     smtp_port: int = Field(587, validation_alias="SMTP_PORT")
     smtp_user: Optional[str] = Field(None, validation_alias="SMTP_USER")
     smtp_password: Optional[str] = Field(None, validation_alias="SMTP_PASSWORD")
@@ -83,13 +66,22 @@ class Settings(BaseSettings):
     # Linear integration
     linear_api_key: Optional[str] = Field(None, validation_alias="LINEAR_API_KEY")
     linear_team_id: Optional[str] = Field(None, validation_alias="LINEAR_TEAM_ID")
-    linear_workspace_id: Optional[str] = Field(None, validation_alias="LINEAR_WORKSPACE_ID")
+    linear_workspace_id: Optional[str] = Field(
+        None, validation_alias="LINEAR_WORKSPACE_ID"
+    )
     linear_project_id: Optional[str] = Field(None, validation_alias="LINEAR_PROJECT_ID")
 
     # Keywords for decision extraction
     decision_keywords: List[str] = Field(
-        default_factory=lambda: ["decided to", "will use", "going to", "plan is", "approach is", "solution is"],
-        validation_alias="DECISION_KEYWORDS"
+        default_factory=lambda: [
+            "decided to",
+            "will use",
+            "going to",
+            "plan is",
+            "approach is",
+            "solution is",
+        ],
+        validation_alias="DECISION_KEYWORDS",
     )
 
     # GitHub integration
@@ -97,8 +89,12 @@ class Settings(BaseSettings):
 
     # AI/LLM API keys
     nanogpt_api_key: Optional[str] = Field(None, validation_alias="NANOGPT_API_KEY")
-    openrouter_api_key: Optional[str] = Field(None, validation_alias="OPENROUTER_API_KEY")
-    perplexity_api_key: Optional[str] = Field(None, validation_alias="PERPLEXITY_API_KEY")
+    openrouter_api_key: Optional[str] = Field(
+        None, validation_alias="OPENROUTER_API_KEY"
+    )
+    perplexity_api_key: Optional[str] = Field(
+        None, validation_alias="PERPLEXITY_API_KEY"
+    )
     gemini_api_key: Optional[str] = Field(None, validation_alias="GEMINI_API_KEY")
 
 
@@ -114,7 +110,10 @@ def get_settings() -> Settings:
         return settings_instance
     except Exception as e:
         # --- CHANGED: Use traceback for richer error logging ---
-        print(f"FATAL ERROR: Failed to load settings. {e} - settings.py:103", file=sys.stderr)
+        print(
+            f"FATAL ERROR: Failed to load settings. {e} - settings.py:103",
+            file=sys.stderr,
+        )
         traceback.print_exc(file=sys.stderr)
         # Re-raise the exception to stop the application
         raise
