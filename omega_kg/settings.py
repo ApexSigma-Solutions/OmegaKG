@@ -20,6 +20,12 @@ class Settings(BaseSettings):
     # --- App Environment ---
     app_env: str = Field("development", validation_alias="APP_ENV")
 
+    # --- Server Configuration ---
+    # Default to localhost if not set
+    app_host: str = Field("127.0.0.1", validation_alias="APP_HOST")
+    # Default to 8000 (standard FastAPI) if not set
+    app_port: int = Field(8000, validation_alias="APP_PORT")
+    
     # --- Core Required Settings (Fail-fast) ---
     neo4j_uri: str = Field("bolt://localhost:7687", validation_alias="NEO4J_URI")
     neo4j_user: str = Field("neo4j", validation_alias="NEO4J_USER")
