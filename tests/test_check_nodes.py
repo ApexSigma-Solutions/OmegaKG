@@ -6,7 +6,16 @@ import importlib
 import subprocess
 import sys
 from unittest.mock import Mock, patch
+import os
 import pytest
+
+# Ensure required environment variables for settings are set at module import time
+os.environ.setdefault("EXTENSION_API_KEY", "test-ext-api-key")
+os.environ.setdefault("LINEAR_WEBHOOK_SECRET", "test-webhook-secret")
+os.environ.setdefault("CHROME_EXTENSION_ID", "test-chrome-ext")
+os.environ.setdefault("JWT_SECRET_KEY", "test-jwt-secret")
+os.environ.setdefault("NEO4J_PASSWORD", "test-neo4j-password")
+os.environ.setdefault("OBSIDIAN_VAULT_PATH", "./test_vault")
 
 
 class TestCheckNodes:
@@ -26,6 +35,14 @@ class TestCheckNodes:
         mock_result.single.return_value = None  # No records for simplicity
         mock_result.__iter__ = Mock(return_value=iter([]))  # Empty iterator
         mock_session.run.return_value = mock_result
+
+        # Ensure required env vars for settings validate without raising
+        os.environ.setdefault("EXTENSION_API_KEY", "test-ext-api-key")
+        os.environ.setdefault("LINEAR_WEBHOOK_SECRET", "test-webhook-secret")
+        os.environ.setdefault("CHROME_EXTENSION_ID", "test-chrome-ext")
+        os.environ.setdefault("JWT_SECRET_KEY", "test-jwt-secret")
+        os.environ.setdefault("NEO4J_PASSWORD", "test-neo4j-password")
+        os.environ.setdefault("OBSIDIAN_VAULT_PATH", "./test_vault")
 
         # Import and reload the module to execute module-level code
         import omega_kg.check_nodes

@@ -124,37 +124,61 @@ def generate_conversation_hash(data: ConversationData) -> str:
 
 
 def format_conversation_markdown(data: ConversationData) -> str:
+    """
+    Formats the conversation data into Markdown with Golden Schema Frontmatter.
+    Schema:
+      - id: CAP-{YYYYMMDD}-{HASH} (Standardized ID)
+      - type: Conversation (Standardized Type)
+      - status: new (Default status)
+      - title: ...
+      - created_at: ...
+    """
     now = datetime.now()
     date_str = now.strftime("%Y-%m-%d")
     timestamp_str = now.isoformat()
+    
+    # Generate a robust Content ID
     conv_hash = generate_conversation_hash(data)
+    # ID Format: CAP (Capture) - Date - Hash
+    content_id = f"CAP-{now.strftime('%Y%m%d')}-{conv_hash}"
 
+    # --- Golden Schema Frontmatter ---
     frontmatter_lines = [
         "---",
-        f"platform: {data.platform}",
+        f"id: {content_id}",
+        "type: Conversation",
+        "status: new",
+        f"title: {data.title or f'{data.platform} Conversation'}",
+        f"created_at: {timestamp_str}",
         f"date: {date_str}",
+        f"platform: {data.platform}",
         f"url: {data.url}",
-        f"message_count: {len(data.messages)}",
-        f"captured_at: {timestamp_str}",
         f"conversation_hash: {conv_hash}",
+        f"message_count: {len(data.messages)}",
     ]
-    if data.title:
-        frontmatter_lines.append(f"title: {data.title}")
+
+    # Add Participants (Roles)
     roles = list(set(msg.role for msg in data.messages))
     participants_str = ", ".join(sorted(roles))
     frontmatter_lines.append(f"participants: {participants_str}")
+
+    # Add any extra metadata
     if data.metadata:
         for key, value in data.metadata.items():
-            frontmatter_lines.append(f"{key}: {value}")
+            # Prevent duplicate keys if they overlap with schema
+            if key not in ["id", "type", "status", "title", "created_at"]:
+                frontmatter_lines.append(f"{key}: {value}")
+    
     frontmatter_lines.append("---")
 
-    title = data.title or f"{data.platform} Conversation"
+    # --- Content Body ---
+    title_header = data.title or f"{data.platform} Conversation"
     content_lines = [
-        f"\n# {title}",
-        f"\n**Date**: {date_str}",
+        f"\n# {title_header}",
+        f"\n**ID**: `{content_id}`",
+        f"**Date**: {date_str}",
         f"**Platform**: {data.platform}",
         f"**URL**: [{data.url}]({data.url})",
-        f"**Messages**: {len(data.messages)}\n",
         "---\n",
     ]
 
@@ -167,7 +191,7 @@ def format_conversation_markdown(data: ConversationData) -> str:
         if msg.timestamp:
             content_lines.append(f"*Sent: {msg.timestamp}*\n")
 
-    return "\n".join(content_lines)
+    return "\n".join(frontmatter_lines + content_lines)
 
 
 # NOTE: The folder name 'AI_Conversations' is a hardcoded convention for storing captured AI conversations.
@@ -488,8 +512,8 @@ def main():
     # Use reload only in development mode
     uvicorn.run(
         "omega_kg.capture_server:app",
-        host="127.0.0.1",
-        port=8765,
+        host=settings.app_host,
+        port=settings.app_port,
         log_level="info",
         reload=False,  # Disable reload for stability
     )

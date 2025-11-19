@@ -104,22 +104,22 @@ class KnowledgeGraphSchema:
 
         try:
             with self.driver.session() as session:
-                # Constraints
-                session.run(
-                    """
-                    CREATE CONSTRAINT task_uid IF NOT EXISTS
-                    FOR (t:Task) REQUIRE t.uid IS UNIQUE
-                """
-                )
+                # Drop old constraints that reference uid-based schema
+                session.run("DROP CONSTRAINT task_uid IF EXISTS")
+                session.run("DROP CONSTRAINT plan_id IF EXISTS")
 
-                session.run(
+                # Create new UNIQUE constraints on the new Golden Schema 'id' property
+                labels = ["Task", "TaskPlan", "ADR", "BacklogPlan", "Plan"]
+                for label in labels:
+                    name = f"{label.lower()}_id"
+                    session.run(
+                        f"""
+                        CREATE CONSTRAINT {name} IF NOT EXISTS
+                        FOR (n:{label}) REQUIRE n.id IS UNIQUE
                     """
-                    CREATE CONSTRAINT plan_id IF NOT EXISTS
-                    FOR (p:Plan) REQUIRE p.id IS UNIQUE
-                """
-                )
+                    )
 
-                # Indexes
+                # Indexes - keep commonly used indexes for Task
                 session.run(
                     """
                     CREATE INDEX task_status IF NOT EXISTS
@@ -127,10 +127,18 @@ class KnowledgeGraphSchema:
                 """
                 )
 
+                # Support both older 'created' and new 'created_at' fields during migration
                 session.run(
                     """
                     CREATE INDEX task_created IF NOT EXISTS
                     FOR (t:Task) ON (t.created)
+                """
+                )
+
+                session.run(
+                    """
+                    CREATE INDEX task_created_at IF NOT EXISTS
+                    FOR (t:Task) ON (t.created_at)
                 """
                 )
 
