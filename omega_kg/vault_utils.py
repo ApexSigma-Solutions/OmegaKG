@@ -13,7 +13,7 @@ import logging
 from pathlib import Path
 import frontmatter
 from omega_kg.settings import settings
-from typing import Any, Mapping, Dict
+from typing import Any, Mapping, Dict, Optional
 
 # Set up logger
 logger = logging.getLogger(__name__)
@@ -127,6 +127,39 @@ class VaultUtils:
         except OSError as e:
             logger.error(f"Failed to write updated frontmatter to {resolved_path}: {e}")
             return False
+
+    def find_note_by_linear_id(self, linear_id: str) -> Optional[Path]:
+        """
+        Scans the vault for a note with the matching 'linear_id' in frontmatter.
+        
+        Args:
+            linear_id (str): The Linear Issue ID to search for.
+            
+        Returns:
+            Optional[Path]: The path to the matching note, or None if not found.
+        """
+        # Iterate over all .md files in the vault
+        # rglob is recursive
+        for note_path in self.vault_path.rglob("*.md"):
+            try:
+                # We use a quick check first to avoid parsing frontmatter for every file
+                # This is a heuristic optimization
+                with note_path.open('r', encoding='utf-8', errors='ignore') as f:
+                    # Read first 2k bytes which should cover frontmatter
+                    head = f.read(2048)
+                    if linear_id not in head:
+                        continue
+                
+                # If potentially found, parse properly
+                metadata = self.read_note_frontmatter(note_path)
+                if str(metadata.get("linear_id")) == linear_id:
+                    return note_path
+                    
+            except Exception as e:
+                logger.warning(f"Error scanning {note_path}: {e}")
+                continue
+                
+        return None
 
 
 # -----------------------------------------------------------------------------
