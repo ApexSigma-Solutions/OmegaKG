@@ -58,7 +58,19 @@ jobs:
       - name: Install dependencies
         run: poetry install --with dev
         
+      - name: Setup Test Environment
+        run: |
+          mkdir -p ./tests/fixtures/vault
+          cat > ./tests/fixtures/vault/unit_test_note.md << 'EOF'
+          ---
+          status: draft
+          ---
+          # Unit Test Note
+          EOF
+
       - name: Run Unit Tests
+        env:
+          OBSIDIAN_VAULT_PATH: ./tests/fixtures/vault
         run: |
           poetry run pytest -m "unit" --cov=omega_kg --cov-report=xml:coverage-unit.xml --junitxml=junit-unit.xml
 
