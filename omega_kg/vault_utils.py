@@ -34,10 +34,31 @@ class VaultUtils:
         Raises:
             ValueError: If the vault_path is not a valid directory.
         """
+        if not vault_path:
+            error_msg = (
+                "[X] FAILURE: Obsidian vault path is not set. "
+                "Please set OBSIDIAN_VAULT_PATH environment variable."
+            )
+            logger.error(error_msg)
+            raise ValueError(error_msg)
+            
         self.vault_path = Path(vault_path)
+        
+        if not self.vault_path.exists():
+            error_msg = (
+                f"[X] FAILURE: Obsidian vault path does not exist: {self.vault_path}\n"
+                f"Please create the directory or update OBSIDIAN_VAULT_PATH."
+            )
+            logger.error(error_msg)
+            raise ValueError(error_msg)
+            
         if not self.vault_path.is_dir():
-            logger.error(f"Invalid vault path: {self.vault_path}")
-            raise ValueError(f"Vault path does not exist or is not a directory: {self.vault_path}")
+            error_msg = (
+                f"[X] FAILURE: Obsidian vault path is not a directory: {self.vault_path}\n"
+                f"Expected a directory, got a file."
+            )
+            logger.error(error_msg)
+            raise ValueError(error_msg)
         
         logger.info(f"VaultUtils initialized. Vault path: {self.vault_path}")
 
