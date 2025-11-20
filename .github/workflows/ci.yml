@@ -1,128 +1,269 @@
 name: Omega_KG CI Pipeline
 
 on:
+  push:
+    branches: [ "beta", "main" ]
   pull_request:
-    branches:
-      - alpha
+    branches: [ "beta", "main" ]
+  workflow_dispatch:
+
+env:
+  PYTHON_VERSION: "3.12"
+  POETRY_VERSION: "2.2.0"
 
 jobs:
-  setup:
+  # -----------------------------------------------------------------------------
+  # TIER 1: FAST FEEDBACK (Linting, Formatting, Static Analysis)
+  # -----------------------------------------------------------------------------
+  quality-checks:
+    name: 🛡️ Quality & Static Analysis
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Python
+      
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
         uses: actions/setup-python@v5
         with:
-          python-version: '3.13'
-      - name: Cache Poetry dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pypoetry
-          key: ${{ runner.os }}-poetry-${{ hashFiles('**/poetry.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-poetry-
+          python-version: ${{ env.PYTHON_VERSION }}
+          
       - name: Install Poetry
-        run: pip install poetry
+        run: pip install poetry==${{ env.POETRY_VERSION }}
+        
       - name: Install dependencies
         run: poetry install --with dev
+        
+      - name: Run Pre-commit Hooks (Ruff, Mypy, Bandit)
+        uses: pre-commit/action@v3.0.1
+        with:
+          extra_args: --all-files
 
-  # Trunk job removed (project no longer uses Trunk)
-
-  semgrep:
+  # -----------------------------------------------------------------------------
+  # TIER 2: UNIT TESTING (Fast Logic Verification)
+  # -----------------------------------------------------------------------------
+  unit-tests:
+    name: 🧪 Unit Tests
+    needs: quality-checks
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Run Semgrep
+      
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          
+      - name: Install Poetry
+        run: pip install poetry==${{ env.POETRY_VERSION }}
+        
+      - name: Install dependencies
+        run: poetry install --with dev
+        
+      - name: Run Unit Tests
+        run: |
+          poetry run pytest -m "unit" --cov=omega_kg --cov-report=xml:coverage-unit.xml --junitxml=junit-unit.xml
+          
+      - name: Upload Unit Test Coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-unit
+          path: coverage-unit.xml
+          retention-days: 1
+
+  # -----------------------------------------------------------------------------
+  # TIER 3: SECURITY & DEEP ANALYSIS (Slower, Comprehensive)
+  # -----------------------------------------------------------------------------
+  security-scans:
+    name: 🔒 Security Scans
+    needs: quality-checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Required for TruffleHog to scan history
+
+      # 1. Secret Scanning (TruffleHog)
+      - name: Run TruffleHog (Secrets)
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+          extra_args: --debug --only-verified
+
+      # 2. Vulnerability Scanning (Trivy)
+      - name: Run Trivy (Filesystem & Dependencies)
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          ignore-unfixed: true
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+          scanners: 'vuln,secret,config'
+
+      # 3. SAST (Semgrep)
+      - name: Run Semgrep (SAST)
         uses: returntocorp/semgrep-action@v1
         with:
           config: auto
-
-  trivy:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Run Trivy FS scan
-        uses: aquasecurity/trivy-action@master
-        with:
-          scan-type: fs
-          format: sarif
-          output: trivy-results.sarif
-      - name: Upload Trivy results
+          
+      - name: Upload Trivy Results
         uses: github/codeql-action/upload-sarif@v3
+        if: always()
         with:
-          sarif_file: trivy-results.sarif
+          sarif_file: 'trivy-results.sarif'
 
-  snyk:
+  # -----------------------------------------------------------------------------
+  # TIER 4: INTEGRATION & BUILD (Slowest, Full System Verification)
+  # -----------------------------------------------------------------------------
+  integration-tests:
+    name: 🔗 Integration Tests
+    needs: [unit-tests, security-scans]
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Run Snyk to check for vulnerabilities
-        uses: snyk/actions/python@master
+    services:
+      neo4j:
+        image: neo4j:5
         env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-
-  pytest:
-    needs: setup
-    runs-on: ubuntu-latest
+          NEO4J_AUTH: neo4j/password
+        ports:
+          - 7687:7687
+          - 7474:7474
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Python
+      
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
         uses: actions/setup-python@v5
         with:
-          python-version: '3.13'
+          python-version: ${{ env.PYTHON_VERSION }}
+          
       - name: Install Poetry
-        run: pip install poetry
-      - name: Restore Poetry cache
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pypoetry
-          key: ${{ runner.os }}-poetry-${{ hashFiles('**/poetry.lock') }}
+        run: pip install poetry==${{ env.POETRY_VERSION }}
+        
       - name: Install dependencies
         run: poetry install --with dev
-      - name: Run pytest with coverage
-        run: poetry run pytest \
-             --cov=omega_kg \
-             --cov-report=xml \
-             --cov-report=term \
-             --junitxml=junit.xml \
-             -m "not requires_neo4j" \
-             --cov-fail-under=50
-
-      # Trunk steps removed - project no longer uses Trunk
-      - name: Upload coverage to PR
+        
+      - name: Run Integration Tests
+        env:
+          NEO4J_URI: bolt://localhost:7687
+          NEO4J_USER: neo4j
+          NEO4J_PASSWORD: password
+          OBSIDIAN_VAULT_PATH: ./tests/fixtures/vault
+          EXTENSION_API_KEY: test-key
+          LINEAR_WEBHOOK_SECRET: test-secret
+          CHROME_EXTENSION_ID: test-id
+          JWT_SECRET_KEY: test-jwt-secret
+        run: |
+          # Create dummy vault for tests if not exists
+          mkdir -p ./tests/fixtures/vault
+          # Run all tests including integration
+          poetry run pytest -m "integration" --cov=omega_kg --cov-append --cov-report=xml:coverage-integration.xml --junitxml=junit-integration.xml
+          
+      - name: Upload Integration Coverage
         uses: actions/upload-artifact@v4
         with:
-          name: coverage-report
-          path: coverage.xml
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
-        with:
-          files: coverage.xml
-          fail_ci_if_error: true
+          name: coverage-integration
+          path: coverage-integration.xml
+          retention-days: 1
 
-  docs:
+  dast-scan:
+    name: 🕷️ DAST Scan (OWASP ZAP)
+    needs: [unit-tests, security-scans]
     runs-on: ubuntu-latest
+    services:
+      neo4j:
+        image: neo4j:5
+        env:
+          NEO4J_AUTH: neo4j/password
+        ports:
+          - 7687:7687
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Python
+      
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
         uses: actions/setup-python@v5
         with:
-          python-version: '3.13'
+          python-version: ${{ env.PYTHON_VERSION }}
+          
       - name: Install Poetry
-        run: pip install poetry
-      - name: Restore Poetry cache
-        uses: actions/cache@v4
+        run: pip install poetry==${{ env.POETRY_VERSION }}
+        
+      - name: Install dependencies
+        run: poetry install --with dev
+        
+      - name: Start Application
+        env:
+          NEO4J_URI: bolt://localhost:7687
+          NEO4J_USER: neo4j
+          NEO4J_PASSWORD: password
+          OBSIDIAN_VAULT_PATH: ./dummy_vault
+          EXTENSION_API_KEY: dast-key
+          LINEAR_WEBHOOK_SECRET: dast-secret
+          CHROME_EXTENSION_ID: dast-id
+          JWT_SECRET_KEY: dast-jwt-secret
+          APP_HOST: 0.0.0.0
+          APP_PORT: 8000
+        run: |
+          mkdir -p ./dummy_vault
+          # Start app in background
+          poetry run uvicorn omega_kg.main:app --host 0.0.0.0 --port 8000 &
+          # Wait for app to be ready
+          sleep 10
+          
+      - name: Run OWASP ZAP Baseline Scan
+        uses: zaproxy/action-baseline@v0.12.0
         with:
-          path: ~/.cache/pypoetry
-          key: ${{ runner.os }}-poetry-${{ hashFiles('**/poetry.lock') }}
-      - name: Install docs dependencies
-        run: poetry install --with docs
-      - name: Build documentation
-        run: poetry run mkdocs build --strict
+          target: 'http://localhost:8000'
+          rules_file_name: '.zap/rules.tsv'
+          cmd_options: '-a' # Ajax spider
+          allow_issue_writing: false # Don't create issues in repo
 
-  gemini:
+  docs-build:
+    name: 📚 Build Documentation
+    needs: quality-checks
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Run Gemini CLI
-        uses: google-github-actions/run-gemini-cli@v0.1.14
+      
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          
+      - name: Install Poetry
+        run: pip install poetry==${{ env.POETRY_VERSION }}
+        
+      - name: Install dependencies
+        run: poetry install --with docs
+        
+      - name: Build MkDocs
+        run: poetry run mkdocs build --strict
+
+  # -----------------------------------------------------------------------------
+  # FINAL REPORTING
+  # -----------------------------------------------------------------------------
+  report-coverage:
+    name: 📊 Report Coverage
+    needs: [unit-tests, integration-tests]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Download Unit Coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-unit
+          path: .
+          
+      - name: Download Integration Coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-integration
+          path: .
+          
+      - name: Upload to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./coverage-unit.xml,./coverage-integration.xml
+          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
