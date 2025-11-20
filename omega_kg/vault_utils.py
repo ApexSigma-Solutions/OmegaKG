@@ -203,21 +203,34 @@ if __name__ == "__main__":
         # --- CONFIGURATION ---
         # This file MUST exist in your vault root for the test to run
         TEST_NOTE_PATH = "my_test_note.md"
+        
         # Ensure the vault path is set and valid before instantiating VaultUtils
         vault_path = getattr(settings, "obsidian_vault_path", None)
+        
+        # Defensive check as requested
         if not vault_path or not Path(vault_path).is_dir():
             msg = (f"[X] FAILURE: settings.obsidian_vault_path is not set or is not a "
                    f"valid directory: {vault_path}")
             print(msg)
             exit(1)
+            
         utils = VaultUtils(vault_path)
         test_file_abs = utils.resolve_path(TEST_NOTE_PATH)
+        
         if not test_file_abs.is_file():
-            print(f"[X] FAILURE: Test file not found at {test_file_abs} - vault_utils.py:162")
-            print(f"Please create '{TEST_NOTE_PATH}' in your vault root to run this test. - vault_utils.py:163"
-                  "")
-            exit(1)
-        print(f"Testing against: {test_file_abs} - vault_utils.py:166")
+            print(f"[X] FAILURE: Test file not found at {test_file_abs}")
+            print(f"Please create '{TEST_NOTE_PATH}' in your vault root to run this test.")
+            # Create it automatically if missing to be helpful in local dev
+            try:
+                print(f"Attempting to create dummy test file at {test_file_abs}...")
+                with open(test_file_abs, 'w') as f:
+                    f.write("---\nstatus: draft\n---\n# Test Note\nAuto-created by test harness.")
+                print("✓ Created dummy test file.")
+            except Exception as e:
+                print(f"Failed to create test file: {e}")
+                exit(1)
+                
+        print(f"Testing against: {test_file_abs}")
         
         # 1. Test Read
         print("\n Testing Read - vault_utils.py:169")
