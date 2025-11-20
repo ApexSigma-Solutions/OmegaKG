@@ -14,15 +14,24 @@ def parse_html_content(html_content: str, url: str) -> list:
 
 def _parse_ai_studio(soup: BeautifulSoup) -> list:
     messages = []
-    # Heuristic: Look for semantic containers or labeled text
-    # This generic approach works for standard Google MD rendering
-    chunks = soup.find_all(['div', 'section'], class_=lambda x: x and 'message' in x)
+    # More specific selectors to avoid capturing containers
+    chunks = soup.select('[class*="message-user"], [class*="message-model"], [class*="user-prompt"], [class*="model-response"]')
+    
+    if not chunks: 
+        # Fallback to slightly broader but still safe check if specific classes fail
+        chunks = soup.find_all(['div', 'section'], class_=lambda x: x and ('message-content' in x or 'text-content' in x))
+        
     if not chunks: return _parse_generic_fallback(soup)
 
     for chunk in chunks:
         text = chunk.get_text(separator="\n", strip=True)
         if text:
-            role = "user" if "Run" in text or "User" in text else "assistant"
+            # Determine role based on class presence
+            classes = " ".join(chunk.get("class", []))
+            if "user" in classes or "prompt" in classes:
+                role = "user"
+            else:
+                role = "assistant"
             messages.append({"role": role, "content": text})
     return messages
 
@@ -32,9 +41,25 @@ def _parse_nano_gpt(soup: BeautifulSoup) -> list:
     bubbles = soup.select('div.whitespace-pre-wrap')
     if not bubbles: return _parse_generic_fallback(soup)
 
-    for i, bubble in enumerate(bubbles):
+    for bubble in bubbles:
         text = bubble.get_text(separator="\n", strip=True)
-        role = "user" if i % 2 == 0 else "assistant"
+        if not text: continue
+        
+        # Robust role detection: check parent for user/assistant indicators
+        # Nano-GPT usually wraps user messages in a specific container or has distinct classes
+        is_user = False
+        parent = bubble.find_parent()
+        while parent:
+            p_classes = parent.get("class", [])
+            if any("user" in c for c in p_classes):
+                is_user = True
+                break
+            if any("assistant" in c or "bot" in c for c in p_classes):
+                is_user = False # Explicitly assistant
+                break
+            parent = parent.find_parent()
+            
+        role = "user" if is_user else "assistant"
         messages.append({"role": role, "content": text})
     return messages
 
