@@ -2,7 +2,7 @@
 // Manifest V3 service workers go inactive - this is NORMAL Chrome behavior
 // The extension will wake up when messages arrive or alarms fire
 
-const DEFAULT_SERVER_URL = "http://localhost:8765";
+const DEFAULT_SERVER_URL = "http://localhost:8002";
 const STORAGE_KEYS = {
     SERVER_URL: 'omega_server_url',
     API_KEY: 'omega_api_key',

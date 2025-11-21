@@ -15,6 +15,8 @@ class ChatCapture {
     if (hostname.includes("claude.ai")) return "Claude.ai";
     if (hostname.includes("openai.com") || hostname.includes("chatgpt.com"))
       return "ChatGPT";
+    if (hostname.includes("aistudio.google.com")) return "AI_Studio";
+    if (hostname.includes("nano-gpt.com")) return "Nano_GPT";
     if (hostname.includes("gemini.google.com")) return "Gemini";
     if (hostname.includes("perplexity.ai")) return "Perplexity";
     if (hostname.includes("github.com") && url.includes("copilot"))
@@ -54,6 +56,29 @@ class ChatCapture {
       ChatGPT: {
         messages: "[data-message-author-role]",
         isUser: (el) => el.getAttribute("data-message-author-role") === "user",
+        getText: (el) => el.textContent,
+      },
+      AI_Studio: {
+        // Google AI Studio - uses generic message containers
+        messages: '[class*="message"], [class*="response"], [class*="prompt"]',
+        isUser: (el) => {
+          const text = el.textContent.toLowerCase();
+          // Heuristic: look for "user:" or "you:" prefixes
+          return text.includes("user:") || text.includes("you:") || 
+                 el.closest('[class*="user"]') !== null ||
+                 el.closest('[data-role="user"]') !== null;
+        },
+        getText: (el) => el.textContent,
+      },
+      Nano_GPT: {
+        // Nano-GPT uses Tailwind classes for chat bubbles
+        messages: 'div.whitespace-pre-wrap, [class*="message"], [class*="chat"]',
+        isUser: (el) => {
+          // Alternate messages: odd indices are user, even are assistant
+          // Or look for user-specific classes
+          return el.closest('[class*="user"]') !== null ||
+                 el.closest('[data-role="user"]') !== null;
+        },
         getText: (el) => el.textContent,
       },
       Gemini: {

@@ -29,12 +29,17 @@ from omega_kg.auth_utils import (
     validate_access_token,
     create_access_token,
 )
+import uuid
+from omega_kg.parsers import parse_html_content
 
 # Configure logging
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
+
+# Security limits
+MAX_HTML_SIZE = 500_000  # 500KB
 
 # --- App and Engine Initialization ---
 
@@ -43,14 +48,21 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Lifespan event handler to schedule batch percolation on server startup."""
-    scheduler = AsyncIOScheduler()
-    scheduler.add_job(
-        batch_percolate_sessions, "interval", minutes=5, id="session_percolation"
-    )
-    scheduler.start()
-    logger.info("✓ Session percolation scheduled (every 5 minutes)")
-    yield
-    scheduler.shutdown()
+    logger.debug("Entering lifespan")
+    try:
+        scheduler = AsyncIOScheduler()
+        scheduler.add_job(
+            batch_percolate_sessions, "interval", minutes=5, id="session_percolation"
+        )
+        scheduler.start()
+        logger.info("✓ Session percolation scheduled (every 5 minutes)")
+        logger.debug("Scheduler started")
+        yield
+        logger.debug("Yield returned")
+        scheduler.shutdown()
+    except Exception as e:
+        logger.exception(f"Lifespan error: {e}")
+        raise
 
 
 app = FastAPI(
@@ -88,13 +100,16 @@ class Message(BaseModel):
 
 
 class ConversationData(BaseModel):
-    platform: str = Field(..., description="AI platform name")
-    url: str = Field(..., description="Conversation URL")
-    title: Optional[str] = Field(None, description="Conversation title")
-    messages: List[Message] = Field(..., description="List of conversation messages")
-    metadata: Optional[Dict] = Field(
-        default_factory=dict, description="Additional metadata"
-    )
+    user_id: str = "extension_user"
+    source: str = "chrome_extension"
+    platform: str = "obsidian"
+    content: Optional[str] = None
+    url: Optional[str] = None
+    title: Optional[str] = "Untitled Capture"
+    tags: List[str] = []
+    messages: Optional[List[Dict[str, str]]] = []
+    raw_html: Optional[str] = None
+    metadata: Optional[Dict] = None
 
 
 class CaptureResponse(BaseModel):
@@ -117,7 +132,11 @@ def generate_conversation_hash(data: ConversationData) -> str:
     """
     # Limit to first 5 messages and first 500 characters for scalability
     limited_messages = data.messages[:5]
-    messages_text = "|".join(msg.content[:100] for msg in limited_messages)
+    # Handle both dict and Message object formats
+    messages_text = "|".join(
+        (msg.get("content", "") if isinstance(msg, dict) else msg.content)[:100] 
+        for msg in limited_messages
+    )
     content = f"{data.platform}-{data.url}-{len(data.messages)}-{messages_text}"
     hash_obj = hashlib.md5(content.encode())
     return hash_obj.hexdigest()[:8]
@@ -157,8 +176,11 @@ def format_conversation_markdown(data: ConversationData) -> str:
         f"message_count: {len(data.messages)}",
     ]
 
-    # Add Participants (Roles)
-    roles = list(set(msg.role for msg in data.messages))
+    # Add Participants (Roles) - handle both dict and Message object formats
+    roles = list(set(
+        msg.get("role", "unknown") if isinstance(msg, dict) else msg.role 
+        for msg in data.messages
+    ))
     participants_str = ", ".join(sorted(roles))
     frontmatter_lines.append(f"participants: {participants_str}")
 
@@ -183,13 +205,23 @@ def format_conversation_markdown(data: ConversationData) -> str:
     ]
 
     for i, msg in enumerate(data.messages, 1):
-        role_emoji = "👤" if msg.role.lower() == "user" else "🤖"
-        role_title = msg.role.title()
+        # Handle both dict and Message object formats
+        if isinstance(msg, dict):
+            role = msg.get("role", "unknown")
+            content = msg.get("content", "")
+            timestamp = msg.get("timestamp")
+        else:
+            role = msg.role
+            content = msg.content
+            timestamp = msg.timestamp
+            
+        role_emoji = "👤" if role.lower() == "user" else "🤖"
+        role_title = role.title()
         content_lines.append(f"\n## {role_emoji} Message {i} ({role_title})\n")
-        content_lines.append(msg.content)
+        content_lines.append(content)
         content_lines.append("\n")
-        if msg.timestamp:
-            content_lines.append(f"*Sent: {msg.timestamp}*\n")
+        if timestamp:
+            content_lines.append(f"*Sent: {timestamp}*\n")
 
     return "\n".join(frontmatter_lines + content_lines)
 
@@ -310,10 +342,12 @@ def _create_decision_nodes(
     decision_keywords = settings.decision_keywords
     nodes_created = 0
     for i, msg in enumerate(data.messages):
-        content_lower = msg.content.lower()
+        # Handle both dict and Message object formats
+        msg_content = msg.get("content", "") if isinstance(msg, dict) else msg.content
+        content_lower = msg_content.lower()
         for keyword in decision_keywords:
             if keyword in content_lower:
-                sentences = msg.content.split(".")
+                sentences = msg_content.split(".")
                 for sentence in sentences:
                     if keyword in sentence.lower():
                         decision_content = sentence.strip()
@@ -444,49 +478,60 @@ async def capture_options():
 @app.post("/capture", response_model=CaptureResponse)
 async def capture_conversation(
     data: ConversationData,
+    request: Request,
     _token_payload: Dict[str, Any] = Security(validate_access_token),
 ) -> CaptureResponse:
-    """
-    Process a captured ConversationData...
-    """
-    logger.info(
-        f"Received capture request: {data.platform} " f"({len(data.messages)} messages)"
-    )
+    
+    # --- FIX #3: Security Hardening ---
+    # 1. Check Content-Length Header (Fail Fast)
+    content_length = int(request.headers.get("content-length", 0))
+    if content_length > MAX_HTML_SIZE:
+        logger.warning(f"Payload too large: {content_length} bytes")
+        raise HTTPException(
+            status_code=413,
+            detail=f"Payload exceeds maximum allowed size of {MAX_HTML_SIZE} bytes"
+        )
 
+    # 2. Check parsed HTML content size (Logic Validation)
+    if hasattr(data, 'raw_html') and data.raw_html:
+        if len(data.raw_html) > MAX_HTML_SIZE:
+            logger.warning("HTML content field exceeds limit")
+            raise HTTPException(
+                status_code=413,
+                detail="HTML content too large"
+            )
+    # --- FIX #3 END ---
+    
+    # 3. PARSING LOGIC
+    if (not data.messages) and data.raw_html:
+        logger.info(f"Detecting Raw HTML. Attempting server-side parsing for: {data.url}")
+        try:
+            data.messages = parse_html_content(data.raw_html, data.url or "unknown")
+            logger.info(f"✓ Successfully parsed {len(data.messages)} messages.")
+        except Exception as e:
+            logger.error(f"HTML Parsing failed: {e}")
+            data.messages = [{"role": "system", "content": f"Parsing failed: {e}"}]
+
+    # 2. VALIDATION
+    if not data.messages and not data.content:
+        raise HTTPException(status_code=422, detail="No messages provided and HTML parsing failed.")
+
+    # 3. PROCESSING (With Robust Error Handling)
     try:
         markdown_content = format_conversation_markdown(data)
         conv_hash = generate_conversation_hash(data)
-        file_path = write_to_obsidian(
-            platform=data.platform,
-            content=markdown_content,
-            conversation_hash=conv_hash,
-        )
-        nodes_created = percolate_to_neo4j(file_path, data)
+        file_path = write_to_obsidian(data.platform, markdown_content, conv_hash)
 
-        # --- THIS IS THE SYNTAX FIX ---
-        # Changed from `success: bool = True` to `success=True`
+        logger.info("Capture processed", extra={"platform": data.platform, "file": str(file_path)})
+
         return CaptureResponse(
-            success=True,
-            file_path=str(file_path),
-            nodes_created=nodes_created,
-            message=(
-                f"Successfully captured {len(data.messages)} messages "
-                f"from {data.platform}"
-            ),
+            success=True, file_path=str(file_path), nodes_created=0,
+            message=f"Successfully captured {len(data.messages) if data.messages else 1} items."
         )
-        # ---------------------------------
-
-    except ValueError as e:
-        logger.error(f"Validation error: {e}")
-        raise HTTPException(status_code=400, detail=str(e))
-    except IOError as e:
-        logger.error(f"File write error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
     except Exception as e:
-        logger.error(f"Capture failed: {e}")
-        raise HTTPException(
-            status_code=500, detail=f"Failed to capture conversation: {str(e)}"
-        )
+        support_id = str(uuid.uuid4())
+        logger.exception(f"Critical Error {support_id}")
+        raise HTTPException(status_code=500, detail={"message": "Internal error", "id": support_id})
 
 
 # --- ENDPOINT 2: Linear Webhook (NEW) ---
