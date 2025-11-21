@@ -17,6 +17,7 @@ from fastapi.testclient import TestClient
 from omega_kg.capture_server import app
 from omega_kg.auth_utils import create_access_token, validate_access_token
 from omega_kg.settings import settings
+from jose import jwt
 
 
 class TestJwtAuthenticationFlow:
@@ -63,20 +64,30 @@ class TestJwtAuthenticationFlow:
         assert isinstance(token, str)
         assert len(token.split(".")) == 3  # JWT format: header.payload.signature
 
-    def test_jwt_token_has_expiration(self):
+    @pytest.mark.asyncio
+    async def test_jwt_token_has_expiration(self):
         """Test JWT token includes expiration claim"""
         token = create_access_token(data={"sub": "chrome_extension_user"})
-        payload = validate_access_token(token)
-        assert payload is not None
+        # validate_access_token returns TokenData, which validates the token signature and expiry
+        payload_obj = await validate_access_token(token)
+        assert payload_obj is not None
+        assert payload_obj.username == "chrome_extension_user"
+        
+        # To check specific claims like 'exp', we decode manually
+        payload = jwt.decode(token, settings.jwt_secret_key, algorithms=[settings.jwt_algorithm])
         assert "exp" in payload
         assert "sub" in payload
         assert payload["sub"] == "chrome_extension_user"
 
-    def test_jwt_token_expiration_timing(self):
+    @pytest.mark.asyncio
+    async def test_jwt_token_expiration_timing(self):
         """Test JWT token expiration is set correctly"""
         token = create_access_token(data={"sub": "test_user"})
-        payload = validate_access_token(token)
+        # Ensure it's valid
+        await validate_access_token(token)
 
+        # Decode to check expiration time
+        payload = jwt.decode(token, settings.jwt_secret_key, algorithms=[settings.jwt_algorithm])
         exp_timestamp = payload["exp"]
         exp_datetime = datetime.fromtimestamp(exp_timestamp, tz=timezone.utc)
         now = datetime.now(timezone.utc)
@@ -85,18 +96,21 @@ class TestJwtAuthenticationFlow:
         time_diff = (exp_datetime - now).total_seconds() / 60
         assert 1430 < time_diff < 1450  # Within 5 min of configured 1440
 
-    def test_jwt_token_validation_success(self):
+    @pytest.mark.asyncio
+    async def test_jwt_token_validation_success(self):
         """Test successful JWT token validation"""
         token = create_access_token(data={"sub": "chrome_extension_user"})
-        payload = validate_access_token(token)
-        assert payload["sub"] == "chrome_extension_user"
+        payload = await validate_access_token(token)
+        assert payload.username == "chrome_extension_user"
 
-    def test_jwt_token_validation_invalid_token(self):
+    @pytest.mark.asyncio
+    async def test_jwt_token_validation_invalid_token(self):
         """Test JWT token validation with invalid token"""
         with pytest.raises(Exception):  # JWT library raises error on invalid token
-            validate_access_token("invalid.jwt.token")
+            await validate_access_token("invalid.jwt.token")
 
-    def test_jwt_token_validation_expired_token(self):
+    @pytest.mark.asyncio
+    async def test_jwt_token_validation_expired_token(self):
         """Test JWT token validation with expired token"""
         # Create a token with past expiration
         past_time = (datetime.now(timezone.utc) - timedelta(hours=1)).timestamp()
@@ -114,7 +128,7 @@ class TestJwtAuthenticationFlow:
 
         # Should raise error on expired token
         with pytest.raises(Exception):
-            validate_access_token(expired_token)
+            await validate_access_token(expired_token)
 
     # ===== Test 2: /auth/token Endpoint =====
 
@@ -144,7 +158,8 @@ class TestJwtAuthenticationFlow:
         assert "token_type" in data
         assert data["token_type"] == "bearer"
 
-    def test_auth_token_returns_valid_jwt(self, client):
+    @pytest.mark.asyncio
+    async def test_auth_token_returns_valid_jwt(self, client):
         """Test /auth/token returns a valid, usable JWT token"""
         response = client.post(
             "/auth/token",
@@ -156,8 +171,8 @@ class TestJwtAuthenticationFlow:
         token = data["access_token"]
 
         # Token should be valid
-        payload = validate_access_token(token)
-        assert payload["sub"] == "chrome_extension_user"
+        payload = await validate_access_token(token)
+        assert payload.username == "chrome_extension_user"
 
     # ===== Test 3: /capture Endpoint Security =====
 
@@ -276,7 +291,8 @@ class TestJwtAuthenticationFlow:
 
     # ===== Test 8: Token Refresh Scenario =====
 
-    def test_token_refresh_creates_new_token(self):
+    @pytest.mark.asyncio
+    async def test_token_refresh_creates_new_token(self):
         """Test that refreshing creates a new token"""
         import time
 
@@ -285,12 +301,12 @@ class TestJwtAuthenticationFlow:
         time.sleep(0.1)
         token2 = create_access_token(data={"sub": "chrome_extension_user"})
 
-        payload1 = validate_access_token(token1)
-        payload2 = validate_access_token(token2)
+        payload1 = await validate_access_token(token1)
+        payload2 = await validate_access_token(token2)
 
         # Both should be valid but potentially different (depends on timing)
-        assert payload1["sub"] == "chrome_extension_user"
-        assert payload2["sub"] == "chrome_extension_user"
+        assert payload1.username == "chrome_extension_user"
+        assert payload2.username == "chrome_extension_user"
 
     # ===== Test 9: No Hardcoded Secrets =====
 
@@ -367,26 +383,31 @@ class TestExtensionIntegration:
         parts = token.split(".")
         assert len(parts) == 3  # header.payload.signature
 
-    def test_token_includes_expiry(self):
+    @pytest.mark.asyncio
+    async def test_token_includes_expiry(self):
         """Test token payload includes expiry"""
         token = create_access_token(data={"sub": "test_user"})
-        payload = validate_access_token(token)
+        await validate_access_token(token)
+        
+        payload = jwt.decode(token, settings.jwt_secret_key, algorithms=[settings.jwt_algorithm])
         assert "exp" in payload
         assert payload["exp"] > datetime.now(timezone.utc).timestamp()
 
-    def test_multiple_tokens_are_independent(self):
+    @pytest.mark.asyncio
+    async def test_multiple_tokens_are_independent(self):
         """Test multiple tokens can be created and validated independently"""
         tokens = [
             create_access_token(data={"sub": "chrome_extension_user"}) for _ in range(3)
         ]
-        payloads = [validate_access_token(t) for t in tokens]
+        payloads = [await validate_access_token(t) for t in tokens]
 
         # All should be valid
         for payload in payloads:
-            assert payload["sub"] == "chrome_extension_user"
+            assert payload.username == "chrome_extension_user"
 
         # All should have different expiration times (or very close)
-        exp_times = [p["exp"] for p in payloads]
+        decoded_payloads = [jwt.decode(t, settings.jwt_secret_key, algorithms=[settings.jwt_algorithm]) for t in tokens]
+        exp_times = [p["exp"] for p in decoded_payloads]
         # At minimum, they should all be valid timestamps in the future
         for exp_time in exp_times:
             assert exp_time > datetime.now(timezone.utc).timestamp()

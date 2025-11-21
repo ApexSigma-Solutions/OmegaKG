@@ -219,7 +219,7 @@ async function clearConfiguration() {
         ]);
 
         apiKeyInput.value = '';
-        serverUrlInput.value = 'http://localhost:8765';
+        serverUrlInput.value = 'http://localhost:8002';
         apiKeyStatus.className = 'field-status';
         apiKeyStatus.textContent = '';
         serverUrlStatus.className = 'field-status';
@@ -240,7 +240,7 @@ function markUnsaved() {
     if (apiKeyInput.value.trim()) {
         updateFieldStatus(apiKeyStatus, 'unsaved', 'Changes not saved');
     }
-    if (serverUrlInput.value.trim() !== 'http://localhost:8765') {
+    if (serverUrlInput.value.trim() !== 'http://localhost:8002') {
         updateFieldStatus(serverUrlStatus, 'unsaved', 'Changes not saved');
     }
 }
