@@ -5,6 +5,7 @@ import hashlib
 import json
 import logging
 from fastapi import Request, HTTPException
+from starlette.concurrency import run_in_threadpool
 from omega_kg.settings import settings
 from pathlib import Path
 from neo4j import GraphDatabase
@@ -85,7 +86,7 @@ class LinearSync:
         )
 
         # Delegate to the synchronous payload handler for the actual logic
-        self.handle_linear_webhook(payload)
+        await run_in_threadpool(self.handle_linear_webhook, payload)
 
         # handle_linear_webhook returns the status dict
         # This return is for safety and consistency with FastAPI expectations.

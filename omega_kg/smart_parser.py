@@ -199,7 +199,7 @@ class SmartParser:
             metadata = self.vault.read_note_frontmatter(note_path)
             linear_id = metadata.get("linear_id")
             
-            full_path = self.vault._resolve_path(note_path)
+            full_path = self.vault.resolve_path(note_path)
             if not full_path.is_file():
                 logger.error(f"File not found at resolved path: {full_path}")
                 return None

@@ -38,6 +38,9 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Security limits
+MAX_HTML_SIZE = 500_000  # 500KB
+
 # --- App and Engine Initialization ---
 
 
@@ -45,7 +48,7 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Lifespan event handler to schedule batch percolation on server startup."""
-    print("DEBUG: Entering lifespan")
+    logger.debug("Entering lifespan")
     try:
         scheduler = AsyncIOScheduler()
         scheduler.add_job(
@@ -53,14 +56,12 @@ async def lifespan(app: FastAPI):
         )
         scheduler.start()
         logger.info("✓ Session percolation scheduled (every 5 minutes)")
-        print("DEBUG: Scheduler started")
+        logger.debug("Scheduler started")
         yield
-        print("DEBUG: Yield returned")
+        logger.debug("Yield returned")
         scheduler.shutdown()
     except Exception as e:
-        print(f"DEBUG: Lifespan error: {e}")
-        import traceback
-        traceback.print_exc()
+        logger.exception(f"Lifespan error: {e}")
         raise
 
 
@@ -477,10 +478,31 @@ async def capture_options():
 @app.post("/capture", response_model=CaptureResponse)
 async def capture_conversation(
     data: ConversationData,
+    request: Request,
     _token_payload: Dict[str, Any] = Security(validate_access_token),
 ) -> CaptureResponse:
     
-    # 1. PARSING LOGIC
+    # --- FIX #3: Security Hardening ---
+    # 1. Check Content-Length Header (Fail Fast)
+    content_length = int(request.headers.get("content-length", 0))
+    if content_length > MAX_HTML_SIZE:
+        logger.warning(f"Payload too large: {content_length} bytes")
+        raise HTTPException(
+            status_code=413,
+            detail=f"Payload exceeds maximum allowed size of {MAX_HTML_SIZE} bytes"
+        )
+
+    # 2. Check parsed HTML content size (Logic Validation)
+    if hasattr(data, 'raw_html') and data.raw_html:
+        if len(data.raw_html) > MAX_HTML_SIZE:
+            logger.warning("HTML content field exceeds limit")
+            raise HTTPException(
+                status_code=413,
+                detail="HTML content too large"
+            )
+    # --- FIX #3 END ---
+    
+    # 3. PARSING LOGIC
     if (not data.messages) and data.raw_html:
         logger.info(f"Detecting Raw HTML. Attempting server-side parsing for: {data.url}")
         try:
