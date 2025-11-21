@@ -13,7 +13,7 @@ import logging
 from pathlib import Path
 import frontmatter
 from omega_kg.settings import settings
-from typing import Any, Mapping, Dict
+from typing import Any, Mapping, Dict, Optional
 
 # Set up logger
 logger = logging.getLogger(__name__)
@@ -34,10 +34,31 @@ class VaultUtils:
         Raises:
             ValueError: If the vault_path is not a valid directory.
         """
+        if not vault_path:
+            error_msg = (
+                "[X] FAILURE: Obsidian vault path is not set. "
+                "Please set OBSIDIAN_VAULT_PATH environment variable."
+            )
+            logger.error(error_msg)
+            raise ValueError(error_msg)
+            
         self.vault_path = Path(vault_path)
+        
+        if not self.vault_path.exists():
+            error_msg = (
+                f"[X] FAILURE: Obsidian vault path does not exist: {self.vault_path}\n"
+                f"Please create the directory or update OBSIDIAN_VAULT_PATH."
+            )
+            logger.error(error_msg)
+            raise ValueError(error_msg)
+            
         if not self.vault_path.is_dir():
-            logger.error(f"Invalid vault path: {self.vault_path}")
-            raise ValueError(f"Vault path does not exist or is not a directory: {self.vault_path}")
+            error_msg = (
+                f"[X] FAILURE: Obsidian vault path is not a directory: {self.vault_path}\n"
+                f"Expected a directory, got a file."
+            )
+            logger.error(error_msg)
+            raise ValueError(error_msg)
         
         logger.info(f"VaultUtils initialized. Vault path: {self.vault_path}")
 
@@ -128,6 +149,39 @@ class VaultUtils:
             logger.error(f"Failed to write updated frontmatter to {resolved_path}: {e}")
             return False
 
+    def find_note_by_linear_id(self, linear_id: str) -> Optional[Path]:
+        """
+        Scans the vault for a note with the matching 'linear_id' in frontmatter.
+        
+        Args:
+            linear_id (str): The Linear Issue ID to search for.
+            
+        Returns:
+            Optional[Path]: The path to the matching note, or None if not found.
+        """
+        # Iterate over all .md files in the vault
+        # rglob is recursive
+        for note_path in self.vault_path.rglob("*.md"):
+            try:
+                # We use a quick check first to avoid parsing frontmatter for every file
+                # This is a heuristic optimization
+                with note_path.open('r', encoding='utf-8', errors='ignore') as f:
+                    # Read first 2k bytes which should cover frontmatter
+                    head = f.read(2048)
+                    if linear_id not in head:
+                        continue
+                
+                # If potentially found, parse properly
+                metadata = self.read_note_frontmatter(note_path)
+                if str(metadata.get("linear_id")) == linear_id:
+                    return note_path
+                    
+            except Exception as e:
+                logger.warning(f"Error scanning {note_path}: {e}")
+                continue
+                
+        return None
+
 
 # -----------------------------------------------------------------------------
 # TEST HARNESS
@@ -149,21 +203,34 @@ if __name__ == "__main__":
         # --- CONFIGURATION ---
         # This file MUST exist in your vault root for the test to run
         TEST_NOTE_PATH = "my_test_note.md"
+        
         # Ensure the vault path is set and valid before instantiating VaultUtils
         vault_path = getattr(settings, "obsidian_vault_path", None)
+        
+        # Defensive check as requested
         if not vault_path or not Path(vault_path).is_dir():
             msg = (f"[X] FAILURE: settings.obsidian_vault_path is not set or is not a "
                    f"valid directory: {vault_path}")
             print(msg)
             exit(1)
+            
         utils = VaultUtils(vault_path)
         test_file_abs = utils.resolve_path(TEST_NOTE_PATH)
+        
         if not test_file_abs.is_file():
-            print(f"[X] FAILURE: Test file not found at {test_file_abs} - vault_utils.py:162")
-            print(f"Please create '{TEST_NOTE_PATH}' in your vault root to run this test. - vault_utils.py:163"
-                  "")
-            exit(1)
-        print(f"Testing against: {test_file_abs} - vault_utils.py:166")
+            print(f"[X] FAILURE: Test file not found at {test_file_abs}")
+            print(f"Please create '{TEST_NOTE_PATH}' in your vault root to run this test.")
+            # Create it automatically if missing to be helpful in local dev
+            try:
+                print(f"Attempting to create dummy test file at {test_file_abs}...")
+                with open(test_file_abs, 'w') as f:
+                    f.write("---\nstatus: draft\n---\n# Test Note\nAuto-created by test harness.")
+                print("✓ Created dummy test file.")
+            except Exception as e:
+                print(f"Failed to create test file: {e}")
+                exit(1)
+                
+        print(f"Testing against: {test_file_abs}")
         
         # 1. Test Read
         print("\n Testing Read - vault_utils.py:169")

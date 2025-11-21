@@ -76,6 +76,11 @@ class Settings(BaseSettings):
         None, validation_alias="LINEAR_WORKSPACE_ID"
     )
     linear_project_id: Optional[str] = Field(None, validation_alias="LINEAR_PROJECT_ID")
+    
+    # JSON maps for parsing
+    linear_user_map_json: Optional[str] = Field(None, validation_alias="LINEAR_USER_MAP_JSON")
+    linear_label_map_json: Optional[str] = Field(None, validation_alias="LINEAR_LABEL_MAP_JSON")
+    linear_status_map_json: Optional[str] = Field(None, validation_alias="LINEAR_STATUS_MAP_JSON")
 
     # Keywords for decision extraction
     decision_keywords: List[str] = Field(
