@@ -29,13 +29,13 @@ Write-Host "   Path: $manifestPath" -ForegroundColor Gray
 
 if (Test-Path $manifestPath) {
     Write-Host "   ✅ File exists" -ForegroundColor Green
-    
+
     # Check file readable
     try {
         $content = Get-Content $manifestPath -Raw -ErrorAction Stop
         Write-Host "   ✅ File is readable" -ForegroundColor Green
         Write-Host "   📄 File size: $((Get-Item $manifestPath).Length) bytes" -ForegroundColor Gray
-        
+
         # Validate JSON
         try {
             $json = $content | ConvertFrom-Json -ErrorAction Stop
@@ -65,7 +65,7 @@ try {
     $acl = Get-Acl $ExtensionPath
     $currentUser = [System.Security.Principal.WindowsIdentity]::GetCurrent().User
     $access = $acl.Access | Where-Object { $_.IdentityReference -match $currentUser.Value }
-    
+
     if ($access) {
         Write-Host "   ✅ Current user has access" -ForegroundColor Green
         Write-Host "   Permissions: $($access.FileSystemRights)" -ForegroundColor Gray
@@ -102,7 +102,7 @@ foreach ($file in $requiredFiles) {
 Write-Host "`n7️⃣  Validating manifest.json structure..." -ForegroundColor Yellow
 try {
     $manifest = Get-Content $manifestPath | ConvertFrom-Json
-    
+
     $checks = @(
         @{ Name = "manifest_version"; Required = $true }
         @{ Name = "name"; Required = $true }
@@ -112,7 +112,7 @@ try {
         @{ Name = "background"; Required = $true }
         @{ Name = "content_scripts"; Required = $true }
     )
-    
+
     foreach ($check in $checks) {
         $property = $manifest | Select-Object -ExpandProperty $check.Name -ErrorAction SilentlyContinue
         if ($property -or -not $check.Required) {

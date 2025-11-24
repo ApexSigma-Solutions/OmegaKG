@@ -100,7 +100,7 @@ async def capture_conversation(
     content_length = request.headers.get("content-length")
     if content_length and int(content_length) > MAX_HTML_SIZE_BYTES:
         raise HTTPException(status_code=413, detail="HTML payload too large (max 500KB)")
-    
+
     # 2. PARSING LOGIC
     if (not data.messages) and data.raw_html:
         if len(data.raw_html) > MAX_HTML_SIZE_BYTES:

@@ -1,7 +1,7 @@
 # --- START: .env LOADER ---
 # (The .env loader code is here... no changes from the previous version)
 # Get the directory where the script itself is located
-$ScriptDir = $PSScriptRoot 
+$ScriptDir = $PSScriptRoot
 
 # Assume the project root is one level up from the 'scripts' directory
 $ProjectRoot = (Get-Item $ScriptDir).Parent.FullName
@@ -17,10 +17,10 @@ if (Test-Path $EnvFile) {
             if ($parts.Length -eq 2) {
                 $key = $parts[0].Trim()
                 $value = $parts[1].Trim()
-                
+
                 # Remove surrounding quotes (single or double) from the value
                 $value = $value -replace '^"|"$' -replace "^'|'$"
-                
+
                 # Set the environment variable for this script's session
                 [Environment]::SetEnvironmentVariable($key, $value, 'Process')
             }
@@ -171,14 +171,14 @@ if ($global:allChecksPassed) {
     # ---------------------------------
     # 5. SERVER START-UP
     # ---------------------------------
-    
+
     $serverHost = if ($env:CAPTURE_SERVER_HOST) { $env:CAPTURE_SERVER_HOST } else { "127.0.0.1" }
     $serverPort = if ($env:CAPTURE_SERVER_PORT) { $env:CAPTURE_SERVER_PORT } else { 8765 }
     $serverModule = if ($env:CAPTURE_SERVER_MODULE) { $env:CAPTURE_SERVER_MODULE } else { "omega_kg.capture_server:app" }
-    
+
     $title = "Omega_KG Server"
     $message = "All checks passed. Start the FastAPI server ($serverModule) on $serverHost`:$serverPort?"
-    
+
     # --- FIX 1: Unambiguous hotkeys ---
     $newWindow = [System.Management.Automation.Host.ChoiceDescription]::new("&New Window", "Start uvicorn in a new, separate terminal window.")
     $thisTerminal = [System.Management.Automation.Host.ChoiceDescription]::new("&This Terminal", "Start uvicorn in this terminal (blocks prompt).")
@@ -192,20 +192,22 @@ if ($global:allChecksPassed) {
     $startScriptPath = Join-Path $PSScriptRoot "start-capture-server.ps1"
 
     switch ($result) {
-        0 { 
+        0 {
             Write-Info "Starting server in new window (via start-capture-server.ps1)..."
             # This script already starts in a new job, so just call it.
             & $startScriptPath
         }
-        1 { 
+        1 {
             Write-Info "Starting server in this terminal. (Press Ctrl+C to stop)"
-            
+
             # We must *manually* check if it's running, since we aren't using the other script
             $existing = Get-CimInstance Win32_Process -Filter "Name = 'uvicorn.exe'" |
                 Where-Object { $_.CommandLine -match "omega_kg.capture_server" }
-            
+
             if ($existing) {
                 Write-Warning "⚠ Capture server already running (PID: $($existing.Id))"
+            }
+        }
         2 {
             Write-Info "Server not started."
         }
@@ -357,14 +359,14 @@ if ($global:allChecksPassed) {
     # ---------------------------------
     # 5. SERVER START-UP
     # ---------------------------------
-    
+
     $serverHost = if ($env:CAPTURE_SERVER_HOST) { $env:CAPTURE_SERVER_HOST } else { "127.0.0.1" }
     $serverPort = if ($env:CAPTURE_SERVER_PORT) { $env:CAPTURE_SERVER_PORT } else { 8765 }
     $serverModule = if ($env:CAPTURE_SERVER_MODULE) { $env:CAPTURE_SERVER_MODULE } else { "omega_kg.capture_server:app" }
-    
+
     $title = "Omega_KG Server"
     $message = "All checks passed. Start the FastAPI server ($serverModule) on $serverHost`:$serverPort?"
-    
+
     # --- FIX 1: Unambiguous hotkeys ---
     $newWindow = [System.Management.Automation.Host.ChoiceDescription]::new("&New Window", "Start uvicorn in a new, separate terminal window.")
     $thisTerminal = [System.Management.Automation.Host.ChoiceDescription]::new("&This Terminal", "Start uvicorn in this terminal (blocks prompt).")
@@ -379,18 +381,18 @@ if ($global:allChecksPassed) {
     $startScriptPath = Join-Path $PSScriptRoot "start-capture-server.ps1"
 
     switch ($result) {
-        0 { 
+        0 {
             Write-Info "Starting server in new window (via start-capture-server.ps1)..."
             # This script already starts in a new job, so just call it.
             & $startScriptPath
         }
-        1 { 
+        1 {
             Write-Info "Starting server in this terminal. (Press Ctrl+C to stop)"
-            
+
             # We must *manually* check if it's running, since we aren't using the other script
             $existing = Get-CimInstance Win32_Process -Filter "Name = 'uvicorn.exe'" |
                 Where-Object { $_.CommandLine -match "omega_kg.capture_server" }
-            
+
             if ($existing) {
                 Write-Warning "⚠ Capture server already running (PID: $($existing.Id))"
             } else {

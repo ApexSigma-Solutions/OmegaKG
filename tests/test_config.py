@@ -39,11 +39,11 @@ def test_config_drift() -> None:
     error_messages: List[str] = []
     if missing_in_template:
         error_messages.append(
-            f"Keys in Settings but NOT in .env.example: " f"{missing_in_template}"
+            f"Keys in Settings but NOT in .env.example: {missing_in_template}"
         )
     if missing_in_settings:
         error_messages.append(
-            f"Keys in .env.example but NOT in Settings: " f"{missing_in_settings}"
+            f"Keys in .env.example but NOT in Settings: {missing_in_settings}"
         )
 
     if error_messages:

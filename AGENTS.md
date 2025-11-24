@@ -2,12 +2,6 @@
 
 This file provides guidance to agents when working with code in this repository.
 
-## First steps for agents
-
-1. Read `.github/instructions/copilot-instructions.md` for a concise, repo-focused guide.
-2. Read `.roo/rules-architect/AGENTS.md` for non-obvious architecture rules and constraints.
-3. Review `README.md` and `.env.example` to set up local environment before running anything.
-
 ## Build & Test Commands
 
 - **Install dependencies**: `poetry install --with dev`

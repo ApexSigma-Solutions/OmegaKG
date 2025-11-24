@@ -1,4 +1,3 @@
-import os
 import hmac
 from datetime import datetime, timedelta, timezone
 from typing import Optional
@@ -25,12 +24,20 @@ class Token(BaseModel):
     access_token: str
     token_type: str
 
+# MODELS
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+
 class TokenData(BaseModel):
     username: Optional[str] = None
+
 
 class LoginRequest(BaseModel):
     username: str
     password: str
+
 
 # UTILS
 def get_static_api_key(api_key_header: str = Security(API_KEY_HEADER)) -> str:
@@ -43,7 +50,7 @@ def get_static_api_key(api_key_header: str = Security(API_KEY_HEADER)) -> str:
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Server misconfiguration: EXTENSION_API_KEY not set",
         )
-        
+
     if hmac.compare_digest(api_key_header, EXTENSION_API_KEY):
         return api_key_header
 
@@ -52,11 +59,17 @@ def get_static_api_key(api_key_header: str = Security(API_KEY_HEADER)) -> str:
         detail="Invalid or missing Bootstrap API Key",
     )
 
+
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()
-    expire = datetime.now(timezone.utc) + (expires_delta if expires_delta else timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
+    expire = datetime.now(timezone.utc) + (
+        expires_delta
+        if expires_delta
+        else timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    )
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
 
 async def validate_access_token(token: str = Depends(oauth2_scheme)):
     credentials_exception = HTTPException(
@@ -67,7 +80,8 @@ async def validate_access_token(token: str = Depends(oauth2_scheme)):
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username: str = payload.get("sub")
-        if username is None: raise credentials_exception
+        if username is None:
+            raise credentials_exception
         return TokenData(username=username)
     except JWTError:
         raise credentials_exception

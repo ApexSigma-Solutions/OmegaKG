@@ -1,7 +1,10 @@
-import sys
 from pathlib import Path
 
-from scripts.validate_env_example import parse_settings_for_env_vars, parse_env_example, compare
+from scripts.validate_env_example import (
+    parse_settings_for_env_vars,
+    parse_env_example,
+    compare,
+)
 
 
 def test_validate_env_example_matches_settings():

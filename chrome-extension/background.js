@@ -190,7 +190,7 @@ async function saveToLocalhost(data) {
   try {
     // Get valid JWT token (will refresh if necessary)
     const jwtToken = await getValidJwtToken();
-    
+
     if (!jwtToken) {
       throw new Error(
         'No JWT token available. Please configure API key in extension options.'
