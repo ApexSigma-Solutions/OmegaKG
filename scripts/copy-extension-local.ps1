@@ -19,17 +19,17 @@ if (-not (Test-Path $SourcePath)) {
 # Create/clear target directory
 function Copy-ExtensionFiles {
     Write-Host "🔄 Copying Omega_KG Extension to local folder..." -ForegroundColor Cyan
-    
+
     if (Test-Path $TargetPath) {
         Write-Host "⚠️  Target directory exists, updating..." -ForegroundColor Yellow
         Remove-Item "$TargetPath\*" -Recurse -Force
     } else {
         New-Item -ItemType Directory -Path $TargetPath -Force | Out-Null
     }
-    
+
     Copy-Item "$SourcePath\*" -Destination $TargetPath -Recurse -Force
     Write-Host "✅ Files copied to: $TargetPath" -ForegroundColor Green
-    
+
     # Verify
     $files = Get-ChildItem $TargetPath -File | Select-Object -ExpandProperty Name
     Write-Host "`n📂 Extension files:" -ForegroundColor Yellow
@@ -68,28 +68,28 @@ if ($OpenChrome) {
 if ($Watch) {
     Write-Host "`n👀 Watch mode enabled - monitoring for changes..." -ForegroundColor Cyan
     Write-Host "Press Ctrl+C to stop`n" -ForegroundColor Yellow
-    
+
     $lastCopy = Get-Date
-    
+
     while ($true) {
         # Check if source files were modified
         $sourceFiles = Get-ChildItem $SourcePath -File -Recurse
         $anyChanged = $false
-        
+
         foreach ($file in $sourceFiles) {
             if ($file.LastWriteTime -gt $lastCopy) {
                 $anyChanged = $true
                 break
             }
         }
-        
+
         if ($anyChanged) {
             Write-Host "`n📝 Changes detected in source, syncing..." -ForegroundColor Yellow
             Copy-ExtensionFiles
             Write-Host "`n⚠️  Remember to reload the extension in Chrome (click the ↻ button)" -ForegroundColor Yellow
             $lastCopy = Get-Date
         }
-        
+
         Start-Sleep -Seconds 2
     }
 }

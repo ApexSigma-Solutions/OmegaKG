@@ -29,6 +29,9 @@ from omega_kg.auth_utils import (
     validate_access_token,
     create_access_token,
 )
+from omega_kg.routers import linear_receiver
+from omega_kg.database.session import get_db
+from sqlalchemy import text
 import uuid
 from omega_kg.parsers import parse_html_content
 
@@ -73,6 +76,9 @@ app = FastAPI(
 )
 
 sync_engine = LinearSync()
+
+# Register Linear Receiver Router (New Parallel Endpoint)
+app.include_router(linear_receiver.router, tags=["Linear Ingest"])
 
 app.add_middleware(
     CORSMiddleware,
@@ -134,7 +140,7 @@ def generate_conversation_hash(data: ConversationData) -> str:
     limited_messages = data.messages[:5]
     # Handle both dict and Message object formats
     messages_text = "|".join(
-        (msg.get("content", "") if isinstance(msg, dict) else msg.content)[:100] 
+        (msg.get("content", "") if isinstance(msg, dict) else msg.content)[:100]
         for msg in limited_messages
     )
     content = f"{data.platform}-{data.url}-{len(data.messages)}-{messages_text}"
@@ -155,7 +161,7 @@ def format_conversation_markdown(data: ConversationData) -> str:
     now = datetime.now()
     date_str = now.strftime("%Y-%m-%d")
     timestamp_str = now.isoformat()
-    
+
     # Generate a robust Content ID
     conv_hash = generate_conversation_hash(data)
     # ID Format: CAP (Capture) - Date - Hash
@@ -177,10 +183,12 @@ def format_conversation_markdown(data: ConversationData) -> str:
     ]
 
     # Add Participants (Roles) - handle both dict and Message object formats
-    roles = list(set(
-        msg.get("role", "unknown") if isinstance(msg, dict) else msg.role 
-        for msg in data.messages
-    ))
+    roles = list(
+        set(
+            msg.get("role", "unknown") if isinstance(msg, dict) else msg.role
+            for msg in data.messages
+        )
+    )
     participants_str = ", ".join(sorted(roles))
     frontmatter_lines.append(f"participants: {participants_str}")
 
@@ -190,7 +198,7 @@ def format_conversation_markdown(data: ConversationData) -> str:
             # Prevent duplicate keys if they overlap with schema
             if key not in ["id", "type", "status", "title", "created_at"]:
                 frontmatter_lines.append(f"{key}: {value}")
-    
+
     frontmatter_lines.append("---")
 
     # --- Content Body ---
@@ -214,7 +222,7 @@ def format_conversation_markdown(data: ConversationData) -> str:
             role = msg.role
             content = msg.content
             timestamp = msg.timestamp
-            
+
         role_emoji = "👤" if role.lower() == "user" else "🤖"
         role_title = role.title()
         content_lines.append(f"\n## {role_emoji} Message {i} ({role_title})\n")
@@ -422,6 +430,7 @@ async def health_check():
         "timestamp": datetime.now().isoformat(),
         "vault_accessible": False,
         "neo4j_connected": False,
+        "postgres_connected": False,
     }
     try:
         vault_path = Path(settings.obsidian_vault_path)
@@ -441,7 +450,23 @@ async def health_check():
         logger.warning(f"Neo4j check failed: {e}")
         health_status["neo4j_error"] = str(e)
 
+    # PostgreSQL Health Check (Async)
+    try:
+        async for session in get_db():
+            await session.execute(text("SELECT 1"))
+            health_status["postgres_connected"] = True
+            break
+    except Exception as e:
+        logger.warning(f"PostgreSQL check failed: {e}")
+        health_status["postgres_error"] = str(e)
+
     return health_status
+
+
+@app.on_event("startup")
+async def startup_event():
+    """Log deprecation notice for legacy endpoint."""
+    logger.warning("⚠️  Legacy endpoint /webhook/linear active. New endpoint: /webhooks/linear")
 
 
 @app.post("/auth/token", response_model=Token)
@@ -481,7 +506,6 @@ async def capture_conversation(
     request: Request,
     _token_payload: Dict[str, Any] = Security(validate_access_token),
 ) -> CaptureResponse:
-    
     # --- FIX #3: Security Hardening ---
     # 1. Check Content-Length Header (Fail Fast)
     content_length = int(request.headers.get("content-length", 0))
@@ -489,22 +513,21 @@ async def capture_conversation(
         logger.warning(f"Payload too large: {content_length} bytes")
         raise HTTPException(
             status_code=413,
-            detail=f"Payload exceeds maximum allowed size of {MAX_HTML_SIZE} bytes"
+            detail=f"Payload exceeds maximum allowed size of {MAX_HTML_SIZE} bytes",
         )
 
     # 2. Check parsed HTML content size (Logic Validation)
-    if hasattr(data, 'raw_html') and data.raw_html:
+    if hasattr(data, "raw_html") and data.raw_html:
         if len(data.raw_html) > MAX_HTML_SIZE:
             logger.warning("HTML content field exceeds limit")
-            raise HTTPException(
-                status_code=413,
-                detail="HTML content too large"
-            )
+            raise HTTPException(status_code=413, detail="HTML content too large")
     # --- FIX #3 END ---
-    
+
     # 3. PARSING LOGIC
     if (not data.messages) and data.raw_html:
-        logger.info(f"Detecting Raw HTML. Attempting server-side parsing for: {data.url}")
+        logger.info(
+            f"Detecting Raw HTML. Attempting server-side parsing for: {data.url}"
+        )
         try:
             data.messages = parse_html_content(data.raw_html, data.url or "unknown")
             logger.info(f"✓ Successfully parsed {len(data.messages)} messages.")
@@ -514,7 +537,9 @@ async def capture_conversation(
 
     # 2. VALIDATION
     if not data.messages and not data.content:
-        raise HTTPException(status_code=422, detail="No messages provided and HTML parsing failed.")
+        raise HTTPException(
+            status_code=422, detail="No messages provided and HTML parsing failed."
+        )
 
     # 3. PROCESSING (With Robust Error Handling)
     try:
@@ -522,16 +547,23 @@ async def capture_conversation(
         conv_hash = generate_conversation_hash(data)
         file_path = write_to_obsidian(data.platform, markdown_content, conv_hash)
 
-        logger.info("Capture processed", extra={"platform": data.platform, "file": str(file_path)})
+        logger.info(
+            "Capture processed",
+            extra={"platform": data.platform, "file": str(file_path)},
+        )
 
         return CaptureResponse(
-            success=True, file_path=str(file_path), nodes_created=0,
-            message=f"Successfully captured {len(data.messages) if data.messages else 1} items."
+            success=True,
+            file_path=str(file_path),
+            nodes_created=0,
+            message=f"Successfully captured {len(data.messages) if data.messages else 1} items.",
         )
-    except Exception as e:
+    except Exception:
         support_id = str(uuid.uuid4())
         logger.exception(f"Critical Error {support_id}")
-        raise HTTPException(status_code=500, detail={"message": "Internal error", "id": support_id})
+        raise HTTPException(
+            status_code=500, detail={"message": "Internal error", "id": support_id}
+        )
 
 
 # --- ENDPOINT 2: Linear Webhook (NEW) ---

@@ -381,7 +381,7 @@ class TaskLifecycle:
 
 **🤖 Lifecycle Transition:** {rule.from_status.value} → **{new_status}**
 *Reason:* Automatic transition after {rule.days_threshold} days of inactivity.
-*Date:* {datetime.now().strftime('%Y-%m-%d %H:%M')}
+*Date:* {datetime.now().strftime("%Y-%m-%d %H:%M")}
 
 """
         post.content += notice
@@ -514,7 +514,7 @@ class TaskLifecycle:
         msg["From"] = settings.smtp_user or ""
         msg["To"] = settings.email_to or ""
         msg["Subject"] = (
-            f"Omega_KG Lifecycle Report - " f"{datetime.now().strftime('%Y-%m-%d')}"
+            f"Omega_KG Lifecycle Report - {datetime.now().strftime('%Y-%m-%d')}"
         )
 
         msg.attach(MIMEText(report, "plain"))

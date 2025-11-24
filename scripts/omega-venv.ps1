@@ -9,13 +9,13 @@ function Enable-OmegaVenv {
     .SYNOPSIS
     Enables the virtual environment in the CURRENT directory.
     #>
-    
+
     # --- FIX: Use relative path from current directory ---
     # $venvPath = "C:\Users\steyn\OneDrive\ApexSigma\Omega_KG\.venv" # OLD HARDCODED PATH
     $venvPath = Join-Path (Get-Location).Path ".venv" # NEW RELATIVE PATH
-    
+
     $activateScript = Join-Path $venvPath "Scripts\Activate.ps1"
-    
+
     if (Test-Path $activateScript) {
         & $activateScript
         Write-Host "✅ Activated .venv for $(Split-Path (Get-Location).Path -Leaf)" -ForegroundColor Green

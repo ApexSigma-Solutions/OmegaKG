@@ -70,7 +70,6 @@ date: 2023-01-02
             patch.object(self.engine, "_percolate_commits") as mock_commits,
             patch.object(self.engine, "_percolate_session") as mock_session_percolate,
         ):
-
             mock_extract.side_effect = [
                 {"date": "2023-01-01", "decision_id": "DEC-001"},
                 {"date": "2023-01-02"},

@@ -7,5 +7,11 @@
 			"path": "../omegavault.as"
 		}
 	],
-	"settings": {}
+	"settings": {
+		"python-envs.defaultEnvManager": "ms-python.python:system",
+		"claudeCode.initialPermissionMode": "plan",
+		"claudeCode.selectedModel": "Minimax M2",
+		"claudeCode.disableLoginPrompt": true,
+		"powershell.cwd": "Omega_KG_dev"
+	}
 }

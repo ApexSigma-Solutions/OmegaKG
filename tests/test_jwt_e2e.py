@@ -72,9 +72,11 @@ class TestJwtAuthenticationFlow:
         payload_obj = await validate_access_token(token)
         assert payload_obj is not None
         assert payload_obj.username == "chrome_extension_user"
-        
+
         # To check specific claims like 'exp', we decode manually
-        payload = jwt.decode(token, settings.jwt_secret_key, algorithms=[settings.jwt_algorithm])
+        payload = jwt.decode(
+            token, settings.jwt_secret_key, algorithms=[settings.jwt_algorithm]
+        )
         assert "exp" in payload
         assert "sub" in payload
         assert payload["sub"] == "chrome_extension_user"
@@ -87,7 +89,9 @@ class TestJwtAuthenticationFlow:
         await validate_access_token(token)
 
         # Decode to check expiration time
-        payload = jwt.decode(token, settings.jwt_secret_key, algorithms=[settings.jwt_algorithm])
+        payload = jwt.decode(
+            token, settings.jwt_secret_key, algorithms=[settings.jwt_algorithm]
+        )
         exp_timestamp = payload["exp"]
         exp_datetime = datetime.fromtimestamp(exp_timestamp, tz=timezone.utc)
         now = datetime.now(timezone.utc)
@@ -388,8 +392,10 @@ class TestExtensionIntegration:
         """Test token payload includes expiry"""
         token = create_access_token(data={"sub": "test_user"})
         await validate_access_token(token)
-        
-        payload = jwt.decode(token, settings.jwt_secret_key, algorithms=[settings.jwt_algorithm])
+
+        payload = jwt.decode(
+            token, settings.jwt_secret_key, algorithms=[settings.jwt_algorithm]
+        )
         assert "exp" in payload
         assert payload["exp"] > datetime.now(timezone.utc).timestamp()
 
@@ -406,7 +412,10 @@ class TestExtensionIntegration:
             assert payload.username == "chrome_extension_user"
 
         # All should have different expiration times (or very close)
-        decoded_payloads = [jwt.decode(t, settings.jwt_secret_key, algorithms=[settings.jwt_algorithm]) for t in tokens]
+        decoded_payloads = [
+            jwt.decode(t, settings.jwt_secret_key, algorithms=[settings.jwt_algorithm])
+            for t in tokens
+        ]
         exp_times = [p["exp"] for p in decoded_payloads]
         # At minimum, they should all be valid timestamps in the future
         for exp_time in exp_times:
