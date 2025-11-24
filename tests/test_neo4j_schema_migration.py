@@ -5,6 +5,7 @@ These tests mock a Neo4j driver and assert that the expected Cypher statements
 are issued when `initialize_schema` is called, including dropping old constraints
 and creating new id-based constraints for Golden Schema entity labels.
 """
+
 from unittest.mock import MagicMock, patch
 
 from omega_kg.neo4j_schema import KnowledgeGraphSchema

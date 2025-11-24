@@ -13,17 +13,20 @@ from omega_kg.settings import settings
 # Set up logger
 logger = logging.getLogger(__name__)
 
+
 class LinearClient:
     """
     Async client for the Linear GraphQL API.
     """
-    
+
     API_URL = "https://api.linear.app/graphql"
 
     def __init__(self):
         self.api_key = settings.linear_api_key
         if not self.api_key:
-            logger.warning("LINEAR_API_KEY is not set. Linear integration will not work.")
+            logger.warning(
+                "LINEAR_API_KEY is not set. Linear integration will not work."
+            )
 
     @property
     def _headers(self) -> Dict[str, str]:
@@ -32,7 +35,9 @@ class LinearClient:
             "Content-Type": "application/json",
         }
 
-    async def _execute_query(self, query: str, variables: Dict[str, Any] = None) -> Dict[str, Any]:
+    async def _execute_query(
+        self, query: str, variables: Dict[str, Any] = None
+    ) -> Dict[str, Any]:
         """
         Executes a GraphQL query against the Linear API.
         """
@@ -44,22 +49,21 @@ class LinearClient:
         async with httpx.AsyncClient() as client:
             try:
                 response = await client.post(
-                    self.API_URL, 
-                    headers=self._headers, 
-                    json=payload, 
-                    timeout=10.0
+                    self.API_URL, headers=self._headers, json=payload, timeout=10.0
                 )
                 response.raise_for_status()
-                
+
                 data = await response.json()
-                
+
                 if "errors" in data:
                     raise Exception(f"GraphQL Error: {data['errors']}")
-                
+
                 return data.get("data", {})
 
             except httpx.HTTPStatusError as e:
-                logger.error(f"HTTP Error connecting to Linear: {e.response.status_code}")
+                logger.error(
+                    f"HTTP Error connecting to Linear: {e.response.status_code}"
+                )
                 raise
             except httpx.RequestError as e:
                 logger.error(f"Network Error connecting to Linear: {e}")
@@ -76,7 +80,7 @@ class LinearClient:
         assignee_id: Optional[str] = None,
         label_ids: Optional[List[str]] = None,
         priority: int = 0,
-        state_id: Optional[str] = None
+        state_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Creates a new issue in Linear.
@@ -94,7 +98,7 @@ class LinearClient:
           }
         }
         """
-        
+
         variables = {
             "input": {
                 "title": title,
@@ -142,7 +146,9 @@ class LinearClient:
         result = await self._execute_query(query, {"id": issue_id})
         return result.get("issue", {})
 
-    async def update_issue(self, issue_id: str, updates: Dict[str, Any]) -> Dict[str, Any]:
+    async def update_issue(
+        self, issue_id: str, updates: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """
         Updates an existing issue.
         """
@@ -164,11 +170,11 @@ class LinearClient:
         result = await self._execute_query(mutation, {"id": issue_id, "input": updates})
         return result.get("issueUpdate", {}).get("issue", {})
 
+
 # Singleton instance for easy import
 linear_client = LinearClient()
+
 
 # Backwards compatibility wrapper (if needed by existing code)
 async def create_linear_issue(*args, **kwargs):
     return await linear_client.create_issue(*args, **kwargs)
-
-

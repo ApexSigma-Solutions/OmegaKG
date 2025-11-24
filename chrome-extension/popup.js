@@ -22,22 +22,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('captureBtn').addEventListener('click', async () => {
     const apiKey = apiKeyInput.value.trim();
-    
+
     // 1. EXTRACT HTML
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     const injection = await chrome.scripting.executeScript({
       target: { tabId: tab.id },
-      func: () => ({ 
-        html: document.documentElement.outerHTML, 
-        title: document.title, 
-        url: window.location.href 
+      func: () => ({
+        html: document.documentElement.outerHTML,
+        title: document.title,
+        url: window.location.href
       })
     });
     const pageData = injection[0].result;
 
     // 2. AUTHENTICATE
     const authResp = await fetch("http://localhost:8002/auth/token", {
-      method: 'POST', 
+      method: 'POST',
       headers: { 'x-api-key': apiKey }
     });
     const token = (await authResp.json()).access_token;
@@ -51,7 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
         url: pageData.url, title: pageData.title, raw_html: pageData.html
       })
     });
-    
+
     statusDiv.textContent = (res.ok) ? "✅ Success" : "❌ Failed";
   });
 });

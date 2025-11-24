@@ -9,17 +9,17 @@ if (!thread) {
   console.error('❌ No #thread element - find-chatgpt-turns.js:9');
 } else {
   console.log('✅ Found #thread container\n - find-chatgpt-turns.js:11');
-  
+
   // Look for common message patterns in new ChatGPT
   console.log('Testing selectors:\n - find-chatgpt-turns.js:14');
-  
+
   const tests = {
     'Turn containers': '[data-testid^="conversation-turn"]',
     'Message blocks': '[class*="group/conversation-turn"]',
     'Agent turns': '[data-message-author-role]',
     'Any data-testid': '[data-testid]',
   };
-  
+
   for (const [name, selector] of Object.entries(tests)) {
     const elements = thread.querySelectorAll(selector);
     console.log(`${name} (${selector}): - find-chatgpt-turns.js:25`);
@@ -32,14 +32,14 @@ if (!thread) {
     }
     console.log('');
   }
-  
+
   // Deep search - find all elements with data-testid
   console.log('All datatestid attributes found:\n - find-chatgpt-turns.js:37');
   const allTestIds = Array.from(thread.querySelectorAll('[data-testid]'))
     .map(el => el.getAttribute('data-testid'))
     .filter((v, i, a) => a.indexOf(v) === i); // unique
   allTestIds.forEach(id => console.log(`${id} - find-chatgpt-turns.js:41`));
-  
+
   // Look for text that looks like your messages
   console.log('\n\nSearching for your actual message text... - find-chatgpt-turns.js:44');
   console.log('(Type some text from your first message below): - find-chatgpt-turns.js:45');
