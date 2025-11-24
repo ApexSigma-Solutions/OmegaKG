@@ -1,138 +1,140 @@
-from typing import Optional, List
-from pydantic_settings import BaseSettings, SettingsConfigDict
+import os
+import uuid
+from typing import Any, Dict, Tuple, Optional
 from pydantic import Field
-from functools import lru_cache
-import sys
-import traceback
+from pydantic_settings import BaseSettings, PydanticBaseSettingsSource, SettingsConfigDict
+from bitwarden_sdk import BitwardenClient, DeviceType
 
+class BitwardenSettingsSource(PydanticBaseSettingsSource):
+    """
+    Hybrid Source: Inject secrets from Bitwarden if BWS_ACCESS_TOKEN is present.
+    """
+    def get_field_value(self, field: Any, field_name: str) -> Tuple[Any, str, bool]:
+        return None, field_name, False
+
+    def __call__(self) -> Dict[str, Any]:
+        bws_token = os.getenv("BWS_ACCESS_TOKEN")
+        if not bws_token:
+            return {}
+
+        fetched_secrets = {}
+        try:
+            # Standard SDK Pattern
+            client = BitwardenClient(device_type=DeviceType.SDK, user_agent="OmegaKG/4.4.2")
+            client.auth.login_access_token(bws_token)
+            
+            # Map internal keys to Env Vars containing UUIDs
+            secret_mappings = {
+                'linear_webhook_secret': 'LINEAR_WEBHOOK_SECRET_ID',
+                'postgres_password': 'POSTGRES_PASSWORD_ID',
+                'neo4j_password': 'NEO4J_PASSWORD_ID',
+                'extension_api_key': 'EXTENSION_API_KEY_ID',
+                'linear_api_key': 'LINEAR_API_KEY_ID',
+                'perplexity_api_key': 'PERPLEXITY_API_KEY_ID',
+                'gemini_api_key': 'GEMINI_API_KEY_ID',
+                'nanogpt_api_key': 'NANOGPT_DEV_API_KEY_ID',
+                'jwt_secret_key': 'JWT_SECRET_KEY_ID'
+            }
+
+            for config_key, env_var_id in secret_mappings.items():
+                secret_uuid = os.getenv(env_var_id)
+                if secret_uuid:
+                    try:
+                        response = client.secrets.get(uuid.UUID(secret_uuid))
+                        fetched_secrets[config_key] = response.value
+                    except Exception as e:
+                        print(f"WARN: Failed to fetch {config_key} (ID: {secret_uuid}): {e}")
+        except Exception as e:
+            print(f"CRITICAL: Bitwarden SDK Error: {e}")
+            return {}
+
+        return fetched_secrets
 
 class Settings(BaseSettings):
-    """
-    Application settings loaded from environment variables.
-    Fails fast if required secrets are missing.
-    """
-
-    # --- Pydantic Config (Moved to top as per best practice) ---
-    model_config = SettingsConfigDict(
-        env_file=".env", env_file_encoding="utf-8", extra="ignore"
-    )
-
-    # --- App Environment ---
-    app_env: str = Field("development", validation_alias="APP_ENV")
-
-    # --- Server Configuration ---
-    # Default to localhost if not set
-    app_host: str = Field("127.0.0.1", validation_alias="APP_HOST")
-    # Default to 8000 (standard FastAPI) if not set
-    app_port: int = Field(8000, validation_alias="APP_PORT")
+    PROJECT_NAME: str = "Omega KG"
+    VERSION: str = "4.4.2"
     
-    # --- Core Required Settings (Fail-fast) ---
+    # --- Server Settings ---
+    app_env: str = Field("development", validation_alias="APP_ENV")
+    app_host: str = Field("127.0.0.1", validation_alias="APP_HOST")
+    app_port: int = Field(8005, validation_alias="APP_PORT")
+
+    # --- Postgres Infrastructure (New) ---
+    postgres_user: str = Field("omega_user", validation_alias="POSTGRES_USER")
+    postgres_server: str = Field("127.0.0.1", validation_alias="POSTGRES_SERVER")
+    postgres_port: int = Field(5433, validation_alias="POSTGRES_PORT")
+    postgres_db: str = Field("omega_kg", validation_alias="POSTGRES_DB")
+    postgres_password: str = Field("omega_dev_password", validation_alias="POSTGRES_PASSWORD")
+
+    # --- Neo4j Infrastructure (Legacy) ---
     neo4j_uri: str = Field("bolt://localhost:7687", validation_alias="NEO4J_URI")
     neo4j_user: str = Field("neo4j", validation_alias="NEO4J_USER")
-    neo4j_password: str = Field(
-        ..., validation_alias="NEO4J_PASSWORD"  # <-- CHANGED: Now required
-    )
-    obsidian_vault_path: str = Field(
-        ..., validation_alias="OBSIDIAN_VAULT_PATH"  # <-- CHANGED: Now required
-    )
+    neo4j_password: str = Field(..., validation_alias="NEO4J_PASSWORD")
+    neo4j_heap_size: str = Field("512M", validation_alias="NEO4J_HEAP_SIZE")
+    neo4j_host_data_path: str = Field("./data/neo4j", validation_alias="NEO4J_HOST_DATA_PATH")
 
-    # --- Security Settings (REQUIRED) ---
-    extension_api_key: str = Field(
-        ..., validation_alias="EXTENSION_API_KEY"
-    )  # API key for browser extension authentication
+    # --- Security & Auth (Legacy Restored) ---
+    jwt_secret_key: str = Field("legacy_fallback_secret", validation_alias="JWT_SECRET_KEY")
+    jwt_algorithm: str = Field("HS256", validation_alias="JWT_ALGORITHM")
+    jwt_expiration_minutes: int = Field(60, validation_alias="JWT_EXPIRATION_MINUTES")
+    chrome_extension_id: Optional[str] = Field(None, validation_alias="CHROME_EXTENSION_ID")
+    extension_api_key: Optional[str] = Field(None, validation_alias="EXTENSION_API_KEY")
 
-    linear_webhook_secret: str = Field(
-        ..., validation_alias="LINEAR_WEBHOOK_SECRET"
-    )  # Secret for verifying Linear webhook payloads
-
-    chrome_extension_id: str = Field(
-        ..., validation_alias="CHROME_EXTENSION_ID"
-    )  # Chrome extension ID for CORS configuration
-
-    # --- JWT Authentication Settings (REQUIRED) ---
-    jwt_secret_key: str = Field(
-        ..., validation_alias="JWT_SECRET_KEY"
-    )  # Secret key for signing JWT tokens
-    jwt_algorithm: str = Field(
-        "HS256", validation_alias="JWT_ALGORITHM"
-    )  # Algorithm for JWT token signing
-    jwt_expiration_minutes: int = Field(
-        1440, validation_alias="JWT_EXPIRATION_MINUTES"
-    )  # JWT token expiration time in minutes (default: 24 hours)
-
-    # --- Optional Integrations ---
-
-    # Email settings for lifecycle reports
-    smtp_host: Optional[str] = Field("smtp.gmail.com", validation_alias="SMTP_HOST")
+    # --- Email/SMTP (Legacy Restored) ---
+    smtp_host: Optional[str] = Field(None, validation_alias="SMTP_HOST")
     smtp_port: int = Field(587, validation_alias="SMTP_PORT")
     smtp_user: Optional[str] = Field(None, validation_alias="SMTP_USER")
     smtp_password: Optional[str] = Field(None, validation_alias="SMTP_PASSWORD")
-    email_to: Optional[str] = Field(None, validation_alias="EMAIL_TO")
 
-    # Linear integration
+    # --- Logic & Keywords (Legacy Restored) ---
+    decision_keywords: str = Field("decided to,chose to,agreed to", validation_alias="DECISION_KEYWORDS")
+    linear_status_map_json: str = Field("{}", validation_alias="LINEAR_STATUS_MAP_JSON")
+
+    # --- Secrets & Keys ---
+    linear_webhook_secret: str = Field(..., validation_alias="LINEAR_WEBHOOK_SECRET")
+    
+    # --- External Services ---
     linear_api_key: Optional[str] = Field(None, validation_alias="LINEAR_API_KEY")
     linear_team_id: Optional[str] = Field(None, validation_alias="LINEAR_TEAM_ID")
-    linear_workspace_id: Optional[str] = Field(
-        None, validation_alias="LINEAR_WORKSPACE_ID"
-    )
+    linear_workspace_id: Optional[str] = Field(None, validation_alias="LINEAR_WORKSPACE_ID")
     linear_project_id: Optional[str] = Field(None, validation_alias="LINEAR_PROJECT_ID")
     
-    # JSON maps for parsing
-    linear_user_map_json: Optional[str] = Field(None, validation_alias="LINEAR_USER_MAP_JSON")
-    linear_label_map_json: Optional[str] = Field(None, validation_alias="LINEAR_LABEL_MAP_JSON")
-    linear_status_map_json: Optional[str] = Field(None, validation_alias="LINEAR_STATUS_MAP_JSON")
-
-    # Keywords for decision extraction
-    decision_keywords: List[str] = Field(
-        default_factory=lambda: [
-            "decided to",
-            "will use",
-            "going to",
-            "plan is",
-            "approach is",
-            "solution is",
-        ],
-        validation_alias="DECISION_KEYWORDS",
-    )
-
-    # GitHub integration
     github_token: Optional[str] = Field(None, validation_alias="GITHUB_TOKEN")
-
-    # AI/LLM API keys
+    
+    # --- AI Services ---
     nanogpt_api_key: Optional[str] = Field(None, validation_alias="NANOGPT_API_KEY")
-    openrouter_api_key: Optional[str] = Field(
-        None, validation_alias="OPENROUTER_API_KEY"
-    )
-    perplexity_api_key: Optional[str] = Field(
-        None, validation_alias="PERPLEXITY_API_KEY"
-    )
+    openrouter_api_key: Optional[str] = Field(None, validation_alias="OPENROUTER_API_KEY")
+    perplexity_api_key: Optional[str] = Field(None, validation_alias="PERPLEXITY_API_KEY")
     gemini_api_key: Optional[str] = Field(None, validation_alias="GEMINI_API_KEY")
 
+    # --- Paths ---
+    obsidian_vault_path: str = Field("./vault", validation_alias="OBSIDIAN_VAULT_PATH")
 
-@lru_cache(maxsize=1)
-def get_settings() -> Settings:
-    """
-    Lazily load and cache Settings instance.
-    This prevents import-time errors if env vars are missing.
-    """
-    try:
-        settings_instance = Settings()
-        # Validation is now handled by Pydantic's constructor
-        return settings_instance
-    except Exception as e:
-        # --- CHANGED: Use traceback for richer error logging ---
-        print(
-            f"FATAL ERROR: Failed to load settings. {e} - settings.py:103",
-            file=sys.stderr,
+    model_config = SettingsConfigDict(
+        env_file=os.getenv("OMEGA_ENV_FILE", ".env"),
+        env_file_encoding="utf-8",
+        case_sensitive=False,
+        extra="ignore"
+    )
+
+    @property
+    def database_url(self) -> str:
+        return f"postgresql+asyncpg://{self.postgres_user}:{self.postgres_password}@{self.postgres_server}:{self.postgres_port}/{self.postgres_db}"
+
+    @classmethod
+    def settings_customise_sources(
+        cls,
+        settings_cls: type[BaseSettings],
+        init_settings: PydanticBaseSettingsSource,
+        env_settings: PydanticBaseSettingsSource,
+        dotenv_settings: PydanticBaseSettingsSource,
+        file_secret_settings: PydanticBaseSettingsSource,
+    ) -> Tuple[PydanticBaseSettingsSource, ...]:
+        return (
+            init_settings,
+            BitwardenSettingsSource(settings_cls), 
+            env_settings,
+            dotenv_settings,
         )
-        traceback.print_exc(file=sys.stderr)
-        # Re-raise the exception to stop the application
-        raise
 
-
-# --- REMOVED: validate_settings() is no longer needed as fields are
-# --- required by Pydantic, providing a cleaner fail-fast mechanism.
-
-# Create the global settings instance using the lazy-loader.
-# This ensures Settings() is only called once and is cached.
-settings = get_settings()
+settings = Settings()

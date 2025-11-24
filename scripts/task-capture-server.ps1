@@ -26,7 +26,7 @@ function Get-ActiveBrowserURLs {
     #>
     try {
         $urls = @()
-        
+
         # Chrome/Edge via UIAutomation (accessible from PowerShell)
         try {
             $chrome = Get-Process chrome -ErrorAction SilentlyContinue
@@ -39,7 +39,7 @@ function Get-ActiveBrowserURLs {
                 }
             }
         } catch {}
-        
+
         # Edge
         try {
             $edge = Get-Process msedge -ErrorAction SilentlyContinue
@@ -51,7 +51,7 @@ function Get-ActiveBrowserURLs {
                 }
             }
         } catch {}
-        
+
         # Firefox
         try {
             $firefox = Get-Process firefox -ErrorAction SilentlyContinue
@@ -63,7 +63,7 @@ function Get-ActiveBrowserURLs {
                 }
             }
         } catch {}
-        
+
         return $urls
     } catch {
         Write-Warning "Error detecting browser URLs: $_"
@@ -77,7 +77,7 @@ function Test-SupportedAppActive {
     Checks if any supported AI app is currently active in a browser
     #>
     $activeURLs = Get-ActiveBrowserURLs
-    
+
     foreach ($url in $activeURLs) {
         foreach ($app in $SupportedApps) {
             if ($url -match [regex]::Escape($app)) {
@@ -85,7 +85,7 @@ function Test-SupportedAppActive {
             }
         }
     }
-    
+
     return $false
 }
 
@@ -94,23 +94,23 @@ function Start-CaptureServer {
     .SYNOPSIS
     Starts capture-server in background if not already running
     #>
-    $existingProcess = Get-Process -Name "python" -ErrorAction SilentlyContinue | 
+    $existingProcess = Get-Process -Name "python" -ErrorAction SilentlyContinue |
         Where-Object { $_.CommandLine -match "capture.server|capture_server" }
-    
+
     if ($existingProcess) {
         Write-Host "$(Get-Date -Format 'HH:mm:ss') ℹ️  Capture server already running (PID: $($existingProcess.Id))"
         return $true
     }
-    
+
     try {
         Write-Host "$(Get-Date -Format 'HH:mm:ss') 🚀 Starting capture server..."
-        
+
         # Start server in background
         $process = Start-Process -FilePath "powershell.exe" `
             -ArgumentList "-NoProfile -WindowStyle Hidden -Command `"cd '$ProjectPath'; poetry run capture-server`"" `
             -PassThru `
             -ErrorAction Stop
-        
+
         Write-Host "$(Get-Date -Format 'HH:mm:ss') ✅ Capture server started (PID: $($process.Id))"
         return $true
     } catch {
@@ -125,9 +125,9 @@ function Stop-CaptureServer {
     Stops the running capture-server process
     #>
     try {
-        $processes = Get-Process -Name "python" -ErrorAction SilentlyContinue | 
+        $processes = Get-Process -Name "python" -ErrorAction SilentlyContinue |
             Where-Object { $_.CommandLine -match "capture.server|capture_server" }
-        
+
         if ($processes) {
             $processes | ForEach-Object {
                 Write-Host "$(Get-Date -Format 'HH:mm:ss') ⛔ Stopping capture server (PID: $($_.Id))..."
@@ -158,7 +158,7 @@ $serverRunning = $false
 try {
     while ($true) {
         $appActive = Test-SupportedAppActive
-        
+
         if ($appActive -and -not $serverRunning) {
             # App became active, start server
             if (Start-CaptureServer) {
@@ -174,7 +174,7 @@ try {
             $serverStatus = if ($serverRunning) { "(Server running)" } else { "(Server idle)" }
             Write-Host "$(Get-Date -Format 'HH:mm:ss') $status $serverStatus" -ForegroundColor Gray
         }
-        
+
         Start-Sleep -Seconds $CheckIntervalSeconds
     }
 } catch {

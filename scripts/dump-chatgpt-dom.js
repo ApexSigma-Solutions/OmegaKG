@@ -9,11 +9,11 @@ if (!main) {
   console.error('❌ NO MAIN ELEMENT FOUND - dump-chatgpt-dom.js:9');
 } else {
   console.log('✅ Found main element - dump-chatgpt-dom.js:11');
-  
+
   // Get all direct children
   const children = Array.from(main.children);
   console.log(`\n📦 Main has ${children.length} direct children:\n - dump-chatgpt-dom.js:15`);
-  
+
   children.forEach((child, i) => {
     console.log(`Child ${i}: - dump-chatgpt-dom.js:18`);
     console.log('Tag: - dump-chatgpt-dom.js:19', child.tagName);
@@ -26,7 +26,7 @@ if (!main) {
     }
     console.log('');
   });
-  
+
   // Look for anything with text content that might be messages
   console.log('\n🔍 Searching for elements with substantial text...\n - dump-chatgpt-dom.js:31');
   const allDivs = main.querySelectorAll('div');
@@ -34,7 +34,7 @@ if (!main) {
     const text = el.textContent.trim();
     return text.length > 20 && text.length < 5000 && el.children.length < 10;
   }).slice(0, 5); // First 5
-  
+
   console.log(`Found ${textElements.length} potential message elements:\n - dump-chatgpt-dom.js:38`);
   textElements.forEach((el, i) => {
     console.log(`Element ${i}: - dump-chatgpt-dom.js:40`);

@@ -209,9 +209,7 @@ tags: [ai, {platform}]
 # {title}
 
 **Platform:** {platform.title()}
-**Created:** {
-    datetime.fromisoformat(created_at).strftime('%Y-%m-%d %H:%M UTC')
-}
+**Created:** {datetime.fromisoformat(created_at).strftime("%Y-%m-%d %H:%M UTC")}
 **ID:** `{conversation_id}`
 
 ---
