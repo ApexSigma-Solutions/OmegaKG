@@ -265,8 +265,7 @@ def main() -> None:
         if stale:
             for task in stale:
                 print(
-                    f"{task['t.uid']}: {task['t.title']} "
-                    f"(created: {task['t.created']})"
+                    f"{task['t.uid']}: {task['t.title']} (created: {task['t.created']})"
                 )
         else:
             print("(none)")

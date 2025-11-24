@@ -22,7 +22,7 @@ index abc1234..def5678 100644
 +            full_path = self.vault.resolve_path(note_path)
              frontmatter = self.vault.read_note_frontmatter(full_path)
              content = self.vault.read_note(full_path)
- 
+
 
 From: AI Code Review Agent <ai@apexsigma.io>
 Date: Thu, 21 Nov 2025 06:12:00 +0200
@@ -55,7 +55,7 @@ index abc1234..def5678 100644
 +        # Execute blocking I/O in background thread to avoid blocking event loop
 +        await run_in_threadpool(self.handle_linear_webhook, payload)
          return {"status": "processed"}
- 
+
      def _verify_signature(self, signature: str, payload: str) -> bool:
 
 From: AI Code Review Agent <ai@apexsigma.io>
@@ -78,13 +78,13 @@ index abc1234..def5678 100644
  from pathlib import Path
  import uuid
 +from fastapi import Request
- 
+
  from omega_kg.settings import get_settings
  from omega_kg.vault_utils import VaultUtils
 @@ -30,6 +31,9 @@ neo4j_connection_pool = None
  # Session tracking for batch percolation
  pending_sessions: Dict[str, List[Neo4jSessionData]] = {}
- 
+
 +# Security limits
 +MAX_HTML_SIZE_BYTES = 500_000  # 500KB
 +
@@ -102,7 +102,7 @@ index abc1234..def5678 100644
 +    content_length = request.headers.get(\"content-length\")
 +    if content_length and int(content_length) > MAX_HTML_SIZE_BYTES:
 +        raise HTTPException(status_code=413, detail=\"HTML payload too large (max 500KB)\")
- 
+
      # 1. PARSING LOGIC
      if (not data.messages) and data.raw_html:
          logger.info(f\"Detecting Raw HTML. Attempting server-side parsing for: {data.url}\")
@@ -183,14 +183,14 @@ index abc1234..def5678 100644
 -        traceback.print_exc()
 +        logger.exception(f\"Lifespan error: {e}\")
          raise
- 
+
  app = FastAPI(title=\"Omega KG Capture Server\", lifespan=lifespan)
--- 
+--
 2.45.0
 
 # To apply these patches:
 # git apply scripts/p0_fixes.patch
-# 
+#
 # Or apply individually:
 # git apply scripts/p0_fixes.patch --include="**/smart_parser.py"
 # git apply scripts/p0_fixes.patch --include="**/linear_sync.py"

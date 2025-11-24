@@ -123,9 +123,11 @@ class LinearSync:
         Synchronize a Linear issue update with Neo4j and Obsidian.
         """
         logger.info(f"Syncing issue update for: {issue.get('identifier')}")
-        linear_id = issue.get("id") # Use UUID for lookup as it's more stable, or identifier
+        linear_id = issue.get(
+            "id"
+        )  # Use UUID for lookup as it's more stable, or identifier
         linear_identifier = issue.get("identifier")
-        
+
         if not linear_id:
             logger.error("Linear issue payload missing 'id'.")
             return
@@ -141,7 +143,7 @@ class LinearSync:
                     """,
                     linear_id=linear_id,
                 ).single()
-                
+
                 if neo4j_result:
                     filepath = neo4j_result.get("t.filepath")
         except Exception as e:
@@ -149,20 +151,24 @@ class LinearSync:
 
         # 2. Fallback to Vault Scan if Neo4j didn't find it
         if not filepath:
-            logger.info(f"Neo4j didn't return a path for {linear_identifier}. Scanning vault...")
+            logger.info(
+                f"Neo4j didn't return a path for {linear_identifier}. Scanning vault..."
+            )
             path_obj = self.vault_utils.find_note_by_linear_id(linear_id)
             if path_obj:
                 filepath = str(path_obj)
             else:
                 # Try scanning by identifier as fallback
                 # (Note: find_note_by_linear_id currently only checks linear_id)
-                logger.warning(f"⚠️  No Obsidian note found for Linear ID {linear_id} ({linear_identifier})")
+                logger.warning(
+                    f"⚠️  No Obsidian note found for Linear ID {linear_id} ({linear_identifier})"
+                )
                 return
 
         # 3. Update Obsidian file
         logger.info(f"Found note at: {filepath}")
         self._update_task_file(filepath, issue)
-        
+
         # 4. Update Neo4j (to keep it in sync)
         try:
             with self.driver.session() as session:
@@ -178,18 +184,17 @@ class LinearSync:
                     status=issue.get("state", {}).get("name", "Unknown"),
                     priority=issue.get("priority", 0),
                     updated=issue.get("updatedAt"),
-                    filepath=filepath
+                    filepath=filepath,
                 )
         except Exception as e:
             logger.error(f"Failed to update Neo4j: {e}")
-
 
     def _update_task_file(self, path: str | Path, issue: Dict[str, Any]):
         """
         Update an Obsidian task file's frontmatter using VaultUtils.
         """
         updates = {}
-        
+
         # Update metadata
         issue_state = issue.get("state", {}).get("name", "Unknown")
         updates["linear_status"] = issue_state

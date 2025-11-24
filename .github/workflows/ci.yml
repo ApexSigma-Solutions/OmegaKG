@@ -20,18 +20,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Set up Python ${{ env.PYTHON_VERSION }}
         uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-          
+
       - name: Install Poetry
         run: pip install poetry==${{ env.POETRY_VERSION }}
-        
+
       - name: Install dependencies
         run: poetry install --with dev
         
+      - name: Run Pre-commit Hooks (Ruff, Mypy, Bandit)
+        uses: pre-commit/action@v3.0.1
+        with:
+          extra_args: --all-files
+
       - name: Run Pre-commit Hooks (Ruff, Mypy, Bandit)
         uses: pre-commit/action@v3.0.1
         with:
@@ -46,18 +51,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Set up Python ${{ env.PYTHON_VERSION }}
         uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-          
+
       - name: Install Poetry
         run: pip install poetry==${{ env.POETRY_VERSION }}
-        
+
       - name: Install dependencies
         run: poetry install --with dev
-        
+
       - name: Setup Test Environment
         run: |
           mkdir -p ${{ github.workspace }}/tests/fixtures/vault
@@ -80,7 +85,7 @@ jobs:
           if [ ! -f coverage-unit.xml ]; then
             echo '<?xml version="1.0"?><coverage/>' > coverage-unit.xml
           fi
-          
+
       - name: Upload Unit Test Coverage
         if: always()
         uses: actions/upload-artifact@v4
@@ -126,7 +131,7 @@ jobs:
         uses: returntocorp/semgrep-action@v1
         with:
           config: auto
-          
+
       - name: Upload Trivy Results
         uses: github/codeql-action/upload-sarif@v3
         if: always()
@@ -150,18 +155,18 @@ jobs:
           - 7474:7474
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Set up Python ${{ env.PYTHON_VERSION }}
         uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-          
+
       - name: Install Poetry
         run: pip install poetry==${{ env.POETRY_VERSION }}
-        
+
       - name: Install dependencies
         run: poetry install --with dev
-        
+
       - name: Setup Test Environment
         env:
           NEO4J_URI: bolt://localhost:7687
@@ -175,7 +180,7 @@ jobs:
         run: |
           # Create vault directory structure
           mkdir -p ${{ github.workspace }}/tests/fixtures/vault
-          
+
           # Create test note for vault_utils tests
           cat > ${{ github.workspace }}/tests/fixtures/vault/my_test_note.md << 'EOF'
           ---
@@ -184,7 +189,7 @@ jobs:
           # Test Note
           This is a test note for VaultUtils.
           EOF
-          
+
       - name: Run Integration Tests
         env:
           NEO4J_URI: bolt://localhost:7687
@@ -198,14 +203,14 @@ jobs:
         run: |
           # Run all tests including integration
           poetry run pytest -m "integration" --cov=omega_kg --cov-append --cov-report=xml:coverage-integration.xml --junitxml=junit-integration.xml
-          
+
       - name: Ensure integration coverage file exists
         if: always()
         run: |
           if [ ! -f coverage-integration.xml ]; then
             echo '<?xml version="1.0"?><coverage/>' > coverage-integration.xml
           fi
-          
+
       - name: Upload Integration Coverage
         if: always()
         uses: actions/upload-artifact@v4
@@ -227,18 +232,18 @@ jobs:
           - 7687:7687
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Set up Python ${{ env.PYTHON_VERSION }}
         uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-          
+
       - name: Install Poetry
         run: pip install poetry==${{ env.POETRY_VERSION }}
-        
+
       - name: Install dependencies
         run: poetry install --with dev
-        
+
       - name: Setup Test Vault and Start Application
         env:
           NEO4J_URI: bolt://localhost:7687
@@ -254,7 +259,7 @@ jobs:
         run: |
           # Create vault directory
           mkdir -p ./dummy_vault
-          
+
           # Create a dummy note to ensure vault is valid
           cat > ./dummy_vault/test.md << 'EOF'
           ---
@@ -263,10 +268,10 @@ jobs:
           # Test
           This is a test note for DAST scanning.
           EOF
-          
+
           # Start app in background
           poetry run uvicorn omega_kg.capture_server:app --host 0.0.0.0 --port 8000 &
-          
+
           # Wait for app to be ready
           echo "Waiting for application to start..."
           for i in {1..30}; do
@@ -277,7 +282,7 @@ jobs:
             echo "Waiting... ($i/30)"
             sleep 1
           done
-          
+
       - name: Run OWASP ZAP Baseline Scan
         uses: zaproxy/action-baseline@v0.12.0
         with:
@@ -292,18 +297,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Set up Python ${{ env.PYTHON_VERSION }}
         uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-          
+
       - name: Install Poetry
         run: pip install poetry==${{ env.POETRY_VERSION }}
-        
+
       - name: Install dependencies
         run: poetry install --with docs
-        
+
       - name: Build MkDocs
         run: poetry run mkdocs build --strict
 
@@ -317,7 +322,7 @@ jobs:
     if: always()
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Download Unit Coverage
         if: always()
         uses: actions/download-artifact@v4
@@ -325,7 +330,7 @@ jobs:
           name: coverage-unit
           path: .
         continue-on-error: true
-          
+
       - name: Download Integration Coverage
         if: always()
         uses: actions/download-artifact@v4
@@ -333,7 +338,7 @@ jobs:
           name: coverage-integration
           path: .
         continue-on-error: true
-          
+
       - name: Upload to Codecov
         uses: codecov/codecov-action@v4
         with:

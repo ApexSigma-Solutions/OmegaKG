@@ -19,7 +19,12 @@ dependencies = [
     "python-jose[cryptography] (>=3.5.0,<4.0.0)",
     "passlib[bcrypt] (>=1.7.4,<2.0.0)",
     "beautifulsoup4 (>=4.14.2,<5.0.0)",
-    "httpx (>=0.28.1,<0.29.0)"
+    "httpx (>=0.28.1,<0.29.0)",
+    "spacy (>=3.7.0,<4.0.0)",
+    "bitwarden-sdk (>=1.0.0,<2.0.0)",
+    "sqlalchemy[asyncio] (>=2.0.0)",
+    "alembic (>=1.13.0)",
+    "asyncpg (>=0.29.0)"
 ]
 
 [project.scripts]
@@ -58,7 +63,7 @@ mkdocstrings = {extras = ["python"], version = "^0.30.1"}
 
 [tool.pytest.ini_options]
 minversion = "7.0"
-testpaths = ["tests"]
+testpaths = ["tests", "tests/integration"]
 python_files = ["test_*.py", "*_test.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
@@ -66,9 +71,10 @@ addopts = "-v --tb=short --strict-markers --junitxml=junit.xml"
 asyncio_mode = "auto"
 markers = [
      "unit: unit tests",
-     "integration: integration tests",
+     "integration: integration tests requiring live services (PostgreSQL, Neo4j, etc.)",
      "slow: slow running tests",
     "requires_neo4j: integration test that requires a live Neo4j instance",
+    "requires_postgres: integration test that requires a live PostgreSQL instance",
     "not_requires_neo4j: tests that do not require Neo4j database connection",
  ]
 

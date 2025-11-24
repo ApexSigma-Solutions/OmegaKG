@@ -19,16 +19,16 @@ $allFilesExist = $true
 foreach ($file in $files) {
     $sourcePath = Join-Path $extensionPath $file
     $localFilePath = Join-Path $localPath $file
-    
+
     if (Test-Path $sourcePath) {
         Write-Host "   ✓ Source: $file" -ForegroundColor Green
-        
+
         # Check if local copy exists
         if (Test-Path $localFilePath) {
             # Compare file sizes
             $sourceSize = (Get-Item $sourcePath).Length
             $localSize = (Get-Item $localFilePath).Length
-            
+
             if ($sourceSize -eq $localSize) {
                 Write-Host "   ✓ Local copy: $file (in sync)" -ForegroundColor Green
             } else {
@@ -53,7 +53,7 @@ try {
     Write-Host "   ✓ Manifest is valid JSON" -ForegroundColor Green
     Write-Host "   ✓ Version: $($manifest.version)" -ForegroundColor Green
     Write-Host "   ✓ Manifest Version: $($manifest.manifest_version)" -ForegroundColor Green
-    
+
     # Check content_scripts
     if ($manifest.content_scripts) {
         $platforms = $manifest.content_scripts[0].matches.Count
@@ -76,7 +76,7 @@ $contentJs = Get-Content $contentPath -Raw
 # Extract detectPlatform function
 if ($contentJs -match "detectPlatform\(\)\s*\{([^}]+)\}") {
     Write-Host "   ✓ detectPlatform() function found" -ForegroundColor Green
-    
+
     # Count platforms
     $platforms = @('claude', 'chatgpt', 'gemini', 'perplexity', 'github_copilot', 'qwen', 'microsoft_copilot')
     foreach ($platform in $platforms) {

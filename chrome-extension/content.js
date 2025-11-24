@@ -64,7 +64,7 @@ class ChatCapture {
         isUser: (el) => {
           const text = el.textContent.toLowerCase();
           // Heuristic: look for "user:" or "you:" prefixes
-          return text.includes("user:") || text.includes("you:") || 
+          return text.includes("user:") || text.includes("you:") ||
                  el.closest('[class*="user"]') !== null ||
                  el.closest('[data-role="user"]') !== null;
         },
