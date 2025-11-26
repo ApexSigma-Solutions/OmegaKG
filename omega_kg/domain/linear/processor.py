@@ -12,8 +12,10 @@ from pydantic import ValidationError
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from omega_kg.domain.linear.models import LinearWebhookPayload
+from omega_kg.database.graph import graph_driver
+from omega_kg.domain.linear.graph_writer import GraphWriter
 from omega_kg.domain.linear.mapper import LinearToObsidianMapper
+from omega_kg.domain.linear.models import LinearIssue, LinearWebhookPayload
 
 logger = logging.getLogger(__name__)
 
@@ -48,8 +50,9 @@ async def process_pending_events(
     """
     from omega_kg.models import RawLinearEvent  # Import here to avoid circular dependency
     
-    # Initialize mapper
+    # Initialize mapper and graph writer
     mapper = LinearToObsidianMapper(vault_path)
+    graph_writer = GraphWriter(graph_driver)
     
     # Query unprocessed events
     query = select(RawLinearEvent).where(
@@ -91,6 +94,16 @@ async def process_pending_events(
             file_path.write_text(markdown_content, encoding='utf-8')
             
             logger.info(f"Wrote {file_path.name} for event {event.id}")
+            
+            # Phase 6: Sync to Graph (Topology)
+            if isinstance(payload.data, dict) and payload.data.get('id'):
+                try:
+                    issue = LinearIssue.model_validate(payload.data)
+                    await graph_writer.upsert_issue(issue)
+                    logger.info(f"Synced {issue.identifier} to graph")
+                except Exception as graph_err:
+                    logger.warning(f"Graph sync failed for event {event.id}: {graph_err}")
+                    # Continue processing - graph sync is non-blocking for Phase 6
             
             # Mark as processed
             await session.execute(

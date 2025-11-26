@@ -29,6 +29,9 @@ class LinearUser(BaseModel):
     id: str
     name: Optional[str] = None
     email: Optional[str] = None
+    active: bool = True
+    createdAt: Optional[datetime] = None
+    updatedAt: Optional[datetime] = None
     
     model_config = {"extra": "allow"}
 
@@ -50,6 +53,7 @@ class LinearState(BaseModel):
     """
     id: str
     name: str
+    color: Optional[str] = None
     type: str  # "started", "completed", "canceled", "triage", "backlog"
     
     model_config = {"extra": "allow"}
@@ -71,6 +75,7 @@ class LinearIssue(BaseModel):
     assignee: Optional[LinearUser] = None
     createdAt: Optional[datetime] = None
     updatedAt: Optional[datetime] = None
+    url: Optional[str] = None
     
     model_config = {"extra": "allow"}
     
