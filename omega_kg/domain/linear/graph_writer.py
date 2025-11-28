@@ -4,15 +4,20 @@ Graph Writer - Linear Domain Service
 Projects Linear Pydantic models into Neo4j graph topology.
 Uses idempotent MERGE operations (Leaf -> Hub -> Edge pattern).
 Phase 6: TN-LINEAR-06 - Graph Topology
+Phase 7: TN-LINEAR-07 - Embedding enrichment
 """
 
 import logging
 from datetime import datetime
+from typing import Any, Dict, List, Optional, Union
 
 from omega_kg.database.graph import AsyncGraphDriver
 from omega_kg.domain.linear.models import LinearIssue, LinearUser
 
 logger = logging.getLogger(__name__)
+
+# Embedding configuration (Phase 7)
+EMBEDDING_DIMENSIONS = 1024
 
 
 class GraphWriter:
@@ -58,12 +63,28 @@ class GraphWriter:
             logger.error(f"Failed to upsert User {user.id}: {e}")
             raise
 
-    async def upsert_issue(self, issue: LinearIssue):
+    async def upsert_issue(
+        self, issue: LinearIssue, embedding: Optional[List[float]] = None
+    ):
         """
         Merges a LinearIssue node and establishes relationships.
         Direction: (Issue)-[:ASSIGNED_TO]->(User)
+
+        Args:
+            issue: The LinearIssue to upsert
+            embedding: Optional 1024-dim vector for semantic search (Phase 7)
+
+        Raises:
+            ValueError: If embedding is provided but not exactly 1024 dimensions
         """
-        # 1. Upsert the Issue Node
+        # Validate embedding dimensions if provided
+        if embedding is not None and len(embedding) != EMBEDDING_DIMENSIONS:
+            raise ValueError(
+                f"Embedding must be exactly {EMBEDDING_DIMENSIONS} floats, "
+                f"got {len(embedding)}"
+            )
+
+        # 1. Upsert the Issue Node (base properties)
         issue_query = """
         MERGE (i:LinearIssue {id: $id})
         SET i.identifier = $identifier,
@@ -75,16 +96,24 @@ class GraphWriter:
             i.updated_at = $updated_at
         """
 
+        # Conditionally add embedding to the SET clause
+        if embedding is not None:
+            issue_query += ", i.embedding = $embedding"
+
         # Safe handling of Optional timestamps
         created_at_iso = (
-            issue.createdAt.isoformat() if issue.createdAt else datetime.now().isoformat()
+            issue.createdAt.isoformat()
+            if issue.createdAt
+            else datetime.now().isoformat()
         )
         updated_at_iso = (
-            issue.updatedAt.isoformat() if issue.updatedAt else datetime.now().isoformat()
+            issue.updatedAt.isoformat()
+            if issue.updatedAt
+            else datetime.now().isoformat()
         )
         status_name = issue.state.name if issue.state else "Unknown"
 
-        params = {
+        params: Dict[str, Any] = {
             "id": str(issue.id),
             "identifier": issue.identifier,
             "title": issue.title,
@@ -94,6 +123,10 @@ class GraphWriter:
             "created_at": created_at_iso,
             "updated_at": updated_at_iso,
         }
+
+        # Add embedding to params if provided (Phase 7)
+        if embedding is not None:
+            params["embedding"] = embedding
 
         async with self.driver.session() as session:
             try:
