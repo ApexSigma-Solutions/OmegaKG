@@ -3,6 +3,7 @@ name: Omega_KG CI Pipeline
 on:
   push:
     branches: [ "beta", "main" ]
+    tags: [ "v*.*.*-core" ]  # Trigger on core release tags
   pull_request:
     branches: [ "beta", "main" ]
   workflow_dispatch:
