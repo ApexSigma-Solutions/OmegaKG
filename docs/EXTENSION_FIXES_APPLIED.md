@@ -140,4 +140,3 @@ Uncaught TypeError: chrome.runtime.onSuspend is not a function
 ```
 
 These are now properly caught and retried with exponential backoff in the content script's `captureConversationWithRetry()` method.
-

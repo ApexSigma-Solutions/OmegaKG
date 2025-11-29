@@ -41,13 +41,13 @@
 param(
     [Parameter(Mandatory=$false)]
     [string]$StartDate = (Get-Date).AddDays(-30).ToString("yyyy-MM-dd"),
-    
+
     [Parameter(Mandatory=$false)]
     [string]$EndDate = (Get-Date).ToString("yyyy-MM-dd"),
-    
+
     [Parameter(Mandatory=$false)]
     [string]$Platform = "",
-    
+
     [Parameter(Mandatory=$false)]
     [switch]$DryRun
 )
@@ -141,21 +141,21 @@ Push-Location $projectRoot
 try {
     Write-Host "🚀 Starting percolation..." -ForegroundColor Cyan
     Write-Host ""
-    
+
     $processedCount = 0
     $errorCount = 0
-    
+
     foreach ($file in $filteredFiles) {
         $relativePath = $file.FullName.Substring($conversationsPath.Length + 1)
         Write-Host "📝 Processing: $relativePath" -ForegroundColor White
-        
+
         try {
             # Read the markdown file
             $content = Get-Content $file.FullName -Raw
-            
+
             # Extract platform from path
             $platform = Split-Path (Split-Path $file.FullName -Parent) -Leaf
-            
+
             # Call Python percolation directly
             $pythonCmd = @"
 import sys
@@ -182,13 +182,13 @@ except Exception as e:
     print(f'ERROR: {str(e)}')
     sys.exit(1)
 "@
-            
+
             $tempPyFile = Join-Path $env:TEMP "percolate_temp_$(Get-Random).py"
             $pythonCmd | Out-File -FilePath $tempPyFile -Encoding UTF8
-            
+
             $result = & poetry run python $tempPyFile 2>&1
             Remove-Item $tempPyFile -ErrorAction SilentlyContinue
-            
+
             if ($LASTEXITCODE -eq 0) {
                 Write-Host "   $result" -ForegroundColor Green
                 $processedCount++
@@ -196,15 +196,15 @@ except Exception as e:
                 Write-Host "   $result" -ForegroundColor Red
                 $errorCount++
             }
-            
+
         } catch {
             Write-Host "   ✗ Error: $($_.Exception.Message)" -ForegroundColor Red
             $errorCount++
         }
-        
+
         Write-Host ""
     }
-    
+
     Write-Host "════════════════════════════════════════" -ForegroundColor Cyan
     Write-Host "✅ Percolation complete!" -ForegroundColor Green
     Write-Host "   Processed: $processedCount files" -ForegroundColor Green
@@ -212,7 +212,7 @@ except Exception as e:
         Write-Host "   Errors: $errorCount files" -ForegroundColor Yellow
     }
     Write-Host "════════════════════════════════════════" -ForegroundColor Cyan
-    
+
 } finally {
     Pop-Location
 }

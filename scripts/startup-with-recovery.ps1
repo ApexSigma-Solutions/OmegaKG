@@ -56,25 +56,25 @@ try {
     while ($waited -lt $maxWait) {
         Start-Sleep -Seconds 2
         $waited += 2
-        
+
         $logs = docker logs apexsigma.neo4j.db --tail 5 2>&1 | Out-String
-        
+
         if ($logs -match "Started\." -or $logs -match "Remote interface available") {
             $started = $true
             Write-Log "Neo4j started successfully" "SUCCESS"
             break
         }
-        
+
         if ($logs -match "ERROR.*transaction.*log" -or $logs -match "corrupted") {
             Write-Log "Transaction log corruption detected!" "ERROR"
             Write-Log "Attempting automatic recovery..." "WARN"
-            
+
             docker-compose down neo4j-db
             Start-Sleep -Seconds 3
-            
+
             # Restart with recovery enabled (already configured in docker-compose.yml)
             docker-compose up -d neo4j-db
-            
+
             $waited = 0  # Reset wait timer for recovery attempt
             continue
         }
@@ -90,17 +90,17 @@ try {
     # Validate connection
     Write-Log "Validating Neo4j connection..." "INFO"
     Start-Sleep -Seconds 5
-    
+
     $testConnection = docker exec apexsigma.neo4j.db cypher-shell -u $env:NEO4J_USER -p $env:NEO4J_PASSWORD `
         "RETURN 'Connection OK' AS status;" 2>&1
-    
+
     if ($LASTEXITCODE -eq 0) {
         Write-Log "Connection validated successfully" "SUCCESS"
-        
+
         # Get database stats
         $stats = docker exec apexsigma.neo4j.db cypher-shell -u $env:NEO4J_USER -p $env:NEO4J_PASSWORD `
             "MATCH (n) RETURN count(n) AS node_count;" 2>&1 | Select-String -Pattern "\d+"
-        
+
         if ($stats) {
             Write-Log "Database contains nodes: $stats" "INFO"
         }

@@ -7,6 +7,7 @@ sys.path.append(os.getcwd())
 try:
     print("Attempting to import settings...")
     from omega_kg.settings import settings
+
     print("Settings imported successfully.")
     print(f"Linear Webhook Secret Present: {bool(settings.linear_webhook_secret)}")
 except Exception as e:

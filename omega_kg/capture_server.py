@@ -466,7 +466,9 @@ async def health_check():
 @app.on_event("startup")
 async def startup_event():
     """Log deprecation notice for legacy endpoint."""
-    logger.warning("⚠️  Legacy endpoint /webhook/linear active. New endpoint: /webhooks/linear")
+    logger.warning(
+        "⚠️  Legacy endpoint /webhook/linear active. New endpoint: /webhooks/linear"
+    )
 
 
 @app.post("/auth/token", response_model=Token)
