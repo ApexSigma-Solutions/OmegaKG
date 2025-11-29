@@ -150,7 +150,9 @@ async def process_pending_events(
                             f"Synced {issue.identifier} to graph with 1024-dim embedding"
                         )
                     else:
-                        logger.info(f"Synced {issue.identifier} to graph (no embedding)")
+                        logger.info(
+                            f"Synced {issue.identifier} to graph (no embedding)"
+                        )
                 except Exception as graph_err:
                     logger.warning(
                         f"Graph sync failed for event {event.id}: {graph_err}"
