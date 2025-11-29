@@ -57,3 +57,9 @@ docker_backups/
 
 #Ignore vscode AI rules
 .github\instructions\codacy.instructions.md
+
+# Security and build artifacts
+Omega_KG_Capture.pem
+Omega_KG_stable.code-workspace
+chrome-extension.crx
+nul
