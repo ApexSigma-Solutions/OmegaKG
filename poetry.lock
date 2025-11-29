@@ -3478,6 +3478,22 @@ files = [
 widechars = ["wcwidth"]
 
 [[package]]
+name = "tenacity"
+version = "9.1.2"
+description = "Retry code until it succeeds"
+optional = false
+python-versions = ">=3.9"
+groups = ["main"]
+files = [
+    {file = "tenacity-9.1.2-py3-none-any.whl", hash = "sha256:f77bf36710d8b73a50b2dd155c97b870017ad21afe6ab300326b0371b3b05138"},
+    {file = "tenacity-9.1.2.tar.gz", hash = "sha256:1169d376c297e7de388d18b4481760d478b0e99a777cad3a9c86e556f4b697cb"},
+]
+
+[package.extras]
+doc = ["reno", "sphinx"]
+test = ["pytest", "tornado (>=4.5)", "typeguard"]
+
+[[package]]
 name = "thinc"
 version = "8.3.2"
 description = "A refreshing functional take on deep learning, compatible with your favorite libraries"
@@ -4228,4 +4244,4 @@ dev = ["pytest", "setuptools"]
 [metadata]
 lock-version = "2.1"
 python-versions = "==3.12.10"
-content-hash = "a14b505ca468a45257fb24ed043cacf65e99247ef97c11d825e3cdafb22ec368"
+content-hash = "ddcec70fbdc855f5b811067b934e74b29e9060d12626c537f53b58e9264be52f"
