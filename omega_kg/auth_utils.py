@@ -19,10 +19,6 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token")
 API_KEY_HEADER = APIKeyHeader(name="X-API-Key")
 
-# MODELS
-class Token(BaseModel):
-    access_token: str
-    token_type: str
 
 # MODELS
 class Token(BaseModel):
