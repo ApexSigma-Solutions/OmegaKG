@@ -33,15 +33,16 @@ class BitwardenSettingsSource(PydanticBaseSettingsSource):
 
             # Map internal keys to Env Vars containing UUIDs
             secret_mappings = {
-                "linear_webhook_secret": "LINEAR_WEBHOOK_SECRET_ID",
-                "postgres_password": "POSTGRES_PASSWORD_ID",
-                "neo4j_password": "NEO4J_PASSWORD_ID",
-                "extension_api_key": "EXTENSION_API_KEY_ID",
-                "linear_api_key": "LINEAR_API_KEY_ID",
-                "perplexity_api_key": "PERPLEXITY_API_KEY_ID",
-                "gemini_api_key": "GEMINI_API_KEY_ID",
-                "nanogpt_api_key": "NANOGPT_DEV_API_KEY_ID",
+                "linear_webhook_secret": "LINEAR_WEBHOOK_SECRET_PRD_ID",
+                "postgres_password": "POSTGRES_PASSWORD_PRD_ID",
+                "neo4j_password": "NEO4J_PASSWORD_PRD_ID",
+                "extension_api_key": "EXTENSION_API_KEY_PRD_ID",
+                "linear_api_key": "LINEAR_API_KEY_PRD_ID",
+                "perplexity_api_key": "PERPLEXITY_API_KEY_PRD_ID",
+                "gemini_api_key": "GEMINI_API_KEY_PRD_ID",
+                "nanogpt_api_key": "NANOGPT_OMEGAKG_API_KEY",
                 "jwt_secret_key": "JWT_SECRET_KEY_ID",
+                "ollama_okg_api_key": "OLLAMA_OKG_API_KEY_PRD_ID",
             }
 
             for config_key, env_var_id in secret_mappings.items():
@@ -97,7 +98,7 @@ class Settings(BaseSettings):
     chrome_extension_id: Optional[str] = Field(
         None, validation_alias="CHROME_EXTENSION_ID"
     )
-    extension_api_key: Optional[str] = Field(None, validation_alias="EXTENSION_API_KEY")
+    extension_api_key: Optional[str] = Field(None, validation_alias="EXTENSION_API_KEY_PRD")
 
     # --- Email/SMTP (Legacy Restored) ---
     smtp_host: Optional[str] = Field(None, validation_alias="SMTP_HOST")
@@ -125,14 +126,17 @@ class Settings(BaseSettings):
     github_token: Optional[str] = Field(None, validation_alias="GITHUB_TOKEN")
 
     # --- AI Services ---
-    nanogpt_api_key: Optional[str] = Field(None, validation_alias="NANOGPT_API_KEY")
+    nanogpt_api_key: Optional[str] = Field(None, validation_alias="NANOGPT_OMEGAKG_API_KEY")
     openrouter_api_key: Optional[str] = Field(
         None, validation_alias="OPENROUTER_API_KEY"
     )
     perplexity_api_key: Optional[str] = Field(
-        None, validation_alias="PERPLEXITY_API_KEY"
+        None, validation_alias="PERPLEXITY_API_KEY_PRD"
     )
-    gemini_api_key: Optional[str] = Field(None, validation_alias="GEMINI_API_KEY")
+    gemini_api_key: Optional[str] = Field(None, validation_alias="GEMINI_API_KEY_PRD")
+    ollama_okg_api_key: Optional[str] = Field(
+        None, validation_alias="OLLAMA_OKG_API_KEY_PRD_ID"
+    )
 
     # --- Paths ---
     obsidian_vault_path: str = Field("./vault", validation_alias="OBSIDIAN_VAULT_PATH")
