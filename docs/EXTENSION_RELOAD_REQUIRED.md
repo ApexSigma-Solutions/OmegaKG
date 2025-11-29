@@ -53,7 +53,7 @@ Instead of repeated:
 ## 📊 Current Status
 
 **File Status:**
-- ✅ `background.js` - Fixed (removed invalid API)  
+- ✅ `background.js` - Fixed (removed invalid API)
 - ✅ `content.js` - Has retry logic with exponential backoff
 - ✅ `manifest.json` - Includes all platform permissions
 
@@ -64,7 +64,7 @@ Instead of repeated:
 ## 🎯 Expected Behavior After Fix
 
 1. **Auto-retry on context invalidation** - Up to 3 attempts with exponential backoff
-2. **Graceful degradation** - Continues capturing even if some attempts fail  
+2. **Graceful degradation** - Continues capturing even if some attempts fail
 3. **No infinite error loops** - Errors are logged but don't crash the observer
 4. **Platform detection works** - Should detect all 7 platforms including Qwen and Microsoft Copilot
 

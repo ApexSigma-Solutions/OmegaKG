@@ -62,7 +62,7 @@ def test_config_drift() -> None:
     missing_in_template = settings_keys - template_keys
     missing_in_settings = (template_keys - settings_keys) - exempted_keys
     error_messages: List[str] = []
-    
+
     if missing_in_template:
         error_messages.append(
             f"Keys in Settings but NOT in .env.example: {missing_in_template}"

@@ -1,6 +1,6 @@
 # Chrome Extension Loading Guide - Troubleshooting
 
-**Date**: October 30, 2025  
+**Date**: October 30, 2025
 **Issue**: "Manifest file is missing or unreadable" when loading extension
 
 ## Root Cause

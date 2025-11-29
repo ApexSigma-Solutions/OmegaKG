@@ -5,7 +5,7 @@
 ### 1. Gemini Selectors Broken ✅ FIXED
 
 - **Problem**: DOM selectors changed; the content script console reported `messagesFound: 0`
-- **Old selectors**:  
+- **Old selectors**:
   > ⚠️ *Note: The following Gemini selectors are now obsolete due to a DOM redesign and are retained here for historical reference only.*
   >
   > See [commit 123abc](https://github.com/your-org/Omega_KG/commit/123abc) for the update that replaced these selectors.
@@ -16,7 +16,7 @@
   - Assistant: `[class*="model-response"]`
   - User: `[class*="user-query"]`
   - Assistant: `[class*="model-response"]`
-- **Status**: Fixed - found 24 user messages, 6 model responses  
+- **Status**: Fixed - found 24 user messages, 6 model responses
   *(Counts obtained using `scripts/test-gemini-selectors.js` in the browser console)*
 
 ### 2. CORS Blocking Capture Requests ✅ FIXED
@@ -60,7 +60,7 @@
 
    ```powershell
    # In server PowerShell window - Press CTRL+C then
-   
+
    poetry run python -m omega_kg.capture_server
    ```
 
@@ -118,9 +118,9 @@ Last seen:
 6. 📝 Document new selectors for future reference
 
 ---
-*Session Duration: ~2 hours*  
-*Files Modified: 3*  
-*Issues Resolved: 2/4*  
+*Session Duration: ~2 hours*
+*Files Modified: 3*
+*Issues Resolved: 2/4*
 *Status: Gemini ready for testing, ChatGPT pending diagnosis*
 
 [def]: https://chatgpt.com/

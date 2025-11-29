@@ -47,7 +47,7 @@ Push-Location $projectRoot
 try {
     # Check if containers are running
     $neo4jRunning = docker ps --filter "name=apexsigma.neo4j.db" --format "{{.Names}}"
-    
+
     if (-not $neo4jRunning) {
         Write-Log "Neo4j container not running. Nothing to shutdown." "WARN"
         exit 0
@@ -56,9 +56,9 @@ try {
     Write-Log "Found running Neo4j container: $neo4jRunning" "INFO"
 
     # Step 1: Stop accepting new connections (if capture server is running)
-    $captureRunning = Get-Process -Name "python" -ErrorAction SilentlyContinue | 
+    $captureRunning = Get-Process -Name "python" -ErrorAction SilentlyContinue |
         Where-Object { $_.CommandLine -like "*capture_server*" }
-    
+
     if ($captureRunning) {
         Write-Log "Stopping capture server (PID: $($captureRunning.Id))..." "INFO"
         Stop-Process -Id $captureRunning.Id -Force
@@ -69,7 +69,7 @@ try {
     Write-Log "Forcing Neo4j checkpoint to flush pending transactions..." "INFO"
     docker exec apexsigma.neo4j.db cypher-shell -u $env:NEO4J_USER -p $env:NEO4J_PASSWORD `
         "CALL dbms.checkpoint();" 2>&1 | Out-Null
-    
+
     if ($LASTEXITCODE -eq 0) {
         Write-Log "Checkpoint completed successfully" "SUCCESS"
     } else {
@@ -87,7 +87,7 @@ try {
     } -ArgumentList $projectRoot
 
     $completed = Wait-Job $stopJob -Timeout $TimeoutSeconds
-    
+
     if ($completed) {
         $result = Receive-Job $stopJob
         Remove-Job $stopJob

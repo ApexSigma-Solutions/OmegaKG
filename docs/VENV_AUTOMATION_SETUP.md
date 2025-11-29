@@ -81,7 +81,7 @@ deactivate-omega    # Deactivate .venv
    ```powershell
    # Edit your profile
    notepad $PROFILE
-   
+
    # Add this line:
    . "C:\Users\steyn\OneDrive\ApexSigma\Omega_KG\scripts\omega-venv.ps1"
    ```

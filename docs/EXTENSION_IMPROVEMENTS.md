@@ -58,16 +58,16 @@ async captureConversationWithRetry(maxAttempts = 3) {
     try {
       return await this.captureConversation();
     } catch (error) {
-      const isContextInvalid = error.message.includes('Extension context invalidated') || 
+      const isContextInvalid = error.message.includes('Extension context invalidated') ||
                               error.message.includes('Message channel closed');
-      
+
       if (isContextInvalid && attempt < maxAttempts - 1) {
         console.warn(`[Omega_KG] Retry ${attempt + 1}/${maxAttempts} - content.js:167`);
         const delay = 100 * Math.pow(2, attempt) + Math.random() * 50;
         await new Promise(resolve => setTimeout(resolve, delay));
         continue;
       }
-      
+
       // Log but don't crash
       console.error('[Omega_KG] Failed to capture after retries (observer continues)');
       return null;
@@ -238,4 +238,3 @@ All console messages now include line numbers and emoji indicators:
 2. ✅ Microsoft Copilot platform detection
 3. ✅ Exponential backoff timing
 4. ✅ Retry exhaustion handling
-

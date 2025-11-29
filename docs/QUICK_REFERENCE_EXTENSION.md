@@ -100,5 +100,5 @@ Location: C:\Omega_KG_Extension
 
 ---
 
-**Status**: ✅ Ready to Load  
+**Status**: ✅ Ready to Load
 **Last Updated**: October 30, 2025
