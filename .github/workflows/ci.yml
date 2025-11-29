@@ -31,7 +31,7 @@ jobs:
 
       - name: Install dependencies
         run: poetry install --with dev
-        
+
       - name: Run Pre-commit Hooks (Ruff, Mypy, Bandit)
         uses: pre-commit/action@v3.0.1
         with:

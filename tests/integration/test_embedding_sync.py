@@ -177,9 +177,7 @@ async def test_generate_embedding_nanogpt_success(mock_embedding):
     }
 
     # Patch settings at the module level BEFORE function is invoked
-    with patch(
-        "omega_kg.domain.common.embedding_service.settings"
-    ) as mock_settings:
+    with patch("omega_kg.domain.common.embedding_service.settings") as mock_settings:
         mock_settings.nanogpt_api_key = SecretStr("test-api-key")
         mock_settings.gemini_api_key = None
 
@@ -228,9 +226,7 @@ async def test_generate_embedding_fallback_to_gemini(mock_embedding):
     async def mock_post(*args, **kwargs):
         return mock_response
 
-    with patch(
-        "omega_kg.domain.common.embedding_service.settings"
-    ) as mock_settings:
+    with patch("omega_kg.domain.common.embedding_service.settings") as mock_settings:
         mock_settings.nanogpt_api_key = None
         mock_settings.gemini_api_key = "test-gemini-key"
 
@@ -245,6 +241,7 @@ async def test_generate_embedding_fallback_to_gemini(mock_embedding):
             # Import fresh after patching
             import importlib
             import omega_kg.domain.common.embedding_service as emb_module
+
             importlib.reload(emb_module)
 
             # Generate embedding directly
@@ -263,9 +260,7 @@ async def test_generate_embedding_no_provider_available():
     """
     from omega_kg.domain.common.embedding_service import generate_embedding
 
-    with patch(
-        "omega_kg.domain.common.embedding_service.settings"
-    ) as mock_settings:
+    with patch("omega_kg.domain.common.embedding_service.settings") as mock_settings:
         mock_settings.nanogpt_api_key = None
         mock_settings.gemini_api_key = None
 

@@ -11,7 +11,7 @@
 
 # --- START: .env LOADER ---
 # Get the directory where the script itself is located
-$ScriptDir = $PSScriptRoot 
+$ScriptDir = $PSScriptRoot
 
 # Assume the project root is one level up from the 'scripts' directory
 # If your script is in the root, change this to: $ProjectRoot = $PSScriptRoot
@@ -28,10 +28,10 @@ if (Test-Path $EnvFile) {
             if ($parts.Length -eq 2) {
                 $key = $parts[0].Trim()
                 $value = $parts[1].Trim()
-                
+
                 # Remove surrounding quotes (single or double) from the value
                 $value = $value -replace '^"|"$' -replace "^'|'$"
-                
+
                 # Set the environment variable for this script's session
                 Set-Item -Path "env:$key" -Value $value
             }
@@ -95,10 +95,10 @@ function Write-Log {
     )
     $Timestamp = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")
     $LogEntry = "$Timestamp - $Message"
-    
+
     Write-Host $LogEntry # Also write to console
     Add-Content -Path $LogFile -Value $LogEntry
-    
+
     if ($IsError) {
         Write-Error $Message
     }

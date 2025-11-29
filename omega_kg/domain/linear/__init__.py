@@ -13,7 +13,10 @@ from omega_kg.domain.linear.models import (
     LinearComment,
 )
 from omega_kg.domain.linear.mapper import LinearToObsidianMapper
-from omega_kg.domain.linear.processor import process_pending_events, process_single_event
+from omega_kg.domain.linear.processor import (
+    process_pending_events,
+    process_single_event,
+)
 
 __all__ = [
     "LinearWebhookPayload",
