@@ -89,7 +89,7 @@ services:
 
   # PostgreSQL with pgvector Extension
   # Used for raw_linear_events persistence and processing queue
-  postgres-db: 
+  postgres-db:
     image: pgvector/pgvector:pg16
     container_name: apexsigma.postgres.db
     environment:

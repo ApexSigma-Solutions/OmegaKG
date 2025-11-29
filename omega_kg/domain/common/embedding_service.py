@@ -8,7 +8,7 @@ Phase 7: TN-LINEAR-07 - The Enrichment (Embeddings)
 """
 
 import logging
-from typing import List, Optional
+from typing import List
 
 import httpx
 from tenacity import retry, stop_after_attempt, wait_exponential
@@ -169,7 +169,9 @@ async def generate_embedding(text: str) -> List[float]:
             logger.debug(f"Generated {EMBEDDING_DIMENSIONS}-dim embedding via Nano-GPT")
             return result
         except Exception as err:
-            logger.warning(f"Nano-GPT embedding failed ({err}); attempting Gemini fallback")
+            logger.warning(
+                f"Nano-GPT embedding failed ({err}); attempting Gemini fallback"
+            )
 
     # Fallback to Gemini (if key is configured)
     if settings.gemini_api_key:

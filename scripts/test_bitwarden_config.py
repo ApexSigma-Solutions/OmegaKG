@@ -41,9 +41,7 @@ def main():
         print("Configuration values (masked):")
         print(f"  neo4j_password: {mask_secret(settings.neo4j_password)}")
         print(f"  extension_api_key: {mask_secret(settings.extension_api_key)}")
-        print(
-            f"  linear_webhook_secret: {mask_secret(settings.linear_webhook_secret)}"
-        )
+        print(f"  linear_webhook_secret: {mask_secret(settings.linear_webhook_secret)}")
         print(f"  jwt_secret_key: {mask_secret(settings.jwt_secret_key)}")
 
         # Check if values look like they came from Bitwarden (longer, more complex)

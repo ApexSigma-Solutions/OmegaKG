@@ -21,7 +21,7 @@ Import Standards: Minimal changes only - add imports where needed without reorde
 # **BEFORE**:
 self.vault._resolve_path(note_path)
 
-# **AFTER**:  
+# **AFTER**:
 self.vault.resolve_path(note_path)
 ```
 

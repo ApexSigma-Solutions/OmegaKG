@@ -8,10 +8,11 @@ app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.VERSION,
     docs_url="/docs",
-    redoc_url="/redoc"
+    redoc_url="/redoc",
 )
 
 app.include_router(linear_receiver.router, tags=["Linear Ingest"])
+
 
 @app.get("/health")
 async def health_check():
@@ -24,12 +25,8 @@ async def health_check():
         async for session in get_db():
             await session.execute(text("SELECT 1"))
             db_status = "connected"
-            break # Only need one
+            break  # Only need one
     except Exception as e:
         db_status = f"error: {str(e)}"
 
-    return {
-        "status": "online", 
-        "version": settings.VERSION, 
-        "database": db_status
-    }
+    return {"status": "online", "version": settings.VERSION, "database": db_status}
