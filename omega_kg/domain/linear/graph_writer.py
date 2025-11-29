@@ -9,7 +9,7 @@ Phase 7: TN-LINEAR-07 - Embedding enrichment
 
 import logging
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 
 from omega_kg.database.graph import AsyncGraphDriver
 from omega_kg.domain.linear.models import LinearIssue, LinearUser
@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 
 # Embedding configuration (Phase 7)
 EMBEDDING_DIMENSIONS = 1024
+
 
 class GraphWriter:
     """
