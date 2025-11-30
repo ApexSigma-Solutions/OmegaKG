@@ -2,31 +2,49 @@
 // Manifest V3 service workers go inactive - this is NORMAL Chrome behavior
 // The extension will wake up when messages arrive or alarms fire
 
-const DEFAULT_SERVER_URL = "http://localhost:8002";
 const STORAGE_KEYS = {
-    SERVER_URL: 'omega_server_url',
     API_KEY: 'omega_api_key',
     JWT_TOKEN: 'omega_jwt_token',
     JWT_EXPIRY: 'omega_jwt_expiry',
 };
 
+const DEFAULT_SERVER_URL = 'http://localhost:8765';
+
 /**
- * Get the configured server URL or fallback to default
- * @returns {Promise<string>} The server URL
+ * Get the current server URL from storage
+ * @async
+ * @returns {Promise<string>} Server URL
  */
 async function getServerUrl() {
-    const result = await chrome.storage.local.get([STORAGE_KEYS.SERVER_URL]);
-    return result[STORAGE_KEYS.SERVER_URL] || DEFAULT_SERVER_URL;
+    try {
+        const data = await chrome.storage.local.get(['omega_server_url']);
+        return data['omega_server_url'] || DEFAULT_SERVER_URL;
+    } catch (error) {
+        console.warn('[Omega_KG] Failed to get server URL:', error);
+        return DEFAULT_SERVER_URL;
+    }
 }
 
 /**
- * Build a full endpoint URL from a path
- * @param {string} path - The endpoint path (e.g., '/capture')
- * @returns {Promise<string>} The full URL
+ * Get full URL for an endpoint
+ * @async
+ * @param {string} endpoint - Endpoint name (AUTH_TOKEN, CAPTURE, HEALTH, LINEAR_WEBHOOK)
+ * @returns {Promise<string>} Full URL
  */
-async function getEndpointUrl(path) {
+async function getEndpointUrl(endpoint) {
+    const endpoints = {
+        AUTH_TOKEN: '/auth/token',
+        CAPTURE: '/capture',
+        HEALTH: '/health',
+        LINEAR_WEBHOOK: '/webhook/linear',
+    };
+
     const serverUrl = await getServerUrl();
-    return `${serverUrl}${path}`;
+    const endpointPath = endpoints[endpoint];
+    if (!endpointPath) {
+        throw new Error(`Unknown endpoint: ${endpoint}`);
+    }
+    return new URL(endpointPath, serverUrl).toString();
 }
 
 // Token cache (short-term cache to avoid excessive /auth/token calls)
@@ -89,7 +107,7 @@ async function refreshJwtToken() {
     }
 
     // Call /auth/token endpoint
-    const authUrl = await getEndpointUrl('/auth/token');
+    const authUrl = await getEndpointUrl('AUTH_TOKEN');
     const response = await fetch(authUrl, {
       method: 'POST',
       headers: {
@@ -197,7 +215,7 @@ async function saveToLocalhost(data) {
       );
     }
 
-    const response = await fetch(await getEndpointUrl('/capture'), {
+    const response = await fetch(await getEndpointUrl('CAPTURE'), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -229,7 +247,7 @@ chrome.alarms.create("health-check", { periodInMinutes: 5 });
 chrome.alarms.onAlarm.addListener(async (alarm) => {
   if (alarm.name === "health-check") {
     try {
-      const healthUrl = await getEndpointUrl('/health');
+      const healthUrl = await getEndpointUrl('HEALTH');
       const response = await fetch(healthUrl);
       const data = await response.json();
       console.log(
