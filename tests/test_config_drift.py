@@ -63,7 +63,18 @@ def get_exempted_keys() -> set[str]:
         Set of exempted keys
     """
     return {
-        "BWS_ACCESS_TOKEN",  # Bitwarden token, not a setting field
+        # Bitwarden Secret IDs (PRD environment)
+        "BWS_ACCESS_TOKEN",
+        "LINEAR_WEBHOOK_SECRET_PRD_ID",
+        "POSTGRES_PASSWORD_PRD_ID",
+        "NEO4J_PASSWORD_PRD_ID",
+        "EXTENSION_API_KEY_PRD_ID",
+        "LINEAR_API_KEY_PRD_ID",
+        "PERPLEXITY_API_KEY_PRD_ID",
+        "GEMINI_API_KEY_PRD_ID",
+        "JWT_SECRET_KEY_ID",
+        "OLLAMA_OKG_API_KEY_PRD_ID",
+        # Legacy Bitwarden IDs (backward compatibility)
         "LINEAR_WEBHOOK_SECRET_ID",
         "POSTGRES_PASSWORD_ID",
         "NEO4J_PASSWORD_ID",
@@ -73,7 +84,6 @@ def get_exempted_keys() -> set[str]:
         "NGROK_API_KEY_ID",
         "NANOGPT_DEV_API_KEY_ID",
         "EXTENSION_API_KEY_ID",
-        "JWT_SECRET_KEY_ID",
     }
 
 
