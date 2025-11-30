@@ -35,6 +35,10 @@ from sqlalchemy import text
 import uuid
 from omega_kg.parsers import parse_html_content
 
+# Eagerly import embedding_service to log initialization at startup
+# This import triggers the module-level logging for diagnostics
+from omega_kg.domain.common.embedding_service import generate_embedding
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -338,6 +342,99 @@ def _create_chat_session(
     return 1 if result.single() else 0
 
 
+async def percolate_to_neo4j_with_embedding(
+    file_path: Path,
+    data: ConversationData,
+    driver: Optional[GraphDatabase.driver] = None,
+) -> int:
+    """
+    Percolates a captured conversation to Neo4j WITH embedding generation.
+    Creates a ChatSession node with 1024-dim embedding vector.
+    Async function to support embedding generation.
+    """
+    own_driver = False
+    if driver is None:
+        driver = GraphDatabase.driver(
+            settings.neo4j_uri, auth=(settings.neo4j_user, settings.neo4j_password)
+        )
+        own_driver = True
+    
+    try:
+        conv_hash = generate_conversation_hash(data)
+        
+        # Generate embedding from conversation content
+        # Combine title + first 5 messages for semantic representation
+        embed_text_parts = [data.title or ""]
+        if data.messages:
+            for msg in data.messages[:5]:
+                content = msg.get("content", "") if isinstance(msg, dict) else msg.content
+                embed_text_parts.append(content[:500])  # Limit each message
+        embed_text = " ".join(embed_text_parts)[:2000]  # Total limit
+        
+        embedding = None
+        try:
+            embedding = await generate_embedding(embed_text)
+            logger.info(f"✓ Generated {len(embedding)}-dim embedding for conversation {conv_hash}")
+        except Exception as e:
+            logger.warning(f"Embedding generation failed for {conv_hash}: {e}")
+        
+        with driver.session() as session:
+            # Create ChatSession with embedding
+            if embedding:
+                result = session.run(
+                    """
+                    MERGE (s:ChatSession {conversation_hash: $hash})
+                    ON CREATE SET
+                        s.date = date($date), s.platform = $platform, s.filepath = $filepath,
+                        s.url = $url, s.message_count = $msg_count, s.created_at = datetime($created_at),
+                        s.embedding = $embedding
+                    ON MATCH SET
+                        s.updated_at = datetime($created_at),
+                        s.embedding = $embedding
+                    RETURN s
+                    """,
+                    hash=conv_hash,
+                    date=datetime.now().strftime("%Y-%m-%d"),
+                    platform=data.platform,
+                    filepath=str(file_path),
+                    url=data.url,
+                    msg_count=len(data.messages) if data.messages else 0,
+                    created_at=datetime.now().isoformat(),
+                    embedding=embedding,
+                )
+            else:
+                result = session.run(
+                    """
+                    MERGE (s:ChatSession {conversation_hash: $hash})
+                    ON CREATE SET
+                        s.date = date($date), s.platform = $platform, s.filepath = $filepath,
+                        s.url = $url, s.message_count = $msg_count, s.created_at = datetime($created_at)
+                    ON MATCH SET
+                        s.updated_at = datetime($created_at)
+                    RETURN s
+                    """,
+                    hash=conv_hash,
+                    date=datetime.now().strftime("%Y-%m-%d"),
+                    platform=data.platform,
+                    filepath=str(file_path),
+                    url=data.url,
+                    msg_count=len(data.messages) if data.messages else 0,
+                    created_at=datetime.now().isoformat(),
+                )
+            
+            nodes_created = 1 if result.single() else 0
+            nodes_created += _create_decision_nodes(session, conv_hash, data)
+        
+        logger.info(f"Created {nodes_created} nodes in Neo4j (with embedding: {embedding is not None})")
+        return nodes_created
+    except Exception as e:
+        logger.error(f"Neo4j percolation with embedding failed: {e}")
+        raise
+    finally:
+        if own_driver:
+            driver.close()
+
+
 def _create_decision_nodes(
     session: "neo4j.work.session.Session", conv_hash: str, data: ConversationData
 ) -> int:
@@ -349,34 +446,35 @@ def _create_decision_nodes(
     # Use keywords from settings
     decision_keywords = settings.decision_keywords
     nodes_created = 0
-    for i, msg in enumerate(data.messages):
-        # Handle both dict and Message object formats
-        msg_content = msg.get("content", "") if isinstance(msg, dict) else msg.content
-        content_lower = msg_content.lower()
-        for keyword in decision_keywords:
-            if keyword in content_lower:
-                sentences = msg_content.split(".")
-                for sentence in sentences:
-                    if keyword in sentence.lower():
-                        decision_content = sentence.strip()
-                        result = session.run(
-                            """
-                            MATCH (s:ChatSession {conversation_hash: $hash})
-                            CREATE (d:Decision {
-                                content: $content, decision_id: $dec_id,
-                                extracted_at: datetime($created_at)
-                            })
-                            CREATE (s)-[:CONTAINS]->(d)
-                            RETURN d
-                            """,
-                            hash=conv_hash,
-                            content=decision_content,
-                            dec_id=f"{conv_hash}-dec-{i}",
-                            created_at=datetime.now().isoformat(),
-                        )
-                        if result.single():
-                            nodes_created += 1
-                        break
+    if data.messages:
+        for i, msg in enumerate(data.messages):
+            # Handle both dict and Message object formats
+            msg_content = msg.get("content", "") if isinstance(msg, dict) else msg.content
+            content_lower = msg_content.lower()
+            for keyword in decision_keywords:
+                if keyword in content_lower:
+                    sentences = msg_content.split(".")
+                    for sentence in sentences:
+                        if keyword in sentence.lower():
+                            decision_content = sentence.strip()
+                            result = session.run(
+                                """
+                                MATCH (s:ChatSession {conversation_hash: $hash})
+                                CREATE (d:Decision {
+                                    content: $content, decision_id: $dec_id,
+                                    extracted_at: datetime($created_at)
+                                })
+                                CREATE (s)-[:CONTAINS]->(d)
+                                RETURN d
+                                """,
+                                hash=conv_hash,
+                                content=decision_content,
+                                dec_id=f"{conv_hash}-dec-{i}",
+                                created_at=datetime.now().isoformat(),
+                            )
+                            if result.single():
+                                nodes_created += 1
+                            break
     return nodes_created
 
 
@@ -386,6 +484,10 @@ def batch_percolate_sessions():
     Intended to run periodically via scheduler.
     """
     try:
+        import time
+        start_time = time.time()
+        logger.info("→ Scheduler execution started: batch_percolate_sessions")
+        
         sessions_path = Path(settings.obsidian_vault_path) / "Sessions"
         if not sessions_path.exists():
             logger.warning(f"Sessions path does not exist: {sessions_path}")
@@ -395,14 +497,20 @@ def batch_percolate_sessions():
             settings.neo4j_uri, auth=(settings.neo4j_user, settings.neo4j_password)
         )
         engine = PercolationEngine(driver)
+        
+        logger.debug(f"Initiating percolation from: {sessions_path}")
         stats = engine.percolate_from_vault(sessions_path)
+        
+        elapsed_ms = (time.time() - start_time) * 1000
         logger.info(
-            f"Percolated session logs: {stats['tasks']} tasks, "
+            f"✓ Scheduler completed in {elapsed_ms:.0f}ms: "
+            f"{stats['tasks']} tasks, "
             f"{stats['commits']} commits, {stats['links']} decision links"
         )
+        logger.debug(f"Stats detail: {stats}")
         driver.close()
     except Exception as e:
-        logger.error(f"Batch session percolation failed: {e}")
+        logger.error(f"Batch session percolation failed: {e}", exc_info=True)
 
 
 # ===================================================================
@@ -549,16 +657,23 @@ async def capture_conversation(
         conv_hash = generate_conversation_hash(data)
         file_path = write_to_obsidian(data.platform, markdown_content, conv_hash)
 
+        # Percolate to Neo4j WITH embedding generation
+        nodes_created = 0
+        try:
+            nodes_created = await percolate_to_neo4j_with_embedding(file_path, data)
+        except Exception as e:
+            logger.warning(f"Neo4j percolation failed (non-fatal): {e}")
+
         logger.info(
             "Capture processed",
-            extra={"platform": data.platform, "file": str(file_path)},
+            extra={"platform": data.platform, "file": str(file_path), "nodes": nodes_created},
         )
 
         return CaptureResponse(
             success=True,
             file_path=str(file_path),
-            nodes_created=0,
-            message=f"Successfully captured {len(data.messages) if data.messages else 1} items.",
+            nodes_created=nodes_created,
+            message=f"Successfully captured {len(data.messages) if data.messages else 1} items with embedding.",
         )
     except Exception:
         support_id = str(uuid.uuid4())
