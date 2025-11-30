@@ -20,6 +20,15 @@ from omega_kg.settings import settings
 
 logger = logging.getLogger(__name__)
 
+# --- STARTUP INITIALIZATION LOGGING ---
+# Log the configured embedding provider at module import time for diagnostics
+_embedding_provider = settings.embedding_provider
+_ollama_url = settings.ollama_base_url
+logger.info(
+    f"✓ Embedding Service initialized with provider: {_embedding_provider}, "
+    f"Ollama base URL: {_ollama_url}"
+)
+
 # Provider configuration
 OLLAMA_EMBEDDING_URL = "http://localhost:11434/api/embeddings"
 OLLAMA_MODEL = "bge-m3:567m"
@@ -28,6 +37,13 @@ NANOGPT_EMBEDDING_URL = "https://nano-gpt.com/api/v1/embeddings"
 NANOGPT_MODEL = "BAAI/bge-m3"
 
 EMBEDDING_DIMENSIONS = 1024
+
+
+# Dynamic URL Construction (use settings-based URL at runtime)
+def get_ollama_url() -> str:
+    """Get the Ollama embeddings endpoint URL from settings."""
+    base_url = settings.ollama_base_url.rstrip("/")
+    return f"{base_url}/api/embeddings"
 
 
 # ----------------------------------------------------------------------
@@ -55,9 +71,10 @@ async def _embed_ollama(text: str) -> List[float]:
     """
     async with httpx.AsyncClient(timeout=60.0) as client:
         payload = {"model": OLLAMA_MODEL, "prompt": text}
+        url = get_ollama_url()
 
         response = await client.post(
-            OLLAMA_EMBEDDING_URL,
+            url,
             json=payload,
         )
         response.raise_for_status()

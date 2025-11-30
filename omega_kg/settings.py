@@ -138,6 +138,14 @@ class Settings(BaseSettings):
         None, validation_alias="OLLAMA_OKG_API_KEY_PRD_ID"
     )
 
+    # --- Embedding Service Configuration (CRITICAL) ---
+    embedding_provider: str = Field(
+        "ollama", validation_alias="EMBEDDING_PROVIDER"
+    )
+    ollama_base_url: str = Field(
+        "http://localhost:11434", validation_alias="OLLAMA_BASE_URL"
+    )
+
     # --- Paths ---
     obsidian_vault_path: str = Field("./vault", validation_alias="OBSIDIAN_VAULT_PATH")
 
