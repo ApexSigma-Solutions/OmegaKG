@@ -11,10 +11,10 @@ networks:
 volumes:
   neo4j-data: # Named volume for the Neo4j database files
     driver: local
-    name: apexsigma.neo4j.data # Explicit, unambiguous name
+    name: apexsigma.neo4j.data.stable # Explicit, unambiguous name
   postgres-data: # Named volume for PostgreSQL database files
     driver: local
-    name: apexsigma.postgres.data # PostgreSQL persistent data
+    name: apexsigma.postgres.data.stable # PostgreSQL persistent data
 
 services:
   # Neo4j Database Service
@@ -22,7 +22,7 @@ services:
   # Currently deferred to focus on Linear sync foundation
   neo4j-db:
     image: neo4j:5-community
-    container_name: apexsigma.neo4j.db # Consistent, human-readable name
+    container_name: apexsigma.neo4j.stable # Consistent, human-readable name
     restart: unless-stopped
     ports:
       # Expose ports to THE HOST MACHINE for external service access
@@ -91,7 +91,7 @@ services:
   # Used for raw_linear_events persistence and processing queue
   postgres-db:
     image: pgvector/pgvector:pg16
-    container_name: apexsigma.postgres.db
+    container_name: apexsigma.postgres.stable
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-omega_user}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-omega_dev_password}
@@ -111,3 +111,5 @@ services:
     profiles:
       # Activated for local development and CI integration tests
       - ci
+
+

@@ -150,7 +150,7 @@ class Settings(BaseSettings):
     obsidian_vault_path: str = Field("./vault", validation_alias="OBSIDIAN_VAULT_PATH")
 
     model_config = SettingsConfigDict(
-        env_file=os.getenv("OMEGA_ENV_FILE", ".env"),
+        env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore",
