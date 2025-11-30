@@ -68,8 +68,8 @@ class Settings(BaseSettings):
 
     # --- Server Settings ---
     app_env: str = Field("development", validation_alias="APP_ENV")
-    app_host: str = Field("127.0.0.1", validation_alias="APP_HOST")
-    app_port: int = Field(8005, validation_alias="APP_PORT")
+    app_host: str = Field("0.0.0.0", validation_alias="APP_HOST")
+    app_port: int = Field(8765, validation_alias="APP_PORT")
 
     # --- Postgres Infrastructure (New) ---
     postgres_user: str = Field("omega_user", validation_alias="POSTGRES_USER")

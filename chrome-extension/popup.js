@@ -35,15 +35,20 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     const pageData = injection[0].result;
 
+    // Import configuration module
+    const config = await import('./config.js');
+
     // 2. AUTHENTICATE
-    const authResp = await fetch("http://localhost:8002/auth/token", {
+    const tokenUrl = await config.config.getEndpointUrl('AUTH_TOKEN');
+    const authResp = await fetch(tokenUrl, {
       method: 'POST',
       headers: { 'x-api-key': apiKey }
     });
     const token = (await authResp.json()).access_token;
 
     // 3. SEND
-    const res = await fetch("http://localhost:8002/capture", {
+    const captureUrl = await config.config.getEndpointUrl('CAPTURE');
+    const res = await fetch(captureUrl, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
