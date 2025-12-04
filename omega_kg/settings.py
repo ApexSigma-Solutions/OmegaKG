@@ -1,13 +1,15 @@
 import os
 import uuid
-from typing import Any, Dict, Tuple, Optional
+from typing import Any, Dict, Optional, Tuple
+
+from bitwarden_sdk import BitwardenClient
+from bitwarden_sdk.schemas import ClientSettings, DeviceType
 from pydantic import Field
 from pydantic_settings import (
     BaseSettings,
     PydanticBaseSettingsSource,
     SettingsConfigDict,
 )
-from bitwarden_sdk import BitwardenClient, DeviceType
 
 
 class BitwardenSettingsSource(PydanticBaseSettingsSource):
@@ -27,9 +29,12 @@ class BitwardenSettingsSource(PydanticBaseSettingsSource):
         try:
             # Standard SDK Pattern
             client = BitwardenClient(
-                device_type=DeviceType.SDK, user_agent="OmegaKG/4.4.2"
+                settings=ClientSettings(
+                    device_type=DeviceType.SDK,
+                    user_agent="OmegaKG/4.4.2"
+                )
             )
-            client.auth.login_access_token(bws_token)
+            client.auth().login_access_token(bws_token)
 
             # Map internal keys to Env Vars containing UUIDs
             secret_mappings = {
@@ -49,7 +54,7 @@ class BitwardenSettingsSource(PydanticBaseSettingsSource):
                 secret_uuid = os.getenv(env_var_id)
                 if secret_uuid:
                     try:
-                        response = client.secrets.get(uuid.UUID(secret_uuid))
+                        response = client.secrets().get(uuid.UUID(secret_uuid))
                         fetched_secrets[config_key] = response.value
                     except Exception as e:
                         print(
@@ -150,7 +155,7 @@ class Settings(BaseSettings):
     obsidian_vault_path: str = Field("./vault", validation_alias="OBSIDIAN_VAULT_PATH")
 
     model_config = SettingsConfigDict(
-        env_file=os.getenv("OMEGA_ENV_FILE", ".env"),
+        env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore",
