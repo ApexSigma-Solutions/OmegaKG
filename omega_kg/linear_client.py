@@ -31,7 +31,7 @@ class LinearClient:
     @property
     def _headers(self) -> Dict[str, str]:
         return {
-            "Authorization": f"Bearer {self.api_key}",
+            "Authorization": f"{self.api_key}",
             "Content-Type": "application/json",
         }
 
@@ -53,7 +53,7 @@ class LinearClient:
                 )
                 response.raise_for_status()
 
-                data = await response.json()
+                data = response.json()
 
                 if "errors" in data:
                     raise Exception(f"GraphQL Error: {data['errors']}")
