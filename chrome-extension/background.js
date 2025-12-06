@@ -255,6 +255,7 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
 
       // Only access response properties if fetch succeeded
       // Validate response status before parsing JSON
+      // response.ok is true only for 2xx status codes
       if (!response.ok) {
         // Handle client errors (4xx) and server errors (5xx) separately
         if (response.status >= 400 && response.status < 500) {
@@ -271,10 +272,17 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
             errorText
           );
           return;
+        } else {
+          // Handle 1xx (informational) and 3xx (redirect) responses
+          // These are unexpected for a health check endpoint
+          console.warn(
+            `[Omega_KG] Server health check returned unexpected status ${response.status} (informational/redirect)`
+          );
+          return;
         }
       }
 
-      // Parse JSON only if response is OK
+      // Parse JSON only if response is OK (2xx status)
       const data = await response.json();
       console.log(
         "[Omega_KG] Server status:",
