@@ -20,6 +20,7 @@ def mock_env_vars(monkeypatch):
         "NEO4J_URI": "bolt://localhost:7687",
         "NEO4J_USER": "neo4j",
         "NEO4J_PASSWORD": "test-password",
+        "LINEAR_WEBHOOK_SECRET": "test-secret",
         "OBSIDIAN_VAULT_PATH": "./test_vault",
         "SMTP_HOST": None,
         "SMTP_PORT": "587",

@@ -14,7 +14,7 @@ import logging
 from typing import List
 
 import httpx
-from tenacity import retry, stop_after_attempt, wait_exponential
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_not_exception_type
 
 from omega_kg.settings import settings
 
@@ -99,6 +99,7 @@ async def _embed_ollama(text: str) -> List[float]:
 @retry(
     stop=stop_after_attempt(5),
     wait=wait_exponential(multiplier=1, min=2, max=30),
+    retry=retry_if_not_exception_type(RuntimeError),  # Don't retry on missing API key
     reraise=True,
 )
 async def _embed_nanogpt(text: str) -> List[float]:
@@ -156,6 +157,7 @@ async def _embed_nanogpt(text: str) -> List[float]:
 @retry(
     stop=stop_after_attempt(5),
     wait=wait_exponential(multiplier=1, min=2, max=30),
+    retry=retry_if_not_exception_type(RuntimeError),  # Don't retry on missing API key
     reraise=True,
 )
 async def _embed_gemini(text: str) -> List[float]:
