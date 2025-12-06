@@ -57,12 +57,24 @@ poetry run pytest -m "not requires_neo4j"
 # Run single test file
 poetry run pytest tests/test_lifecycle.py
 
-# Run with coverage
+# Run with coverage (generates terminal, HTML, and XML reports)
 poetry run pytest --cov=omega_kg --cov-report=html
+
+# Coverage with specific formats
+poetry run pytest --cov=omega_kg --cov-report=term-missing
+poetry run pytest --cov=omega_kg --cov-report=xml:coverage.xml
+
+# Coverage helper script (recommended)
+python scripts/coverage-report.py quick   # Quick unit test coverage
+python scripts/coverage-report.py full    # Full coverage with HTML report
+python scripts/coverage-report.py view    # Open HTML report in browser
+python scripts/coverage-report.py minimal # Check threshold only (70%)
 
 # Smoke test capture server
 poetry run python scripts/smoke-test-capture-server.py
 ```
+
+**Coverage Documentation:** See [COVERAGE.md](COVERAGE.md) for detailed coverage guide.
 
 ### Code Quality
 ```bash

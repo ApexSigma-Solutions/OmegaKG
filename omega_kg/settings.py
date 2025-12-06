@@ -1,13 +1,15 @@
 import os
 import uuid
-from typing import Any, Dict, Tuple, Optional
+from typing import Any, Dict, Optional, Tuple
+
+from bitwarden_sdk import BitwardenClient
+from bitwarden_sdk.schemas import ClientSettings, DeviceType
 from pydantic import Field
 from pydantic_settings import (
     BaseSettings,
     PydanticBaseSettingsSource,
     SettingsConfigDict,
 )
-from bitwarden_sdk import BitwardenClient, DeviceType
 
 
 class BitwardenSettingsSource(PydanticBaseSettingsSource):
@@ -27,9 +29,12 @@ class BitwardenSettingsSource(PydanticBaseSettingsSource):
         try:
             # Standard SDK Pattern
             client = BitwardenClient(
-                device_type=DeviceType.SDK, user_agent="OmegaKG/4.4.2"
+                settings=ClientSettings(
+                    device_type=DeviceType.SDK,
+                    user_agent="OmegaKG/4.4.2"
+                )
             )
-            client.auth.login_access_token(bws_token)
+            client.auth().login_access_token(bws_token)
 
             # Map internal keys to Env Vars containing UUIDs
             secret_mappings = {
@@ -49,7 +54,7 @@ class BitwardenSettingsSource(PydanticBaseSettingsSource):
                 secret_uuid = os.getenv(env_var_id)
                 if secret_uuid:
                     try:
-                        response = client.secrets.get(uuid.UUID(secret_uuid))
+                        response = client.secrets().get(uuid.UUID(secret_uuid))
                         fetched_secrets[config_key] = response.value
                     except Exception as e:
                         print(
@@ -138,11 +143,33 @@ class Settings(BaseSettings):
         None, validation_alias="OLLAMA_OKG_API_KEY_PRD_ID"
     )
 
+    # --- Embedding Service Configuration (CRITICAL) ---
+    embedding_provider: str = Field(
+        "ollama", validation_alias="EMBEDDING_PROVIDER"
+    )
+    ollama_base_url: str = Field(
+        "http://0.0.0.0:11434", validation_alias="OLLAMA_BASE_URL"
+    )
+
+    # --- Quipu Monitoring Configuration ---
+    ollama_host_url: str = Field(
+        "http://localhost:11434", validation_alias="OLLAMA_HOST_URL"
+    )
+    heartbeat_interval_sec: int = Field(
+        60, validation_alias="HEARTBEAT_INTERVAL_SEC"
+    )
+    quipu_service_name: str = Field(
+        "ollama-server-01", validation_alias="QUIPU_SERVICE_NAME"
+    )
+    omega_pg_conn: Optional[str] = Field(
+        None, validation_alias="OMEGA_PG_CONN"
+    )
+
     # --- Paths ---
     obsidian_vault_path: str = Field("./vault", validation_alias="OBSIDIAN_VAULT_PATH")
 
     model_config = SettingsConfigDict(
-        env_file=os.getenv("OMEGA_ENV_FILE", ".env"),
+        env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore",
@@ -151,6 +178,13 @@ class Settings(BaseSettings):
     @property
     def database_url(self) -> str:
         return f"postgresql+asyncpg://{self.postgres_user}:{self.postgres_password}@{self.postgres_server}:{self.postgres_port}/{self.postgres_db}"
+
+    @property
+    def sync_database_url(self) -> str:
+        """Synchronous PostgreSQL connection string for psycopg2."""
+        if self.omega_pg_conn:
+            return self.omega_pg_conn
+        return f"postgresql://{self.postgres_user}:{self.postgres_password}@{self.postgres_server}:{self.postgres_port}/{self.postgres_db}"
 
     @classmethod
     def settings_customise_sources(
