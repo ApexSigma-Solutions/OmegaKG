@@ -15,6 +15,8 @@ class ChatCapture {
     if (hostname.includes("claude.ai")) return "Claude.ai";
     if (hostname.includes("openai.com") || hostname.includes("chatgpt.com"))
       return "ChatGPT";
+    if (hostname.includes("aistudio.google.com")) return "AI_Studio";
+    if (hostname.includes("nano-gpt.com")) return "Nano_GPT";
     if (hostname.includes("gemini.google.com")) return "Gemini";
     if (hostname.includes("perplexity.ai")) return "Perplexity";
     if (hostname.includes("github.com") && url.includes("copilot"))
@@ -54,6 +56,29 @@ class ChatCapture {
       ChatGPT: {
         messages: "[data-message-author-role]",
         isUser: (el) => el.getAttribute("data-message-author-role") === "user",
+        getText: (el) => el.textContent,
+      },
+      AI_Studio: {
+        // Google AI Studio - uses generic message containers
+        messages: '[class*="message"], [class*="response"], [class*="prompt"]',
+        isUser: (el) => {
+          const text = el.textContent.toLowerCase();
+          // Heuristic: look for "user:" or "you:" prefixes
+          return text.includes("user:") || text.includes("you:") ||
+                 el.closest('[class*="user"]') !== null ||
+                 el.closest('[data-role="user"]') !== null;
+        },
+        getText: (el) => el.textContent,
+      },
+      Nano_GPT: {
+        // Nano-GPT uses Tailwind classes for chat bubbles
+        messages: 'div.whitespace-pre-wrap, [class*="message"], [class*="chat"]',
+        isUser: (el) => {
+          // Alternate messages: odd indices are user, even are assistant
+          // Or look for user-specific classes
+          return el.closest('[class*="user"]') !== null ||
+                 el.closest('[data-role="user"]') !== null;
+        },
         getText: (el) => el.textContent,
       },
       Gemini: {
@@ -236,17 +261,17 @@ class ChatCapture {
   async captureConversation() {
     const messages = this.extractMessages();
 
-    console.log(`[Omega_KG] Attempting capture: - content.js:239`, {
+    console.log(`[Omega_KG] Attempting capture:`, {
       platform: this.platform,
       messageCount: messages.length,
       url: window.location.href,
     });
 
     if (messages.length === 0) {
-      console.warn(
-        "[Omega_KG] No messages extracted, skipping capture",
-      );
-      return;
+      const msg = "No messages extracted";
+      console.warn("[Omega_KG] " + msg);
+      this.showNotification(msg, "info");
+      return false;
     }
 
     // Generate conversation hash (to detect duplicates)
@@ -254,10 +279,10 @@ class ChatCapture {
 
     // Skip if already captured in this session
     if (this.conversationCache.has(conversationHash)) {
-      console.log(
-        "[Omega_KG] Conversation already captured (hash collision), skipping",
-      );
-      return;
+      const msg = "Conversation already captured";
+      console.log("[Omega_KG] " + msg);
+      this.showNotification(msg, "info");
+      return false;
     }
 
     // Prepare data payload matching capture_server.py expectations
@@ -287,12 +312,12 @@ class ChatCapture {
           `[Omega_KG] ✅ Captured ${messages.length} messages from ${this.platform}`,
         );
         this.showNotification("Conversation captured!", "success");
+        return true;
       } else {
-        console.error(
-          "[Omega_KG] ❌ Capture failed:",
-          response?.error,
-        );
+        const errorMsg = response?.error || "Capture failed";
+        console.error("[Omega_KG] ❌ Capture failed:", errorMsg);
         this.showNotification("Capture failed - check server", "error");
+        return false;
       }
     } catch (error) {
       console.error(
@@ -300,6 +325,7 @@ class ChatCapture {
         error,
       );
       this.showNotification("Extension error - check console", "error");
+      return false;
     }
   }
 
@@ -323,7 +349,7 @@ class ChatCapture {
       right: 20px;
       padding: 12px 20px;
       border-radius: 8px;
-      background: ${type === "success" ? "#10b981" : type === "error" ? "#ef4444" : "#3b82f6"};
+      background: ${type === "success" ? "#019387" : type === "error" ? "#FF7C87" : "#3799ad"};
       color: white;
       font-family: system-ui, -apple-system, sans-serif;
       font-size: 14px;
@@ -495,4 +521,43 @@ window.addEventListener("beforeunload", () => {
     "[Omega_KG] Page unloading, capturing conversation",
   );
   capture.captureConversation();
+});
+
+// Listen for messages from popup script (TRIGGER_CAPTURE)
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  // Validate message type
+  if (message.type !== 'TRIGGER_CAPTURE') {
+    return false; // Not handled
+  }
+
+  console.log('[Omega_KG] Received TRIGGER_CAPTURE message from popup');
+
+  // Handle async capture operation
+  (async () => {
+    try {
+      // Trigger capture conversation and get result
+      const captureSuccess = await capture.captureConversation();
+      
+      if (captureSuccess) {
+        // Send success response
+        sendResponse({ success: true });
+      } else {
+        // captureConversation returned false, indicating failure (no messages, duplicate, or server error)
+        console.error('[Omega_KG] Capture failed (no messages, duplicate, or server error)');
+        sendResponse({
+          success: false,
+          error: 'Capture failed: no messages extracted, duplicate conversation, or server error'
+        });
+      }
+    } catch (error) {
+      console.error('[Omega_KG] Error handling TRIGGER_CAPTURE:', error);
+      sendResponse({
+        success: false,
+        error: error.message || 'Unknown error during capture'
+      });
+    }
+  })();
+
+  // Return true to indicate we will send a response asynchronously
+  return true;
 });

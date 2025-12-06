@@ -2,7 +2,156 @@
 // Manifest V3 service workers go inactive - this is NORMAL Chrome behavior
 // The extension will wake up when messages arrive or alarms fire
 
-const CAPTURE_ENDPOINT = "http://localhost:8765/capture";
+const STORAGE_KEYS = {
+    API_KEY: 'omega_api_key',
+    JWT_TOKEN: 'omega_jwt_token',
+    JWT_EXPIRY: 'omega_jwt_expiry',
+};
+
+const DEFAULT_SERVER_URL = 'http://localhost:8765';
+
+/**
+ * Get the current server URL from storage
+ * @async
+ * @returns {Promise<string>} Server URL
+ */
+async function getServerUrl() {
+    try {
+        const data = await chrome.storage.local.get(['omega_server_url']);
+        return data['omega_server_url'] || DEFAULT_SERVER_URL;
+    } catch (error) {
+        console.warn('[Omega_KG] Failed to get server URL:', error);
+        return DEFAULT_SERVER_URL;
+    }
+}
+
+/**
+ * Get full URL for an endpoint
+ * @async
+ * @param {string} endpoint - Endpoint name (AUTH_TOKEN, CAPTURE, HEALTH, LINEAR_WEBHOOK)
+ * @returns {Promise<string>} Full URL
+ */
+async function getEndpointUrl(endpoint) {
+    const endpoints = {
+        AUTH_TOKEN: '/auth/token',
+        CAPTURE: '/capture',
+        HEALTH: '/health',
+        LINEAR_WEBHOOK: '/webhook/linear',
+    };
+
+    const serverUrl = await getServerUrl();
+    const endpointPath = endpoints[endpoint];
+    if (!endpointPath) {
+        throw new Error(`Unknown endpoint: ${endpoint}`);
+    }
+    return new URL(endpointPath, serverUrl).toString();
+}
+
+// Token cache (short-term cache to avoid excessive /auth/token calls)
+let cachedJwtToken = null;
+let cachedJwtExpiry = 0;
+
+/**
+ * Retrieve and cache JWT token from storage, refreshing if necessary
+ * @async
+ * @returns {Promise<string|null>} JWT token or null if not configured/available
+ */
+async function getValidJwtToken() {
+  try {
+    // Check if cached token is still valid (with 60-second buffer)
+    const now = Date.now();
+    if (cachedJwtToken && cachedJwtExpiry > (now + 60000)) {
+      console.debug('[Omega_KG] Using cached JWT token');
+      return cachedJwtToken;
+    }
+
+    // Try to load from storage first
+    const storedData = await chrome.storage.local.get([
+      STORAGE_KEYS.JWT_TOKEN,
+      STORAGE_KEYS.JWT_EXPIRY,
+    ]);
+
+    const storedToken = storedData[STORAGE_KEYS.JWT_TOKEN];
+    const storedExpiry = storedData[STORAGE_KEYS.JWT_EXPIRY];
+
+    if (storedToken && storedExpiry && storedExpiry > (now + 60000)) {
+      console.debug('[Omega_KG] Using stored JWT token from storage');
+      cachedJwtToken = storedToken;
+      cachedJwtExpiry = storedExpiry;
+      return storedToken;
+    }
+
+    // Token expired or not available - need to refresh
+    console.debug('[Omega_KG] JWT token expired or missing, refreshing...');
+    return await refreshJwtToken();
+  } catch (error) {
+    console.error('[Omega_KG] Failed to get valid JWT token:', error);
+    return null;
+  }
+}
+
+/**
+ * Refresh JWT token using bootstrap API key
+ * @async
+ * @returns {Promise<string|null>} New JWT token or null if refresh fails
+ */
+async function refreshJwtToken() {
+  try {
+    // Get bootstrap API key from storage
+    const storedData = await chrome.storage.local.get(STORAGE_KEYS.API_KEY);
+    const apiKey = storedData[STORAGE_KEYS.API_KEY];
+
+    if (!apiKey) {
+      console.warn('[Omega_KG] No bootstrap API key configured - cannot refresh token');
+      return null;
+    }
+
+    // Call /auth/token endpoint
+    const authUrl = await getEndpointUrl('AUTH_TOKEN');
+    const response = await fetch(authUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': apiKey,
+      },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Token refresh failed (${response.status}): ${errorText}`);
+    }
+
+    const data = await response.json();
+    const token = data.access_token;
+    const expiresIn = data.expires_in || 86400; // Default 24 hours
+    const expiry = Date.now() + (expiresIn * 1000);
+
+    // Cache the token
+    cachedJwtToken = token;
+    cachedJwtExpiry = expiry;
+
+    // Also store in chrome.storage.local for persistence across service worker reloads
+    await chrome.storage.local.set({
+      [STORAGE_KEYS.JWT_TOKEN]: token,
+      [STORAGE_KEYS.JWT_EXPIRY]: expiry,
+    });
+
+    console.debug('[Omega_KG] JWT token refreshed successfully');
+    return token;
+  } catch (error) {
+    console.error('[Omega_KG] JWT token refresh failed:', error);
+    return null;
+  }
+}
+
+// Listen for configuration updates from options.js
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === 'CONFIG_UPDATED') {
+    console.debug('[Omega_KG] Configuration updated, clearing cached JWT token');
+    cachedJwtToken = null;
+    cachedJwtExpiry = 0;
+  }
+});
 
 // Listen for messages from content scripts
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -32,7 +181,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 
   if (message.type === "PING") {
-    console.log("[Omega_KG] Service worker is alive - background.js:35");
+    console.log("[Omega_KG] Service worker is alive - background.js:36");
     sendResponse({ alive: true, timestamp: new Date().toISOString() });
     return true;
   }
@@ -40,6 +189,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 /**
  * Saves conversation data to the localhost capture server.
+ * Uses JWT Bearer token authentication (exchanges bootstrap key for JWT via /auth/token)
  * @async
  * @param {Object} data - The conversation data to save
  * @returns {Promise<Object>} Promise that resolves to the JSON-decoded response from the server
@@ -56,10 +206,20 @@ async function saveToLocalhost(data) {
   );
 
   try {
-    const response = await fetch(CAPTURE_ENDPOINT, {
+    // Get valid JWT token (will refresh if necessary)
+    const jwtToken = await getValidJwtToken();
+
+    if (!jwtToken) {
+      throw new Error(
+        'No JWT token available. Please configure API key in extension options.'
+      );
+    }
+
+    const response = await fetch(await getEndpointUrl('CAPTURE'), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        "Authorization": `Bearer ${jwtToken}`,
       },
       body: JSON.stringify(data),
     });
@@ -70,7 +230,7 @@ async function saveToLocalhost(data) {
     }
 
     const result = await response.json();
-    console.log("[Omega_KG] Server response: - background.js:73", result);
+    console.log("[Omega_KG] Server response:", result);
     return result;
   } catch (error) {
     console.error(
@@ -84,18 +244,66 @@ async function saveToLocalhost(data) {
 // Periodic health check (ensures server is running)
 chrome.alarms.create("health-check", { periodInMinutes: 5 });
 
-chrome.alarms.onAlarm.addListener((alarm) => {
+chrome.alarms.onAlarm.addListener(async (alarm) => {
   if (alarm.name === "health-check") {
-    fetch("http://localhost:8765/health")
-      .then((r) => r.json())
-      .then((data) =>
-        console.log(
-          "[Omega_KG] Server status:",
-          data.status,
-        ),
-      )
-      .catch(() =>
-        console.warn("[Omega_KG] Server offline - background.js:98"),
+    try {
+      const healthUrl = await getEndpointUrl('HEALTH');
+      const response = await fetch(healthUrl, {
+        method: 'GET',
+        signal: AbortSignal.timeout(5000), // 5 second timeout
+      });
+
+      // Only access response properties if fetch succeeded
+      // Validate response status before parsing JSON
+      // response.ok is true only for 2xx status codes
+      if (!response.ok) {
+        // Handle client errors (4xx) and server errors (5xx) separately
+        if (response.status >= 400 && response.status < 500) {
+          const errorText = await response.text().catch(() => 'Unknown client error');
+          console.warn(
+            `[Omega_KG] Server health check failed (client error ${response.status}):`,
+            errorText
+          );
+          return;
+        } else if (response.status >= 500) {
+          const errorText = await response.text().catch(() => 'Unknown server error');
+          console.error(
+            `[Omega_KG] Server health check failed (server error ${response.status}):`,
+            errorText
+          );
+          return;
+        } else {
+          // Handle 1xx (informational) and 3xx (redirect) responses
+          // These are unexpected for a health check endpoint
+          console.warn(
+            `[Omega_KG] Server health check returned unexpected status ${response.status} (informational/redirect)`
+          );
+          return;
+        }
+      }
+
+      // Parse JSON only if response is OK (2xx status)
+      const data = await response.json();
+      console.log(
+        "[Omega_KG] Server status:",
+        data.status,
       );
+    } catch (error) {
+      // Check for timeout/abort errors FIRST (before any response access)
+      // These occur when fetch() throws before a response is received
+      if (error.name === 'AbortError' || error.name === 'TimeoutError') {
+        console.warn("[Omega_KG] Server health check timed out");
+        return;
+      }
+      
+      // Check for network errors (no response received)
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        console.warn("[Omega_KG] Server offline - network error:", error.message);
+        return;
+      }
+      
+      // Other errors
+      console.warn("[Omega_KG] Server health check error:", error.message);
+    }
   }
 });

@@ -20,10 +20,10 @@ class KnowledgeGraphSchema:
     def __init__(self, mock_mode: bool = False) -> None:
         """
         Create a KnowledgeGraphSchema and, unless mock_mode is True, attempt to establish and verify a Neo4j driver connection.
-        
+
         Parameters:
             mock_mode (bool): If True, skip creating a Neo4j driver and leave the instance in mock mode.
-        
+
         Details:
             When mock_mode is False, the initializer attempts to create a Neo4j driver using configured settings and runs a health check. On successful connection the driver is stored on the instance. If connection or authentication fails, the instance switches to mock mode and the driver is set to None.
         """
@@ -48,10 +48,10 @@ class KnowledgeGraphSchema:
     def _check_connection(self) -> bool:
         """
         Verify that the configured Neo4j driver can run a simple test query.
-        
+
         Returns:
             `true` if the driver executed the test query successfully.
-        
+
         Raises:
             ConnectionError: If no driver is initialized or the test query fails; includes underlying error details.
         """
@@ -85,13 +85,13 @@ class KnowledgeGraphSchema:
     def initialize_schema(self) -> None:
         """
         Create the required Neo4j schema for the knowledge graph.
-        
+
         When a live Neo4j driver is available, this creates database constraints and indexes:
         - Constraint: Task.uid is unique
         - Constraint: Plan.id is unique
         - Index: Task.status
         - Index: Task.created
-        
+
         If running in mock mode or no driver is available, the method makes no changes.
         """
         if self.mock_mode:
@@ -104,22 +104,22 @@ class KnowledgeGraphSchema:
 
         try:
             with self.driver.session() as session:
-                # Constraints
-                session.run(
-                    """
-                    CREATE CONSTRAINT task_uid IF NOT EXISTS
-                    FOR (t:Task) REQUIRE t.uid IS UNIQUE
-                """
-                )
+                # Drop old constraints that reference uid-based schema
+                session.run("DROP CONSTRAINT task_uid IF EXISTS")
+                session.run("DROP CONSTRAINT plan_id IF EXISTS")
 
-                session.run(
+                # Create new UNIQUE constraints on the new Golden Schema 'id' property
+                labels = ["Task", "TaskPlan", "ADR", "BacklogPlan", "Plan"]
+                for label in labels:
+                    name = f"{label.lower()}_id"
+                    session.run(
+                        f"""
+                        CREATE CONSTRAINT {name} IF NOT EXISTS
+                        FOR (n:{label}) REQUIRE n.id IS UNIQUE
                     """
-                    CREATE CONSTRAINT plan_id IF NOT EXISTS
-                    FOR (p:Plan) REQUIRE p.id IS UNIQUE
-                """
-                )
+                    )
 
-                # Indexes
+                # Indexes - keep commonly used indexes for Task
                 session.run(
                     """
                     CREATE INDEX task_status IF NOT EXISTS
@@ -127,10 +127,18 @@ class KnowledgeGraphSchema:
                 """
                 )
 
+                # Support both older 'created' and new 'created_at' fields during migration
                 session.run(
                     """
                     CREATE INDEX task_created IF NOT EXISTS
                     FOR (t:Task) ON (t.created)
+                """
+                )
+
+                session.run(
+                    """
+                    CREATE INDEX task_created_at IF NOT EXISTS
+                    FOR (t:Task) ON (t.created_at)
                 """
                 )
 
@@ -155,7 +163,7 @@ class KnowledgeGraphSchema:
 def main() -> None:
     """
     CLI entry point to initialize the Neo4j schema and report connection status.
-    
+
     Creates a KnowledgeGraphSchema, performs schema initialization according to command-line options, prints whether a real Neo4j connection or mock mode is in use, and ensures the driver is closed on exit.
     """
     import argparse

@@ -1,108 +1,208 @@
 # omega_kg/linear_sync.py
 
-from neo4j import GraphDatabase
-from pathlib import Path
-import frontmatter
+import hmac
+import hashlib
+import json
+import logging
+from fastapi import Request, HTTPException
+from starlette.concurrency import run_in_threadpool
 from omega_kg.settings import settings
+from pathlib import Path
+from neo4j import GraphDatabase
+from typing import Optional, Dict, Any
+import neo4j
+from omega_kg.vault_utils import VaultUtils
+
+logger = logging.getLogger(__name__)
 
 
 class LinearSync:
-    """Bidirectional sync between Linear and Obsidian via Neo4j"""
+    """
+    Contains all business logic for processing Linear webhooks.
+    """
 
     def __init__(self):
         """
-        Initialize the LinearSync instance and prepare the Neo4j driver and Obsidian vault path.
-        
-        Creates a Neo4j driver using credentials from settings and stores the Obsidian vault path as a Path object.
-
-        Attributes:
-            driver: Neo4j driver connected using settings.neo4j_uri and credentials from settings.neo4j_user/settings.neo4j_password.
-            vault: Path to the Obsidian vault directory from settings.obsidian_vault_path.
+        Initializes the LinearSync engine.
         """
+        self.vault_utils = VaultUtils()
         self.driver = GraphDatabase.driver(
             settings.neo4j_uri, auth=(settings.neo4j_user, settings.neo4j_password)
         )
-        self.vault = Path(settings.obsidian_vault_path)
+        logger.info("LinearSync engine initialized.")
 
-    def handle_linear_webhook(self, payload: dict):
+    async def verify_linear_signature(self, request: Request) -> bytes:
         """
-        Route and handle a Linear webhook payload by dispatching supported actions.
+        Verifies the X-Linear-Signature header.
+        Raises HTTPException if invalid.
+        """
+        signature = request.headers.get("X-Linear-Signature")
+        if not signature:
+            logger.error("Missing X-Linear-Signature header.")
+            raise HTTPException(status_code=400, detail="Missing X-Linear-Signature")
 
-        Processes the incoming `payload` dictionary, reading the `action` key to determine the operation and the `data` key for the issue payload. Supported actions:
-        - "update": synchronize the provided issue into Neo4j and the Obsidian vault.
-        - "remove": mark the corresponding issue as archived in Neo4j.
+        raw_body = await request.body()
 
-        Parameters:
-            payload (dict): Webhook payload expected to contain:
-                - "action" (str): the webhook event type ("update" or "remove").
-                - "data" (dict): the Linear issue object for the event.
+        if not raw_body:
+            logger.warning("Received Linear webhook with empty body.")
+            raise HTTPException(status_code=400, detail="Empty request body")
 
+        # settings.py now GUARANTEES linear_webhook_secret is a string
+        secret = settings.linear_webhook_secret.encode("utf-8")
+
+        hashed_body = hmac.new(secret, raw_body, hashlib.sha256).hexdigest()
+
+        if not hmac.compare_digest(hashed_body, signature):
+            logger.error(
+                f"Invalid signature. Expected: {hashed_body}, Got: {signature}"
+            )
+            raise HTTPException(status_code=403, detail="Invalid signature")
+
+        return raw_body
+
+    async def handle_linear_webhook_request(self, request: Request):
+        """
+        Validates and routes a Linear webhook payload.
+        This is called BY the FastAPI endpoint.
+        """
+        # 1. Verify signature and get raw body
+        raw_body = await self.verify_linear_signature(request)
+
+        # 2. Parse incoming JSON
+        payload: Dict[str, Any] = json.loads(raw_body)
+
+        # 3. Continue with existing logic
+        action = payload.get("action")
+        issue = payload.get("data")
+
+        if not issue or not action:
+            logger.warning(
+                f"Invalid Linear payload structure. Action: {action}, Issue: {issue}"
+            )
+            raise HTTPException(status_code=400, detail="Invalid payload structure")
+
+        logger.info(
+            f"Processing Linear webhook. Action: {action}, Issue ID: {issue.get('id')}"
+        )
+
+        # Delegate to the synchronous payload handler for the actual logic
+        await run_in_threadpool(self.handle_linear_webhook, payload)
+
+        # handle_linear_webhook returns the status dict
+        # This return is for safety and consistency with FastAPI expectations.
+        return {"status": f"action '{action}' processed"}
+
+    def handle_linear_webhook(self, payload: Dict[str, Any]):
+        """
+        Synchronously handle a parsed Linear webhook payload (used by unit tests).
         """
         action = payload.get("action")
         issue = payload.get("data")
+
+        if not issue or not action:
+            logger.warning(
+                f"Invalid Linear payload structure. Action: {action}, Issue: {issue}"
+            )
+            raise ValueError("Invalid payload structure")
+
+        logger.info(
+            f"Processing Linear webhook. Action: {action}, Issue ID: {issue.get('id')}"
+        )
 
         if action == "update":
             self._sync_issue_update(issue)
         elif action == "remove":
             self._handle_issue_deletion(issue)
+        else:
+            logger.info(f"Received unhandled Linear action: {action}")
 
-    def _sync_issue_update(self, issue: dict):
+        return {"status": f"action '{action}' processed"}
+
+    def _sync_issue_update(self, issue: Dict[str, Any]):
         """
-        Synchronize a Linear issue update into Neo4j and the corresponding Obsidian task file.
-
-        Updates the matching Task node's Linear metadata in the Neo4j graph and then updates the Obsidian file's frontmatter for that task. If no matching Task node is found, no file updates are performed.
-
-        Parameters:
-            issue (dict): Linear issue payload; must include 'identifier', 'state' (with 'name'), and 'updatedAt'. May include 'priority'.
+        Synchronize a Linear issue update with Neo4j and Obsidian.
         """
-        linear_id = issue["identifier"]
+        logger.info(f"Syncing issue update for: {issue.get('identifier')}")
+        linear_id = issue.get(
+            "id"
+        )  # Use UUID for lookup as it's more stable, or identifier
+        linear_identifier = issue.get("identifier")
 
-        # Update Neo4j
-        with self.driver.session() as session:
-            result = session.run(
-                """
-                MATCH (t:Task {linear_id: $linear_id})
-                SET t.linear_status = $status,
-                    t.linear_priority = $priority,
-                    t.linear_updated = datetime($updated)
-                RETURN t.filepath
-            """,
-                linear_id=linear_id,
-                status=issue["state"]["name"],
-                priority=issue.get("priority", 0),
-                updated=issue["updatedAt"],
-            ).single()
-
-        if not result:
-            print(f"⚠️  No Obsidian task found for {linear_id}")
+        if not linear_id:
+            logger.error("Linear issue payload missing 'id'.")
             return
 
-        # Update Obsidian file
-        task_path = self.vault / result["t.filepath"]
-        self._update_task_file(task_path, issue)
+        # 1. Try to find file via Neo4j first (faster if indexed)
+        filepath = None
+        try:
+            with self.driver.session() as session:
+                neo4j_result: Optional[neo4j.Record] = session.run(
+                    """
+                    MATCH (t:Task {linear_id: $linear_id})
+                    RETURN t.filepath
+                    """,
+                    linear_id=linear_id,
+                ).single()
 
-    def _update_task_file(self, path: Path, issue: dict):
+                if neo4j_result:
+                    filepath = neo4j_result.get("t.filepath")
+        except Exception as e:
+            logger.warning(f"Neo4j lookup failed: {e}")
+
+        # 2. Fallback to Vault Scan if Neo4j didn't find it
+        if not filepath:
+            logger.info(
+                f"Neo4j didn't return a path for {linear_identifier}. Scanning vault..."
+            )
+            path_obj = self.vault_utils.find_note_by_linear_id(linear_id)
+            if path_obj:
+                filepath = str(path_obj)
+            else:
+                # Try scanning by identifier as fallback
+                # (Note: find_note_by_linear_id currently only checks linear_id)
+                logger.warning(
+                    f"⚠️  No Obsidian note found for Linear ID {linear_id} ({linear_identifier})"
+                )
+                return
+
+        # 3. Update Obsidian file
+        logger.info(f"Found note at: {filepath}")
+        self._update_task_file(filepath, issue)
+
+        # 4. Update Neo4j (to keep it in sync)
+        try:
+            with self.driver.session() as session:
+                session.run(
+                    """
+                    MERGE (t:Task {linear_id: $linear_id})
+                    SET t.linear_status = $status,
+                        t.linear_priority = $priority,
+                        t.linear_updated = datetime($updated),
+                        t.filepath = $filepath
+                    """,
+                    linear_id=linear_id,
+                    status=issue.get("state", {}).get("name", "Unknown"),
+                    priority=issue.get("priority", 0),
+                    updated=issue.get("updatedAt"),
+                    filepath=filepath,
+                )
+        except Exception as e:
+            logger.error(f"Failed to update Neo4j: {e}")
+
+    def _update_task_file(self, path: str | Path, issue: Dict[str, Any]):
         """
-        Update an Obsidian task file's frontmatter with fields from a Linear issue.
-
-        Reads the file at `path`, sets frontmatter keys `linear_status`, `linear_priority`, and
-        `linear_updated` from the provided `issue`, maps the Linear state to an Obsidian
-        `status` value, and writes the updated frontmatter back to disk.
-
-        Parameters:
-            path (Path): Filesystem path to the Obsidian note to update.
-            issue (dict): Linear issue payload containing at least `state["name"]` and
-                `updatedAt`. May include `priority`; if absent, `linear_priority` will be 0.
+        Update an Obsidian task file's frontmatter using VaultUtils.
         """
-        with open(path, "r", encoding="utf-8") as f:
-            post = frontmatter.load(f)
+        updates = {}
 
         # Update metadata
-        post.metadata["linear_status"] = issue["state"]["name"]
-        post.metadata["linear_priority"] = issue.get("priority", 0)
-        post.metadata["linear_updated"] = issue["updatedAt"]
+        issue_state = issue.get("state", {}).get("name", "Unknown")
+        updates["linear_status"] = issue_state
+        updates["linear_priority"] = issue.get("priority", 0)
+        updates["linear_updated"] = issue.get("updatedAt")
 
         # Map Linear status to Obsidian status
+        # TODO: Move this map to settings or shared constant
         status_map = {
             "Backlog": "draft",
             "Todo": "ready",
@@ -110,24 +210,25 @@ class LinearSync:
             "Done": "completed",
             "Canceled": "archived",
         }
-        post.metadata["status"] = status_map.get(issue["state"]["name"], "draft")
+        # Only update status if we have a mapping, otherwise keep existing
+        if issue_state in status_map:
+            updates["status"] = status_map[issue_state]
 
-        # Write back
-        with open(path, "w", encoding="utf-8") as f:
-            f.write(frontmatter.dumps(post))
+        if self.vault_utils.update_note_frontmatter(path, updates):
+            logger.info(f"✓ Updated {Path(path).name} from Linear")
+        else:
+            logger.error(f"Failed to update task file {path}")
 
-        print(f"✓ Updated {path.name} from Linear")
-
-    def _handle_issue_deletion(self, issue: dict):
+    def _handle_issue_deletion(self, issue: Dict[str, Any]):
         """
         Mark the Neo4j Task matching the Linear issue as archived.
-        
-        Sets the Task's `status` to "archived", `linear_status` to "Canceled", and `transitioned_at` to the current datetime.
-        
-        Parameters:
-            issue (dict): Linear issue payload containing the "identifier" key with the Linear issue ID.
         """
-        linear_id = issue["identifier"]
+        linear_id = issue.get("id")
+        if not linear_id:
+            logger.error("Linear delete payload missing 'id'.")
+            return
+
+        logger.info(f"Archiving task for Linear issue {linear_id}")
 
         # Update Neo4j to mark as archived
         with self.driver.session() as session:
@@ -141,4 +242,4 @@ class LinearSync:
                 linear_id=linear_id,
             )
 
-        print(f"✓ Archived task for Linear issue {linear_id}")
+        logger.info(f"✓ Archived task for Linear issue {linear_id}")

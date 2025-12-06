@@ -5,7 +5,7 @@
 - **Linter**: Ruff (configured in pyproject.toml)
 - **Type checker**: MyPy (configured in pyproject.toml)
 - **Line length**: Default Black (~88 chars)
-- **Naming**: 
+- **Naming**:
   - Classes: PascalCase (e.g., TaskLifecycle, Settings)
   - Functions/methods: snake_case (e.g., validate_settings, extract_messages)
   - Constants: UPPER_SNAKE_CASE
@@ -18,20 +18,20 @@
 
 ## Docstrings
 - **Style**: Google-style docstrings (for mkdocstrings extraction)
-- **Format**: 
+- **Format**:
   ```python
   def function_name(param1: str, param2: int) -> bool:
       """Short description on one line.
-      
+
       Longer description if needed.
-      
+
       Args:
           param1: Description of param1
           param2: Description of param2
-      
+
       Returns:
           Description of return value
-      
+
       Raises:
           ValueError: When something is invalid
       """

@@ -2,7 +2,6 @@
 Unit tests for percolation.py
 """
 
-import pytest
 from unittest.mock import Mock, patch
 from pathlib import Path
 from omega_kg.percolation import PercolationEngine, create_percolation_engine
@@ -25,7 +24,7 @@ class TestPercolationEngine:
         """Test PercolationEngine initialization."""
         assert self.engine.driver == self.mock_driver
 
-    @patch('omega_kg.percolation.Path')
+    @patch("omega_kg.percolation.Path")
     def test_percolate_from_vault(self, mock_path_class):
         """Test percolating from a vault with multiple files."""
         # Mock Path and file operations
@@ -65,14 +64,15 @@ date: 2023-01-02
         self.mock_driver.session.return_value = mock_session
 
         # Mock the percolation methods
-        with patch.object(self.engine, '_extract_frontmatter') as mock_extract, \
-             patch.object(self.engine, '_percolate_task') as mock_task, \
-             patch.object(self.engine, '_percolate_commits') as mock_commits, \
-             patch.object(self.engine, '_percolate_session') as mock_session_percolate:
-
+        with (
+            patch.object(self.engine, "_extract_frontmatter") as mock_extract,
+            patch.object(self.engine, "_percolate_task") as mock_task,
+            patch.object(self.engine, "_percolate_commits") as mock_commits,
+            patch.object(self.engine, "_percolate_session") as mock_session_percolate,
+        ):
             mock_extract.side_effect = [
-                {'date': '2023-01-01', 'decision_id': 'DEC-001'},
-                {'date': '2023-01-02'}
+                {"date": "2023-01-01", "decision_id": "DEC-001"},
+                {"date": "2023-01-02"},
             ]
             mock_task.side_effect = [1, 1]  # One task each
             mock_commits.side_effect = [1, 0]  # One commit from first file
@@ -80,7 +80,7 @@ date: 2023-01-02
 
             result = self.engine.percolate_from_vault(mock_vault_path)
 
-            expected = {'tasks': 2, 'commits': 1, 'links': 1}
+            expected = {"tasks": 2, "commits": 1, "links": 1}
             assert result == expected
 
     def test_extract_frontmatter_valid(self):
@@ -95,7 +95,7 @@ Some content here.
 """
 
         result = self.engine._extract_frontmatter(content)
-        expected = {'date': '2023-01-01', 'title': 'Test Note'}
+        expected = {"date": "2023-01-01", "title": "Test Note"}
         assert result == expected
 
     def test_extract_frontmatter_no_frontmatter(self):
@@ -111,15 +111,15 @@ Some content here.
 
         result = self.engine._extract_frontmatter(content)
         # The method parses what it can, so it returns the parsed dict
-        assert result == {'invalid': 'yaml: content:'}
+        assert result == {"invalid": "yaml: content:"}
 
-    @patch('omega_kg.percolation.datetime')
+    @patch("omega_kg.percolation.datetime")
     def test_percolate_task(self, mock_datetime):
         """Test percolating tasks from content."""
-        mock_datetime.now.return_value.isoformat.return_value = '2023-01-01T00:00:00'
+        mock_datetime.now.return_value.isoformat.return_value = "2023-01-01T00:00:00"
 
         mock_file = Mock(spec=Path)
-        metadata = {'date': '2023-01-01'}
+        metadata = {"date": "2023-01-01"}
         content = "Some content [[PROJ-001]] and [[PROJ-002]]"
 
         result = self.engine._percolate_task(mock_file, metadata, content)
@@ -129,10 +129,10 @@ Some content here.
         session_calls = self.mock_driver.session.return_value.run.call_count
         assert session_calls == 2
 
-    @patch('omega_kg.percolation.datetime')
+    @patch("omega_kg.percolation.datetime")
     def test_percolate_commits(self, mock_datetime):
         """Test percolating commits from content."""
-        mock_datetime.now.return_value.isoformat.return_value = '2023-01-01T00:00:00'
+        mock_datetime.now.return_value.isoformat.return_value = "2023-01-01T00:00:00"
 
         mock_file = Mock(spec=Path)
         metadata = {}
@@ -159,20 +159,22 @@ Initial commit
         self.mock_driver.session.return_value = mock_session
 
         mock_file = Mock(spec=Path)
-        metadata = {'date': '2023-01-01', 'topic': 'Test Session'}
+        metadata = {"date": "2023-01-01", "topic": "Test Session"}
         content = """
 ## Decision
 
 This is a test decision about the project.
 """
 
-        with patch.object(self.engine, '_generate_decision_id') as mock_gen_id:
-            mock_gen_id.return_value = 'DEC-001'
+        with patch.object(self.engine, "_generate_decision_id") as mock_gen_id:
+            mock_gen_id.return_value = "DEC-001"
 
             result = self.engine._percolate_session(mock_file, metadata, content)
 
             assert result == 1  # One decision link created
-            assert mock_session.run.call_count == 3  # MERGE session + MERGE decision + MERGE relationship
+            assert (
+                mock_session.run.call_count == 3
+            )  # MERGE session + MERGE decision + MERGE relationship
 
     def test_generate_decision_id(self):
         """Test generating decision IDs."""
@@ -180,7 +182,7 @@ This is a test decision about the project.
         result = self.engine._generate_decision_id(content)
 
         # Should return a string in format DEC-XXXX
-        assert result.startswith('DEC-')
+        assert result.startswith("DEC-")
         assert len(result) == 8  # DEC- + 4 digits
 
         # Same content should generate same ID
@@ -196,12 +198,14 @@ This is a test decision about the project.
 
         # Mock query results
         mock_records = [
-            Mock(__getitem__=lambda self, key: {
-                't.uid': 'TASK-001',
-                't.title': 'Stale Task',
-                't.status': 'active',
-                't.created': '2023-01-01'
-            }.get(key))
+            Mock(
+                __getitem__=lambda self, key: {
+                    "t.uid": "TASK-001",
+                    "t.title": "Stale Task",
+                    "t.status": "active",
+                    "t.created": "2023-01-01",
+                }.get(key)
+            )
         ]
         mock_result = Mock()
         mock_result.__iter__ = Mock(return_value=iter(mock_records))
@@ -210,18 +214,18 @@ This is a test decision about the project.
         result = self.engine.detect_stale_tasks(days_threshold=30)
 
         assert len(result) == 1
-        assert result[0]['uid'] == 'TASK-001'
-        assert result[0]['title'] == 'Stale Task'
-        assert result[0]['status'] == 'active'
+        assert result[0]["uid"] == "TASK-001"
+        assert result[0]["title"] == "Stale Task"
+        assert result[0]["status"] == "active"
 
-    @patch('omega_kg.percolation.GraphDatabase')
+    @patch("omega_kg.percolation.GraphDatabase")
     def test_create_percolation_engine(self, mock_graph_db):
         """Test the factory function."""
         mock_driver = Mock()
         mock_graph_db.driver.return_value = mock_driver
 
-        result = create_percolation_engine('uri', 'user', 'pass')
+        result = create_percolation_engine("uri", "user", "pass")
 
         assert isinstance(result, PercolationEngine)
         assert result.driver == mock_driver
-        mock_graph_db.driver.assert_called_once_with('uri', auth=('user', 'pass'))
+        mock_graph_db.driver.assert_called_once_with("uri", auth=("user", "pass"))

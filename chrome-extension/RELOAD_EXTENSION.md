@@ -80,11 +80,11 @@ After reloading:
 
 ## 📋 Current Configuration
 
-**Platform Key**: `github_copilot`  
-**URL Pattern**: `github.com` + `/copilot/`  
-**Container**: Elements with `TaskChat-module` classes  
-**User Messages**: `.UserInitialMessage-module__container--j2mCV`  
-**Assistant Messages**: Markdown bodies excluding user message markdown  
+**Platform Key**: `github_copilot`
+**URL Pattern**: `github.com` + `/copilot/`
+**Container**: Elements with `TaskChat-module` classes
+**User Messages**: `.UserInitialMessage-module__container--j2mCV`
+**Assistant Messages**: Markdown bodies excluding user message markdown
 
 ## 🔍 Debugging
 
@@ -114,7 +114,7 @@ Assistant msgs: 1 (or more)
 
 ---
 
-**Last Updated**: October 29, 2025  
-**Issue**: File reformatted, GitHub Copilot support lost  
-**Resolution**: Selectors restored in `content.js`  
+**Last Updated**: October 29, 2025
+**Issue**: File reformatted, GitHub Copilot support lost
+**Resolution**: Selectors restored in `content.js`
 **Action Required**: Reload extension in Chrome

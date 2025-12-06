@@ -208,4 +208,3 @@ See the [API Reference](reference.md) section for detailed module documentation.
 ## Support
 
 For issues and questions, please visit the [GitHub repository](https://github.com/ApexSigma-Solutions/omega_kg).
-

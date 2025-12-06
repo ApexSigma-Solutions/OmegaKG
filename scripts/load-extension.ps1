@@ -132,10 +132,10 @@ Write-Info "Chrome found at: $BrowserPath"
 try {
     $extensionAbsPath = Resolve-Path $ExtensionPath
     Write-Info "Opening Chrome extensions page..."
-    
+
     # Try to open extensions page (will open if Chrome is not already running)
     & "$BrowserPath" --new-window "chrome://extensions/" --profile-directory=Default
-    
+
     Write-Success "Chrome opened to extensions page"
     Write-Header "Manual Steps Required"
     Write-Info "1. Toggle 'Developer mode' ON (top right corner)"
@@ -144,7 +144,7 @@ try {
     Write-Info ""
     Write-Info "Extension path (copy-paste in dialog):"
     Write-Host $extensionAbsPath -ForegroundColor Yellow
-    
+
 } catch {
     Write-Error "Failed to open Chrome: $_"
     Write-Info "Please manually open chrome://extensions and load the unpacked extension from:"

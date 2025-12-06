@@ -12,9 +12,14 @@ volumes:
   neo4j-data: # Named volume for the Neo4j database files
     driver: local
     name: apexsigma.neo4j.data # Explicit, unambiguous name
+  postgres-data: # Named volume for PostgreSQL database files
+    driver: local
+    name: apexsigma.postgres.data # PostgreSQL persistent data
 
 services:
   # Neo4j Database Service
+  # Phase 6: Graph Integration - Neo4j will be used for entity relationships
+  # Currently deferred to focus on Linear sync foundation
   neo4j-db:
     image: neo4j:5-community
     container_name: apexsigma.neo4j.db # Consistent, human-readable name
@@ -81,3 +86,26 @@ services:
       timeout: 10s
       retries: 3
       start_period: 30s
+
+  # PostgreSQL with pgvector Extension
+  # Used for raw_linear_events persistence and processing queue
+  postgres-db:
+    image: pgvector/pgvector:pg16
+    container_name: apexsigma.postgres.db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-omega_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-omega_dev_password}
+      POSTGRES_DB: ${POSTGRES_DB:-omega_kg}
+    ports:
+      - "5433:5432"
+    networks:
+      - apexsigma.net
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-omega_user}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
