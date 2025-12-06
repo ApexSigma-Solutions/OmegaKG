@@ -253,6 +253,7 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
         signal: AbortSignal.timeout(5000), // 5 second timeout
       });
 
+      // Only access response properties if fetch succeeded
       // Validate response status before parsing JSON
       if (!response.ok) {
         // Handle client errors (4xx) and server errors (5xx) separately
@@ -280,14 +281,21 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
         data.status,
       );
     } catch (error) {
-      // Structured error handling for network failures
+      // Check for timeout/abort errors FIRST (before any response access)
+      // These occur when fetch() throws before a response is received
       if (error.name === 'AbortError' || error.name === 'TimeoutError') {
         console.warn("[Omega_KG] Server health check timed out");
-      } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
-        console.warn("[Omega_KG] Server offline - network error:", error.message);
-      } else {
-        console.warn("[Omega_KG] Server health check error:", error.message);
+        return;
       }
+      
+      // Check for network errors (no response received)
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        console.warn("[Omega_KG] Server offline - network error:", error.message);
+        return;
+      }
+      
+      // Other errors
+      console.warn("[Omega_KG] Server health check error:", error.message);
     }
   }
 });

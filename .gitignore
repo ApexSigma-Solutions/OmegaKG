@@ -28,6 +28,7 @@ dist/
 junit.xml
 coverage.xml
 .coverage
+htmlcov/
 
 # Pytest cache and test artifacts
 .pytest_cache/

@@ -33,11 +33,13 @@ async function initializeForm() {
         if (data[STORAGE_KEYS.API_KEY]) {
             apiKeyInput.value = data[STORAGE_KEYS.API_KEY];
             updateFieldStatus(apiKeyStatus, 'saved', 'API key saved ✓');
+            savedApiKey = data[STORAGE_KEYS.API_KEY];
         }
 
         // Get current server URL from storage or use default
         const currentServerUrl = data['omega_server_url'] || 'http://localhost:8765';
         serverUrlInput.value = currentServerUrl;
+        savedServerUrl = currentServerUrl;
         if (data['omega_server_url']) {
             updateFieldStatus(serverUrlStatus, 'saved', 'Server URL loaded ✓');
         }
@@ -186,6 +188,10 @@ async function saveConfiguration() {
             'omega_server_url': serverUrl,
         });
 
+        // Update saved values for synchronous comparison
+        savedApiKey = apiKey;
+        savedServerUrl = serverUrl;
+
         console.debug('[Omega_KG] Configuration saved successfully');
         updateFieldStatus(apiKeyStatus, 'saved', 'API key saved ✓');
         updateFieldStatus(serverUrlStatus, 'saved', 'Server URL saved ✓');
@@ -228,6 +234,8 @@ async function clearConfiguration() {
 
         apiKeyInput.value = '';
         serverUrlInput.value = 'http://localhost:8765';
+        savedApiKey = '';
+        savedServerUrl = 'http://localhost:8765';
         apiKeyStatus.className = 'field-status';
         apiKeyStatus.textContent = '';
         serverUrlStatus.className = 'field-status';
@@ -241,42 +249,34 @@ async function clearConfiguration() {
     }
 }
 
+// Saved values for synchronous comparison (avoid race conditions)
+let savedApiKey = '';
+let savedServerUrl = 'http://localhost:8765';
+
 /**
  * Mark form as having unsaved changes
  * Uses strict equality comparison to detect changes, including when saved values are cleared
+ * Synchronous version to avoid race conditions with async storage reads
  */
-async function markUnsaved() {
-    try {
-        // Get current input values
-        const currentApiKey = apiKeyInput.value.trim();
-        const currentServerUrl = serverUrlInput.value.trim();
+function markUnsaved() {
+    // Get current input values
+    const currentApiKey = apiKeyInput.value.trim();
+    const currentServerUrl = serverUrlInput.value.trim();
 
-        // Get saved values from storage
-        const data = await chrome.storage.local.get([
-            STORAGE_KEYS.API_KEY,
-            'omega_server_url',
-        ]);
+    // Strict equality comparison for API key (detects both changes and clearing)
+    if (currentApiKey !== savedApiKey) {
+        updateFieldStatus(apiKeyStatus, 'unsaved', 'Changes not saved');
+    } else {
+        // Reset to saved state if values match
+        updateFieldStatus(apiKeyStatus, 'saved', 'API key saved ✓');
+    }
 
-        const savedApiKey = data[STORAGE_KEYS.API_KEY] || '';
-        const savedServerUrl = data['omega_server_url'] || 'http://localhost:8765';
-
-        // Strict equality comparison for API key (detects both changes and clearing)
-        if (currentApiKey !== savedApiKey) {
-            updateFieldStatus(apiKeyStatus, 'unsaved', 'Changes not saved');
-        } else {
-            // Reset to saved state if values match
-            updateFieldStatus(apiKeyStatus, 'saved', 'API key saved ✓');
-        }
-
-        // Strict equality comparison for server URL
-        if (currentServerUrl !== savedServerUrl) {
-            updateFieldStatus(serverUrlStatus, 'unsaved', 'Changes not saved');
-        } else {
-            // Reset to saved state if values match
-            updateFieldStatus(serverUrlStatus, 'saved', 'Server URL saved ✓');
-        }
-    } catch (error) {
-        console.error('[Omega_KG] Error in markUnsaved:', error);
+    // Strict equality comparison for server URL
+    if (currentServerUrl !== savedServerUrl) {
+        updateFieldStatus(serverUrlStatus, 'unsaved', 'Changes not saved');
+    } else {
+        // Reset to saved state if values match
+        updateFieldStatus(serverUrlStatus, 'saved', 'Server URL saved ✓');
     }
 }
 
