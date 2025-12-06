@@ -33,11 +33,13 @@ async function initializeForm() {
         if (data[STORAGE_KEYS.API_KEY]) {
             apiKeyInput.value = data[STORAGE_KEYS.API_KEY];
             updateFieldStatus(apiKeyStatus, 'saved', 'API key saved ✓');
+            savedApiKey = data[STORAGE_KEYS.API_KEY];
         }
 
         // Get current server URL from storage or use default
         const currentServerUrl = data['omega_server_url'] || 'http://localhost:8765';
         serverUrlInput.value = currentServerUrl;
+        savedServerUrl = currentServerUrl;
         if (data['omega_server_url']) {
             updateFieldStatus(serverUrlStatus, 'saved', 'Server URL loaded ✓');
         }
@@ -69,6 +71,13 @@ function showStatus(type, message) {
     statusMessage.className = `status-message ${type}`;
     statusMessage.textContent = message;
     console.debug(`[Omega_KG] Status (${type}): ${message}`);
+    
+    // Auto-hide success messages after 3 seconds
+    if (type === 'success') {
+        setTimeout(() => {
+            statusMessage.className = 'status-message';
+        }, 3000);
+    }
 }
 
 /**
@@ -179,6 +188,10 @@ async function saveConfiguration() {
             'omega_server_url': serverUrl,
         });
 
+        // Update saved values for synchronous comparison
+        savedApiKey = apiKey;
+        savedServerUrl = serverUrl;
+
         console.debug('[Omega_KG] Configuration saved successfully');
         updateFieldStatus(apiKeyStatus, 'saved', 'API key saved ✓');
         updateFieldStatus(serverUrlStatus, 'saved', 'Server URL saved ✓');
@@ -221,6 +234,8 @@ async function clearConfiguration() {
 
         apiKeyInput.value = '';
         serverUrlInput.value = 'http://localhost:8765';
+        savedApiKey = '';
+        savedServerUrl = 'http://localhost:8765';
         apiKeyStatus.className = 'field-status';
         apiKeyStatus.textContent = '';
         serverUrlStatus.className = 'field-status';
@@ -234,20 +249,35 @@ async function clearConfiguration() {
     }
 }
 
+// Saved values for synchronous comparison (avoid race conditions)
+let savedApiKey = '';
+let savedServerUrl = 'http://localhost:8765';
+
 /**
  * Mark form as having unsaved changes
+ * Uses strict equality comparison to detect changes, including when saved values are cleared
+ * Synchronous version to avoid race conditions with async storage reads
  */
 function markUnsaved() {
-    if (apiKeyInput.value.trim()) {
-        updateFieldStatus(apiKeyStatus, 'unsaved', 'Changes not saved');
-    }
+    // Get current input values
+    const currentApiKey = apiKeyInput.value.trim();
     const currentServerUrl = serverUrlInput.value.trim();
-    chrome.storage.local.get(['omega_server_url'], (data) => {
-        const savedServerUrl = data['omega_server_url'] || 'http://localhost:8765';
-        if (currentServerUrl !== savedServerUrl) {
-            updateFieldStatus(serverUrlStatus, 'unsaved', 'Changes not saved');
-        }
-    });
+
+    // Strict equality comparison for API key (detects both changes and clearing)
+    if (currentApiKey !== savedApiKey) {
+        updateFieldStatus(apiKeyStatus, 'unsaved', 'Changes not saved');
+    } else {
+        // Reset to saved state if values match
+        updateFieldStatus(apiKeyStatus, 'saved', 'API key saved ✓');
+    }
+
+    // Strict equality comparison for server URL
+    if (currentServerUrl !== savedServerUrl) {
+        updateFieldStatus(serverUrlStatus, 'unsaved', 'Changes not saved');
+    } else {
+        // Reset to saved state if values match
+        updateFieldStatus(serverUrlStatus, 'saved', 'Server URL saved ✓');
+    }
 }
 
 // Event listeners
