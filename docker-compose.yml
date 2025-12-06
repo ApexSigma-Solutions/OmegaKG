@@ -108,6 +108,4 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
-    profiles:
-      # Activated for local development and CI integration tests
-      - ci
+
