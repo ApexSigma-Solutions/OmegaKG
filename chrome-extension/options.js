@@ -69,6 +69,13 @@ function showStatus(type, message) {
     statusMessage.className = `status-message ${type}`;
     statusMessage.textContent = message;
     console.debug(`[Omega_KG] Status (${type}): ${message}`);
+    
+    // Auto-hide success messages after 3 seconds
+    if (type === 'success') {
+        setTimeout(() => {
+            statusMessage.className = 'status-message';
+        }, 3000);
+    }
 }
 
 /**
@@ -236,18 +243,41 @@ async function clearConfiguration() {
 
 /**
  * Mark form as having unsaved changes
+ * Uses strict equality comparison to detect changes, including when saved values are cleared
  */
-function markUnsaved() {
-    if (apiKeyInput.value.trim()) {
-        updateFieldStatus(apiKeyStatus, 'unsaved', 'Changes not saved');
-    }
-    const currentServerUrl = serverUrlInput.value.trim();
-    chrome.storage.local.get(['omega_server_url'], (data) => {
+async function markUnsaved() {
+    try {
+        // Get current input values
+        const currentApiKey = apiKeyInput.value.trim();
+        const currentServerUrl = serverUrlInput.value.trim();
+
+        // Get saved values from storage
+        const data = await chrome.storage.local.get([
+            STORAGE_KEYS.API_KEY,
+            'omega_server_url',
+        ]);
+
+        const savedApiKey = data[STORAGE_KEYS.API_KEY] || '';
         const savedServerUrl = data['omega_server_url'] || 'http://localhost:8765';
+
+        // Strict equality comparison for API key (detects both changes and clearing)
+        if (currentApiKey !== savedApiKey) {
+            updateFieldStatus(apiKeyStatus, 'unsaved', 'Changes not saved');
+        } else {
+            // Reset to saved state if values match
+            updateFieldStatus(apiKeyStatus, 'saved', 'API key saved ✓');
+        }
+
+        // Strict equality comparison for server URL
         if (currentServerUrl !== savedServerUrl) {
             updateFieldStatus(serverUrlStatus, 'unsaved', 'Changes not saved');
+        } else {
+            // Reset to saved state if values match
+            updateFieldStatus(serverUrlStatus, 'saved', 'Server URL saved ✓');
         }
-    });
+    } catch (error) {
+        console.error('[Omega_KG] Error in markUnsaved:', error);
+    }
 }
 
 // Event listeners

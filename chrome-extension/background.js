@@ -248,14 +248,46 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
   if (alarm.name === "health-check") {
     try {
       const healthUrl = await getEndpointUrl('HEALTH');
-      const response = await fetch(healthUrl);
+      const response = await fetch(healthUrl, {
+        method: 'GET',
+        signal: AbortSignal.timeout(5000), // 5 second timeout
+      });
+
+      // Validate response status before parsing JSON
+      if (!response.ok) {
+        // Handle client errors (4xx) and server errors (5xx) separately
+        if (response.status >= 400 && response.status < 500) {
+          const errorText = await response.text().catch(() => 'Unknown client error');
+          console.warn(
+            `[Omega_KG] Server health check failed (client error ${response.status}):`,
+            errorText
+          );
+          return;
+        } else if (response.status >= 500) {
+          const errorText = await response.text().catch(() => 'Unknown server error');
+          console.error(
+            `[Omega_KG] Server health check failed (server error ${response.status}):`,
+            errorText
+          );
+          return;
+        }
+      }
+
+      // Parse JSON only if response is OK
       const data = await response.json();
       console.log(
         "[Omega_KG] Server status:",
         data.status,
       );
     } catch (error) {
-      console.warn("[Omega_KG] Server offline - background.js:100");
+      // Structured error handling for network failures
+      if (error.name === 'AbortError' || error.name === 'TimeoutError') {
+        console.warn("[Omega_KG] Server health check timed out");
+      } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        console.warn("[Omega_KG] Server offline - network error:", error.message);
+      } else {
+        console.warn("[Omega_KG] Server health check error:", error.message);
+      }
     }
   }
 });
