@@ -14,11 +14,20 @@ import logging
 from typing import List
 
 import httpx
-from tenacity import retry, stop_after_attempt, wait_exponential
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_not_exception_type
 
 from omega_kg.settings import settings
 
 logger = logging.getLogger(__name__)
+
+# --- STARTUP INITIALIZATION LOGGING ---
+# Log the configured embedding provider at module import time for diagnostics
+_embedding_provider = settings.embedding_provider
+_ollama_url = settings.ollama_base_url
+logger.info(
+    f"✓ Embedding Service initialized with provider: {_embedding_provider}, "
+    f"Ollama base URL: {_ollama_url}"
+)
 
 # Provider configuration
 OLLAMA_EMBEDDING_URL = "http://localhost:11434/api/embeddings"
@@ -28,6 +37,13 @@ NANOGPT_EMBEDDING_URL = "https://nano-gpt.com/api/v1/embeddings"
 NANOGPT_MODEL = "BAAI/bge-m3"
 
 EMBEDDING_DIMENSIONS = 1024
+
+
+# Dynamic URL Construction (use settings-based URL at runtime)
+def get_ollama_url() -> str:
+    """Get the Ollama embeddings endpoint URL from settings."""
+    base_url = settings.ollama_base_url.rstrip("/")
+    return f"{base_url}/api/embeddings"
 
 
 # ----------------------------------------------------------------------
@@ -55,9 +71,10 @@ async def _embed_ollama(text: str) -> List[float]:
     """
     async with httpx.AsyncClient(timeout=60.0) as client:
         payload = {"model": OLLAMA_MODEL, "prompt": text}
+        url = get_ollama_url()
 
         response = await client.post(
-            OLLAMA_EMBEDDING_URL,
+            url,
             json=payload,
         )
         response.raise_for_status()
@@ -82,6 +99,7 @@ async def _embed_ollama(text: str) -> List[float]:
 @retry(
     stop=stop_after_attempt(5),
     wait=wait_exponential(multiplier=1, min=2, max=30),
+    retry=retry_if_not_exception_type(RuntimeError),  # Don't retry on missing API key
     reraise=True,
 )
 async def _embed_nanogpt(text: str) -> List[float]:
@@ -139,6 +157,7 @@ async def _embed_nanogpt(text: str) -> List[float]:
 @retry(
     stop=stop_after_attempt(5),
     wait=wait_exponential(multiplier=1, min=2, max=30),
+    retry=retry_if_not_exception_type(RuntimeError),  # Don't retry on missing API key
     reraise=True,
 )
 async def _embed_gemini(text: str) -> List[float]:

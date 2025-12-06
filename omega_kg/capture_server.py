@@ -35,6 +35,15 @@ from sqlalchemy import text
 import uuid
 from omega_kg.parsers import parse_html_content
 
+# Eagerly import embedding_service to log initialization at startup
+# This import triggers the module-level logging for diagnostics
+from omega_kg.domain.common.embedding_service import generate_embedding
+
+# Vector storage and worker imports
+from omega_kg.vector_store import get_vector_store, VectorStore
+from omega_kg.workers.embedding_worker import start_worker, stop_worker
+from omega_kg.config import log_config_summary
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -50,8 +59,26 @@ MAX_HTML_SIZE = 500_000  # 500KB
 # Lifespan for scheduler
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Lifespan event handler to schedule batch percolation on server startup."""
-    logger.debug("Entering lifespan")
+    """Lifespan event handler to initialize vector store, start worker, and schedule batch percolation."""
+    logger.info("Starting Omega_KG Capture Server...")
+    
+    # Initialize vector store
+    try:
+        vector_store = await get_vector_store()
+        logger.info("✓ Vector store initialized")
+    except Exception as e:
+        logger.error(f"Failed to initialize vector store: {e}")
+        raise
+    
+    # Start embedding worker
+    try:
+        await start_worker()
+        logger.info("✓ Embedding worker started (polling every 10s)")
+    except Exception as e:
+        logger.error(f"Failed to start embedding worker: {e}")
+        raise
+    
+    # Start scheduler for batch percolation
     try:
         scheduler = AsyncIOScheduler()
         scheduler.add_job(
@@ -59,13 +86,38 @@ async def lifespan(app: FastAPI):
         )
         scheduler.start()
         logger.info("✓ Session percolation scheduled (every 5 minutes)")
-        logger.debug("Scheduler started")
-        yield
-        logger.debug("Yield returned")
-        scheduler.shutdown()
     except Exception as e:
-        logger.exception(f"Lifespan error: {e}")
+        logger.error(f"Failed to start scheduler: {e}")
         raise
+    
+    # Log startup summary
+    logger.info(log_config_summary())
+    
+    yield
+    
+    # Shutdown sequence
+    logger.info("Shutting down Omega_KG Capture Server...")
+    
+    # Stop embedding worker gracefully
+    try:
+        await stop_worker()
+        logger.info("✓ Embedding worker stopped")
+    except Exception as e:
+        logger.error(f"Error stopping embedding worker: {e}")
+    
+    # Stop scheduler
+    try:
+        scheduler.shutdown()
+        logger.info("✓ Scheduler stopped")
+    except Exception as e:
+        logger.error(f"Error stopping scheduler: {e}")
+    
+    # Close vector store pool
+    try:
+        await VectorStore.close_pool()
+        logger.info("✓ Vector store pool closed")
+    except Exception as e:
+        logger.error(f"Error closing vector store: {e}")
 
 
 app = FastAPI(
@@ -137,13 +189,17 @@ def generate_conversation_hash(data: ConversationData) -> str:
         str: An 8-character hash string.
     """
     # Limit to first 5 messages and first 500 characters for scalability
-    limited_messages = data.messages[:5]
+    if not data.messages:
+        limited_messages = []
+    else:
+        limited_messages = data.messages[:5]
     # Handle both dict and Message object formats
     messages_text = "|".join(
         (msg.get("content", "") if isinstance(msg, dict) else msg.content)[:100]
         for msg in limited_messages
     )
-    content = f"{data.platform}-{data.url}-{len(data.messages)}-{messages_text}"
+    msg_count = len(data.messages) if data.messages else 0
+    content = f"{data.platform}-{data.url}-{msg_count}-{messages_text}"
     hash_obj = hashlib.md5(content.encode())
     return hash_obj.hexdigest()[:8]
 
@@ -179,16 +235,18 @@ def format_conversation_markdown(data: ConversationData) -> str:
         f"platform: {data.platform}",
         f"url: {data.url}",
         f"conversation_hash: {conv_hash}",
-        f"message_count: {len(data.messages)}",
+        f"message_count: {len(data.messages) if data.messages else 0}",
     ]
 
     # Add Participants (Roles) - handle both dict and Message object formats
-    roles = list(
-        set(
-            msg.get("role", "unknown") if isinstance(msg, dict) else msg.role
-            for msg in data.messages
+    roles = []
+    if data.messages:
+        roles = list(
+            set(
+                msg.get("role", "unknown") if isinstance(msg, dict) else msg.role
+                for msg in data.messages
+            )
         )
-    )
     participants_str = ", ".join(sorted(roles))
     frontmatter_lines.append(f"participants: {participants_str}")
 
@@ -212,7 +270,8 @@ def format_conversation_markdown(data: ConversationData) -> str:
         "---\n",
     ]
 
-    for i, msg in enumerate(data.messages, 1):
+    messages_list = data.messages or []
+    for i, msg in enumerate(messages_list, 1):
         # Handle both dict and Message object formats
         if isinstance(msg, dict):
             role = msg.get("role", "unknown")
@@ -242,11 +301,9 @@ def write_to_obsidian(platform: str, content: str, conversation_hash: str) -> Pa
     the 'AI_Conversations' folder (hardcoded convention; see project architecture).
     Creates a subfolder for the platform and names the file using the current date
     and conversation hash.
-    Creates a subfolder for the platform and names the file using the current date
-    and conversation hash.
 
     Args:
-        platform (str): The AI platform name (used for subfolder).
+        platform (str): The AI platform name (used for subfolder). Must be safe (no path traversal).
         content (str): The markdown content to write.
         conversation_hash (str): Unique hash for the conversation.
 
@@ -254,9 +311,19 @@ def write_to_obsidian(platform: str, content: str, conversation_hash: str) -> Pa
         Path: The path to the written markdown file.
 
     Raises:
-        ValueError: If the Obsidian vault path does not exist.
+        ValueError: If the Obsidian vault path does not exist or platform contains path traversal.
         IOError: If writing the file fails.
     """
+    # Validate platform parameter to prevent path traversal
+    if not platform or ".." in platform or "/" in platform or "\\" in platform:
+        raise ValueError(f"Invalid platform name: {platform} (contains path traversal characters)")
+    
+    # Normalize platform name to safe directory name
+    import re
+    platform_folder = re.sub(r'[<>:"|?*\x00-\x1f]', "", platform.replace(" ", "_"))
+    if not platform_folder:
+        platform_folder = "unknown"
+    
     vault_path = Path(settings.obsidian_vault_path)
     if not vault_path.exists():
         logger.warning(
@@ -264,8 +331,14 @@ def write_to_obsidian(platform: str, content: str, conversation_hash: str) -> Pa
         )
         vault_path.mkdir(parents=True, exist_ok=True)
 
-    platform_folder = platform.replace(" ", "_")
-    ai_conv_path = vault_path / "AI_Conversations" / platform_folder
+    # Resolve path to ensure we stay within vault directory (prevent path traversal)
+    ai_conv_path = (vault_path / "AI_Conversations" / platform_folder).resolve()
+    
+    # Verify the resolved path is still within the vault directory
+    vault_resolved = vault_path.resolve()
+    if not str(ai_conv_path).startswith(str(vault_resolved)):
+        raise ValueError(f"Path traversal detected: {platform_folder} would escape vault directory")
+    
     ai_conv_path.mkdir(parents=True, exist_ok=True)
 
     date_str = datetime.now().strftime("%Y-%m-%d")
@@ -317,6 +390,7 @@ def _create_chat_session(
     session, conv_hash: str, file_path: Path, data: ConversationData
 ) -> int:
     """Create or update a ChatSession node in Neo4j."""
+    msg_count = len(data.messages) if data.messages else 0
     result = session.run(
         """
         MERGE (s:ChatSession {conversation_hash: $hash})
@@ -332,51 +406,170 @@ def _create_chat_session(
         platform=data.platform,
         filepath=str(file_path),
         url=data.url,
-        msg_count=len(data.messages),
+        msg_count=msg_count,
         created_at=datetime.now().isoformat(),
     )
     return 1 if result.single() else 0
+
+
+async def _create_decision_nodes_async(
+    session: "neo4j.work.async_.AsyncSession", conv_hash: str, data: ConversationData
+) -> int:
+    """
+    Extract decisions from messages and create Decision nodes in Neo4j (async version).
+    
+    Only the first matching sentence per message containing a decision keyword is extracted.
+    """
+    # Use keywords from settings
+    decision_keywords = settings.decision_keywords
+    nodes_created = 0
+    if data.messages:
+        for i, msg in enumerate(data.messages):
+            # Handle both dict and Message object formats
+            msg_content = msg.get("content", "") if isinstance(msg, dict) else msg.content
+            content_lower = msg_content.lower()
+            for keyword in decision_keywords:
+                if keyword in content_lower:
+                    sentences = msg_content.split(".")
+                    for sentence in sentences:
+                        if keyword in sentence.lower():
+                            decision_content = sentence.strip()
+                            result = await session.run(
+                                """
+                                MATCH (s:ChatSession {conversation_hash: $hash})
+                                CREATE (d:Decision {
+                                    content: $content, decision_id: $dec_id,
+                                    extracted_at: datetime($created_at)
+                                })
+                                CREATE (s)-[:CONTAINS]->(d)
+                                RETURN d
+                                """,
+                                hash=conv_hash,
+                                content=decision_content,
+                                dec_id=f"{conv_hash}-dec-{i}",
+                                created_at=datetime.now().isoformat(),
+                            )
+                            record = await result.single()
+                            if record:
+                                nodes_created += 1
+                            break
+    return nodes_created
+
+
+async def percolate_to_neo4j_with_embedding(
+    file_path: Path,
+    data: ConversationData,
+) -> int:
+    """
+    Percolates a captured conversation to Neo4j WITH pending vector record creation.
+    Creates a ChatSession node and queues embedding generation via vector_store.
+    Captures complete immediately; embeddings are generated asynchronously by worker.
+    
+    Uses AsyncGraphDriver for non-blocking Neo4j operations.
+    """
+    from omega_kg.database.graph import graph_driver
+    
+    try:
+        conv_hash = generate_conversation_hash(data)
+        
+        # Create ChatSession in Neo4j (WITHOUT immediate embedding) using async driver
+        async with graph_driver.session() as session:
+            result = await session.run(
+                """
+                MERGE (s:ChatSession {conversation_hash: $hash})
+                ON CREATE SET
+                    s.date = date($date), s.platform = $platform, s.filepath = $filepath,
+                    s.url = $url, s.message_count = $msg_count, s.created_at = datetime($created_at)
+                ON MATCH SET
+                    s.updated_at = datetime($created_at)
+                RETURN id(s) AS session_id
+                """,
+                hash=conv_hash,
+                date=datetime.now().strftime("%Y-%m-%d"),
+                platform=data.platform,
+                filepath=str(file_path),
+                url=data.url,
+                msg_count=len(data.messages) if data.messages else 0,
+                created_at=datetime.now().isoformat(),
+            )
+            
+            record = await result.single()
+            if not record:
+                logger.warning(f"Failed to create ChatSession node for {conv_hash}")
+                return 0
+            
+            session_id = record["session_id"]
+            nodes_created = 1
+            
+            # Create Decision nodes (async)
+            nodes_created += await _create_decision_nodes_async(session, conv_hash, data)
+        
+        # Queue pending embedding via vector_store (async, non-blocking)
+        try:
+            vector_store = await get_vector_store()
+            vector_id = await vector_store.store_pending(
+                message_id=session_id,
+                node_label="ChatSession"
+            )
+            logger.info(
+                f"✓ Queued embedding for ChatSession {conv_hash} "
+                f"(neo4j_id={session_id}, vector_id={vector_id})"
+            )
+        except Exception as e:
+            logger.warning(f"Failed to queue embedding for {conv_hash}: {e}")
+            # Non-fatal: Node created successfully, embedding will retry
+        
+        logger.info(f"Created {nodes_created} nodes in Neo4j + pending embedding queued")
+        return nodes_created
+        
+    except Exception as e:
+        logger.error(f"Neo4j percolation failed: {e}")
+        raise
 
 
 def _create_decision_nodes(
     session: "neo4j.work.session.Session", conv_hash: str, data: ConversationData
 ) -> int:
     """
-    Extract decisions from messages and create Decision nodes in Neo4j.
-
+    Extract decisions from messages and create Decision nodes in Neo4j (synchronous version).
+    
     Only the first matching sentence per message containing a decision keyword is extracted.
+    
+    Note: This is the synchronous version used by legacy percolate_to_neo4j function.
+    For async operations, use _create_decision_nodes_async.
     """
     # Use keywords from settings
     decision_keywords = settings.decision_keywords
     nodes_created = 0
-    for i, msg in enumerate(data.messages):
-        # Handle both dict and Message object formats
-        msg_content = msg.get("content", "") if isinstance(msg, dict) else msg.content
-        content_lower = msg_content.lower()
-        for keyword in decision_keywords:
-            if keyword in content_lower:
-                sentences = msg_content.split(".")
-                for sentence in sentences:
-                    if keyword in sentence.lower():
-                        decision_content = sentence.strip()
-                        result = session.run(
-                            """
-                            MATCH (s:ChatSession {conversation_hash: $hash})
-                            CREATE (d:Decision {
-                                content: $content, decision_id: $dec_id,
-                                extracted_at: datetime($created_at)
-                            })
-                            CREATE (s)-[:CONTAINS]->(d)
-                            RETURN d
-                            """,
-                            hash=conv_hash,
-                            content=decision_content,
-                            dec_id=f"{conv_hash}-dec-{i}",
-                            created_at=datetime.now().isoformat(),
-                        )
-                        if result.single():
-                            nodes_created += 1
-                        break
+    if data.messages:
+        for i, msg in enumerate(data.messages):
+            # Handle both dict and Message object formats
+            msg_content = msg.get("content", "") if isinstance(msg, dict) else msg.content
+            content_lower = msg_content.lower()
+            for keyword in decision_keywords:
+                if keyword in content_lower:
+                    sentences = msg_content.split(".")
+                    for sentence in sentences:
+                        if keyword in sentence.lower():
+                            decision_content = sentence.strip()
+                            result = session.run(
+                                """
+                                MATCH (s:ChatSession {conversation_hash: $hash})
+                                CREATE (d:Decision {
+                                    content: $content, decision_id: $dec_id,
+                                    extracted_at: datetime($created_at)
+                                })
+                                CREATE (s)-[:CONTAINS]->(d)
+                                RETURN d
+                                """,
+                                hash=conv_hash,
+                                content=decision_content,
+                                dec_id=f"{conv_hash}-dec-{i}",
+                                created_at=datetime.now().isoformat(),
+                            )
+                            if result.single():
+                                nodes_created += 1
+                            break
     return nodes_created
 
 
@@ -385,7 +578,12 @@ def batch_percolate_sessions():
     Batch percolates all session logs from the Obsidian vault to Neo4j.
     Intended to run periodically via scheduler.
     """
+    driver = None
     try:
+        import time
+        start_time = time.time()
+        logger.info("→ Scheduler execution started: batch_percolate_sessions")
+        
         sessions_path = Path(settings.obsidian_vault_path) / "Sessions"
         if not sessions_path.exists():
             logger.warning(f"Sessions path does not exist: {sessions_path}")
@@ -395,14 +593,23 @@ def batch_percolate_sessions():
             settings.neo4j_uri, auth=(settings.neo4j_user, settings.neo4j_password)
         )
         engine = PercolationEngine(driver)
+        
+        logger.debug(f"Initiating percolation from: {sessions_path}")
         stats = engine.percolate_from_vault(sessions_path)
+        
+        elapsed_ms = (time.time() - start_time) * 1000
         logger.info(
-            f"Percolated session logs: {stats['tasks']} tasks, "
+            f"✓ Scheduler completed in {elapsed_ms:.0f}ms: "
+            f"{stats['tasks']} tasks, "
             f"{stats['commits']} commits, {stats['links']} decision links"
         )
-        driver.close()
+        logger.debug(f"Stats detail: {stats}")
     except Exception as e:
-        logger.error(f"Batch session percolation failed: {e}")
+        logger.error(f"Batch session percolation failed: {e}", exc_info=True)
+    finally:
+        # Ensure driver is always closed to prevent resource leaks
+        if driver is not None:
+            driver.close()
 
 
 # ===================================================================
@@ -549,16 +756,23 @@ async def capture_conversation(
         conv_hash = generate_conversation_hash(data)
         file_path = write_to_obsidian(data.platform, markdown_content, conv_hash)
 
+        # Percolate to Neo4j WITH embedding generation
+        nodes_created = 0
+        try:
+            nodes_created = await percolate_to_neo4j_with_embedding(file_path, data)
+        except Exception as e:
+            logger.warning(f"Neo4j percolation failed (non-fatal): {e}")
+
         logger.info(
             "Capture processed",
-            extra={"platform": data.platform, "file": str(file_path)},
+            extra={"platform": data.platform, "file": str(file_path), "nodes": nodes_created},
         )
 
         return CaptureResponse(
             success=True,
             file_path=str(file_path),
-            nodes_created=0,
-            message=f"Successfully captured {len(data.messages) if data.messages else 1} items.",
+            nodes_created=nodes_created,
+            message=f"Successfully captured {len(data.messages) if data.messages else 1} items with embedding.",
         )
     except Exception:
         support_id = str(uuid.uuid4())
@@ -568,7 +782,49 @@ async def capture_conversation(
         )
 
 
-# --- ENDPOINT 2: Linear Webhook (NEW) ---
+# --- ENDPOINT 2: Health Check (Vector Store) ---
+@app.get("/health/vectors")
+async def health_check_vectors() -> Dict[str, Any]:
+    """
+    Get vector store health metrics for monitoring.
+    
+    Returns:
+        dict: Health status with pending/ready/failed counts and worker state
+    """
+    try:
+        vector_store = await get_vector_store()
+        stats = await vector_store.get_stats()
+        
+        pending_count = stats.get("pending_count", 0)
+        failed_count = stats.get("failed_count", 0)
+        
+        # Determine health status
+        if failed_count > 100:
+            status = "unhealthy"
+        elif pending_count > 1000:
+            status = "degraded"
+        else:
+            status = "healthy"
+        
+        return {
+            "status": status,
+            "total_records": stats.get("total_records", 0),
+            "pending_count": pending_count,
+            "ready_count": stats.get("ready_count", 0),
+            "failed_count": failed_count,
+            "avg_retry_count": round(stats.get("avg_retry_count", 0), 2),
+            "worker_running": True,
+        }
+    except Exception as e:
+        logger.error(f"Vector health check failed: {e}")
+        return {
+            "status": "unhealthy",
+            "error": str(e),
+            "worker_running": False,
+        }
+
+
+# --- ENDPOINT 3: Linear Webhook (NEW) ---
 @app.post("/webhook/linear")
 async def linear_webhook_endpoint(request: Request):
     """
