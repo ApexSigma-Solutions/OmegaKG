@@ -21,7 +21,7 @@ Error Handling:
 """
 
 import logging
-from typing import List, Optional
+from typing import List, Optional, cast
 
 import asyncpg
 from pgvector.asyncpg import register_vector
@@ -109,7 +109,7 @@ class VectorStore:
         self,
         message_id: int,
         node_label: str = DEFAULT_NODE_TYPE,
-    ) -> int:
+    ) -> Optional[int]:
         """
         Insert a new pending embedding record or return existing vector_id if duplicate.
 
@@ -139,12 +139,12 @@ class VectorStore:
 
         try:
             async with self.pool.acquire() as conn:
-                result = await conn.fetchval(
+                result = cast(Optional[int], await conn.fetchval(
                     query,
                     message_id,
                     node_label,
                     VectorStatus.PENDING_EMBEDDING,
-                )
+                ))
 
             if result:
                 logger.debug(
@@ -159,9 +159,9 @@ class VectorStore:
                     WHERE message_id = $1 AND node_label = $2;
                 """
                 async with self.pool.acquire() as conn:
-                    existing_id = await conn.fetchval(
+                    existing_id = cast(Optional[int], await conn.fetchval(
                         fetch_query, message_id, node_label
-                    )
+                    ))
                 logger.debug(
                     f"Pending record already exists: message_id={message_id}, "
                     f"node_label={node_label}, vector_id={existing_id}"
@@ -347,7 +347,7 @@ class VectorStore:
 
         try:
             async with self.pool.acquire() as conn:
-                status = await conn.fetchval(query, vector_id)
+                status = cast(Optional[str], await conn.fetchval(query, vector_id))
             return status
 
         except asyncpg.PostgresError as e:
