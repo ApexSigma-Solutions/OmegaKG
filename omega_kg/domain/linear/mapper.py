@@ -248,8 +248,11 @@ class LinearToObsidianMapper:
         filename = re.sub(r"\s+", " ", filename)
 
         # Limit length (Windows has 255 char limit)
+        # Truncate at UTF-8 byte boundary to prevent Unicode corruption
         max_length = 100
-        if len(filename) > max_length:
-            filename = filename[:max_length].strip()
+        filename_bytes = filename.encode('utf-8')
+        if len(filename_bytes) > max_length:
+            # Truncate bytes and decode, ignoring incomplete characters
+            filename = filename_bytes[:max_length].decode('utf-8', 'ignore').strip()
 
         return filename.strip()
