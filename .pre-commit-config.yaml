@@ -14,7 +14,7 @@ repos:
     rev: v1.14.0
     hooks:
       - id: mypy
-        args: [--ignore-missing-imports, --python-version=3.12, --explicit-package-bases, --no-strict-optional]
+        args: [--ignore-missing-imports, --python-version=3.12, --explicit-package-bases, --no-strict-optional, "omega_kg"]
         # Install common third-party type stubs so mypy can type-check here
         additional_dependencies: ["types-requests", "types-PyYAML"]
         # Removed `types-all` to avoid massive, sometimes-unavailable bundles on Windows.
