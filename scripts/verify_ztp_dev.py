@@ -13,6 +13,7 @@ Exit codes:
   1 = Configuration mismatch
   2 = Import/runtime error
 """
+
 import os
 import sys
 
@@ -26,6 +27,7 @@ EXPECTED = {
     "neo4j_uri": "bolt://localhost:7688",
 }
 
+
 def main():
     print("=" * 70)
     print(" ZERO TRUST PATTERN VERIFICATION (DEV ENVIRONMENT)")
@@ -33,17 +35,19 @@ def main():
     print()
 
     # Ensure we're configured for DEV
-    os.environ.setdefault('OMEGA_ENV', 'dev')
-    os.environ.setdefault('POSTGRES_DB', 'omega_kg_dev')
-    os.environ.setdefault('POSTGRES_PORT', '5434')
-    os.environ.setdefault('APP_PORT', '8765')
-    os.environ.setdefault('NEO4J_URI', 'bolt://localhost:7688')
+    os.environ.setdefault("OMEGA_ENV", "dev")
+    os.environ.setdefault("POSTGRES_DB", "omega_kg_dev")
+    os.environ.setdefault("POSTGRES_PORT", "5434")
+    os.environ.setdefault("APP_PORT", "8765")
+    os.environ.setdefault("NEO4J_URI", "bolt://localhost:7688")
 
     print("Configuration Environment:")
     print(f"  ├─ Working Directory: {os.getcwd()}")
     print(f"  ├─ OMEGA_ENV: {os.environ.get('OMEGA_ENV', 'NOT SET')}")
     print(f"  ├─ POSTGRES_DB: {os.environ.get('POSTGRES_DB', 'NOT SET')}")
-    print(f"  └─ BWS_ACCESS_TOKEN: {'Present' if os.environ.get('BWS_ACCESS_TOKEN') else 'Not set'}")
+    print(
+        f"  └─ BWS_ACCESS_TOKEN: {'Present' if os.environ.get('BWS_ACCESS_TOKEN') else 'Not set'}"
+    )
     print()
 
     try:
@@ -57,7 +61,9 @@ def main():
         print(f"  ├─ Database Port: {settings.postgres_port}")
         print(f"  ├─ Neo4j URI: {settings.neo4j_uri}")
         print(f"  ├─ App Port: {settings.app_port}")
-        print(f"  └─ Embedding Provider: {getattr(settings, 'embedding_provider', 'Not configured')}")
+        print(
+            f"  └─ Embedding Provider: {getattr(settings, 'embedding_provider', 'Not configured')}"
+        )
         print()
 
         # ═══════════════════════════════════════════════════════════════════════
@@ -85,7 +91,7 @@ def main():
         if all_passed:
             print(" ✅ ZERO TRUST PATTERN SUCCESSFULLY VERIFIED")
             print(" DEV environment is properly configured and isolated")
-            if os.environ.get('BWS_ACCESS_TOKEN'):
+            if os.environ.get("BWS_ACCESS_TOKEN"):
                 print(" BWS_ACCESS_TOKEN is active - secrets from Bitwarden")
             else:
                 print(" Using .env fallback values (BWS_ACCESS_TOKEN not set)")
@@ -100,6 +106,7 @@ def main():
     except Exception as e:
         print(f"❌ ERROR: {e}")
         import traceback
+
         traceback.print_exc()
         return 2
 

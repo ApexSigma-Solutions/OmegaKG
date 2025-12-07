@@ -62,7 +62,7 @@ if ($null -eq $existingTask) {
     $action = New-ScheduledTaskAction -Execute "ollama" -Argument "serve"
     $trigger = New-ScheduledTaskTrigger -AtStartup
     $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -Hidden -ExecutionTimeLimit 0
-    
+
     # Register the task to run as the SYSTEM account (highest privilege, no login required)
     Register-ScheduledTask -Action $action -Trigger $trigger -Settings $settings -TaskName $taskName -User "SYSTEM" -RunLevel Highest
     Write-Host "✓ OllamaService scheduled task created" -ForegroundColor Green

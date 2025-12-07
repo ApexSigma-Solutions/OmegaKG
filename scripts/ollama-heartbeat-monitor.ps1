@@ -31,7 +31,7 @@ if ($enablePostgresLogging) {
     if (-not $pgUser) { $missingVars += 'POSTGRES_USER' }
     if (-not $pgPassword) { $missingVars += 'POSTGRES_PASSWORD' }
     if (-not $pgDatabase) { $missingVars += 'POSTGRES_DB' }
-    
+
     if ($missingVars.Count -gt 0) {
         Write-Host "⚠️  Missing environment variables: $($missingVars -join ', ')" -ForegroundColor Yellow
         Write-Host "   PostgreSQL logging will be disabled" -ForegroundColor Yellow
@@ -50,7 +50,7 @@ if ($enablePostgresLogging) {
         "C:\Program Files\PowerShell\7\Modules\Npgsql\*\lib\netstandard2.0\Npgsql.dll",
         "$env:USERPROFILE\.nuget\packages\npgsql\*\lib\netstandard2.0\Npgsql.dll"
     )
-    
+
     foreach ($pathPattern in $npgsqlPaths) {
         $foundPath = Get-Item $pathPattern -ErrorAction SilentlyContinue | Select-Object -First 1
         if ($foundPath) {
@@ -69,7 +69,7 @@ if ($enablePostgresLogging) {
             }
         }
     }
-    
+
     if (-not $script:NpgsqlLoaded) {
         Write-Host "⚠️  Npgsql assembly not found. PostgreSQL logging disabled." -ForegroundColor Yellow
         $enablePostgresLogging = $false
@@ -104,46 +104,46 @@ function Write-ToPostgres {
         [datetime]$timestamp,
         [int]$responseTimeMs = 0
     )
-    
+
     if (-not $enablePostgresLogging -or -not $script:NpgsqlLoaded) {
         return
     }
-    
+
     $connection = $null
     $command = $null
-    
+
     try {
         $connectionString = "Server=$pgHost;Port=$pgPort;Database=$pgDatabase;User Id=$pgUser;Password=$pgPassword;"
         $connection = New-Object Npgsql.NpgsqlConnection($connectionString)
         $connection.Open()
-        
+
         $command = $connection.CreateCommand()
         $command.CommandText = @"
 INSERT INTO ollama_heartbeat (
-    timestamp, 
-    is_healthy, 
-    status_message, 
+    timestamp,
+    is_healthy,
+    status_message,
     response_time_ms
 ) VALUES (
-    @timestamp, 
-    @isHealthy, 
-    @statusMessage, 
+    @timestamp,
+    @isHealthy,
+    @statusMessage,
     @responseTime
 )
 "@
-        
+
         $command.Parameters.Add((New-Object Npgsql.NpgsqlParameter("timestamp", [System.Data.DbType]::DateTime)))
         $command.Parameters["timestamp"].Value = $timestamp
-        
+
         $command.Parameters.Add((New-Object Npgsql.NpgsqlParameter("isHealthy", [System.Data.DbType]::Boolean)))
         $command.Parameters["isHealthy"].Value = $isHealthy
-        
+
         $command.Parameters.Add((New-Object Npgsql.NpgsqlParameter("statusMessage", [System.Data.DbType]::String)))
         $command.Parameters["statusMessage"].Value = $statusMessage
-        
+
         $command.Parameters.Add((New-Object Npgsql.NpgsqlParameter("responseTime", [System.Data.DbType]::Int32)))
         $command.Parameters["responseTime"].Value = $responseTimeMs
-        
+
         $command.ExecuteNonQuery()
     }
     catch {
@@ -151,9 +151,9 @@ INSERT INTO ollama_heartbeat (
     }
     finally {
         if ($command) { $command.Dispose() }
-        if ($connection) { 
+        if ($connection) {
             if ($connection.State -eq 'Open') { $connection.Close() }
-            $connection.Dispose() 
+            $connection.Dispose()
         }
     }
 }
@@ -163,15 +163,15 @@ function Create-HeartbeatTable {
     if (-not $enablePostgresLogging -or -not $script:NpgsqlLoaded) {
         return
     }
-    
+
     $connection = $null
     $command = $null
-    
+
     try {
         $connectionString = "Server=$pgHost;Port=$pgPort;Database=$pgDatabase;User Id=$pgUser;Password=$pgPassword;"
         $connection = New-Object Npgsql.NpgsqlConnection($connectionString)
         $connection.Open()
-        
+
         $command = $connection.CreateCommand()
         $command.CommandText = @"
 CREATE TABLE IF NOT EXISTS ollama_heartbeat (
@@ -186,7 +186,7 @@ CREATE TABLE IF NOT EXISTS ollama_heartbeat (
 CREATE INDEX IF NOT EXISTS idx_ollama_heartbeat_timestamp ON ollama_heartbeat(timestamp);
 CREATE INDEX IF NOT EXISTS idx_ollama_heartbeat_healthy ON ollama_heartbeat(is_healthy);
 "@
-        
+
         $command.ExecuteNonQuery()
         Write-Log "Heartbeat table ready"
     }
@@ -195,9 +195,9 @@ CREATE INDEX IF NOT EXISTS idx_ollama_heartbeat_healthy ON ollama_heartbeat(is_h
     }
     finally {
         if ($command) { $command.Dispose() }
-        if ($connection) { 
+        if ($connection) {
             if ($connection.State -eq 'Open') { $connection.Close() }
-            $connection.Dispose() 
+            $connection.Dispose()
         }
     }
 }
@@ -217,7 +217,7 @@ try {
         $isHealthy, $statusMessage = Test-OllamaConnection
         $endTime = Get-Date
         $responseTime = [math]::Round(($endTime - $startTime).TotalMilliseconds)
-        
+
         if ($isHealthy) {
             $successCount++
             $failureCount = 0
@@ -232,16 +232,16 @@ try {
             $downtime = [math]::Round((New-TimeSpan -Start $lastFailureTime -End (Get-Date)).TotalSeconds)
             Write-Log "❌ Unhealthy - $statusMessage (Downtime: ${downtime}s, Failures: $failureCount)"
         }
-        
+
         # Log to PostgreSQL (now includes actual response time)
         Write-ToPostgres -isHealthy $isHealthy -statusMessage $statusMessage -timestamp $startTime -responseTimeMs $responseTime
-        
+
         # Alert conditions
         if ($failureCount -ge 3) {
             Write-Log "🚨 ALERT: Ollama has been unhealthy for $failureCount consecutive checks!"
             # You could add email/SMS notifications here
         }
-        
+
         Start-Sleep -Seconds $checkIntervalSeconds
     }
 }

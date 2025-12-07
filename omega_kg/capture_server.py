@@ -37,7 +37,6 @@ from omega_kg.parsers import parse_html_content
 
 # Eagerly import embedding_service to log initialization at startup
 # This import triggers the module-level logging for diagnostics
-from omega_kg.domain.common.embedding_service import generate_embedding
 
 # Vector storage and worker imports
 from omega_kg.vector_store import get_vector_store, VectorStore
@@ -61,7 +60,7 @@ MAX_HTML_SIZE = 500_000  # 500KB
 async def lifespan(app: FastAPI):
     """Lifespan event handler to initialize vector store, start worker, and schedule batch percolation."""
     logger.info("Starting Omega_KG Capture Server...")
-    
+
     # Initialize vector store
     try:
         vector_store = await get_vector_store()
@@ -69,7 +68,7 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error(f"Failed to initialize vector store: {e}")
         raise
-    
+
     # Start embedding worker
     try:
         await start_worker()
@@ -77,7 +76,7 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error(f"Failed to start embedding worker: {e}")
         raise
-    
+
     # Start scheduler for batch percolation
     try:
         scheduler = AsyncIOScheduler()
@@ -89,29 +88,29 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error(f"Failed to start scheduler: {e}")
         raise
-    
+
     # Log startup summary
     logger.info(log_config_summary())
-    
+
     yield
-    
+
     # Shutdown sequence
     logger.info("Shutting down Omega_KG Capture Server...")
-    
+
     # Stop embedding worker gracefully
     try:
         await stop_worker()
         logger.info("✓ Embedding worker stopped")
     except Exception as e:
         logger.error(f"Error stopping embedding worker: {e}")
-    
+
     # Stop scheduler
     try:
         scheduler.shutdown()
         logger.info("✓ Scheduler stopped")
     except Exception as e:
         logger.error(f"Error stopping scheduler: {e}")
-    
+
     # Close vector store pool
     try:
         await VectorStore.close_pool()
@@ -316,14 +315,17 @@ def write_to_obsidian(platform: str, content: str, conversation_hash: str) -> Pa
     """
     # Validate platform parameter to prevent path traversal
     if not platform or ".." in platform or "/" in platform or "\\" in platform:
-        raise ValueError(f"Invalid platform name: {platform} (contains path traversal characters)")
-    
+        raise ValueError(
+            f"Invalid platform name: {platform} (contains path traversal characters)"
+        )
+
     # Normalize platform name to safe directory name
     import re
+
     platform_folder = re.sub(r'[<>:"|?*\x00-\x1f]', "", platform.replace(" ", "_"))
     if not platform_folder:
         platform_folder = "unknown"
-    
+
     vault_path = Path(settings.obsidian_vault_path)
     if not vault_path.exists():
         logger.warning(
@@ -333,12 +335,14 @@ def write_to_obsidian(platform: str, content: str, conversation_hash: str) -> Pa
 
     # Resolve path to ensure we stay within vault directory (prevent path traversal)
     ai_conv_path = (vault_path / "AI_Conversations" / platform_folder).resolve()
-    
+
     # Verify the resolved path is still within the vault directory
     vault_resolved = vault_path.resolve()
     if not str(ai_conv_path).startswith(str(vault_resolved)):
-        raise ValueError(f"Path traversal detected: {platform_folder} would escape vault directory")
-    
+        raise ValueError(
+            f"Path traversal detected: {platform_folder} would escape vault directory"
+        )
+
     ai_conv_path.mkdir(parents=True, exist_ok=True)
 
     date_str = datetime.now().strftime("%Y-%m-%d")
@@ -417,7 +421,7 @@ async def _create_decision_nodes_async(
 ) -> int:
     """
     Extract decisions from messages and create Decision nodes in Neo4j (async version).
-    
+
     Only the first matching sentence per message containing a decision keyword is extracted.
     """
     # Use keywords from settings
@@ -426,7 +430,9 @@ async def _create_decision_nodes_async(
     if data.messages:
         for i, msg in enumerate(data.messages):
             # Handle both dict and Message object formats
-            msg_content = msg.get("content", "") if isinstance(msg, dict) else msg.content
+            msg_content = (
+                msg.get("content", "") if isinstance(msg, dict) else msg.content
+            )
             content_lower = msg_content.lower()
             for keyword in decision_keywords:
                 if keyword in content_lower:
@@ -464,14 +470,14 @@ async def percolate_to_neo4j_with_embedding(
     Percolates a captured conversation to Neo4j WITH pending vector record creation.
     Creates a ChatSession node and queues embedding generation via vector_store.
     Captures complete immediately; embeddings are generated asynchronously by worker.
-    
+
     Uses AsyncGraphDriver for non-blocking Neo4j operations.
     """
     from omega_kg.database.graph import graph_driver
-    
+
     try:
         conv_hash = generate_conversation_hash(data)
-        
+
         # Create ChatSession in Neo4j (WITHOUT immediate embedding) using async driver
         async with graph_driver.session() as session:
             result = await session.run(
@@ -492,24 +498,25 @@ async def percolate_to_neo4j_with_embedding(
                 msg_count=len(data.messages) if data.messages else 0,
                 created_at=datetime.now().isoformat(),
             )
-            
+
             record = await result.single()
             if not record:
                 logger.warning(f"Failed to create ChatSession node for {conv_hash}")
                 return 0
-            
+
             session_id = record["session_id"]
             nodes_created = 1
-            
+
             # Create Decision nodes (async)
-            nodes_created += await _create_decision_nodes_async(session, conv_hash, data)
-        
+            nodes_created += await _create_decision_nodes_async(
+                session, conv_hash, data
+            )
+
         # Queue pending embedding via vector_store (async, non-blocking)
         try:
             vector_store = await get_vector_store()
             vector_id = await vector_store.store_pending(
-                message_id=session_id,
-                node_label="ChatSession"
+                message_id=session_id, node_label="ChatSession"
             )
             logger.info(
                 f"✓ Queued embedding for ChatSession {conv_hash} "
@@ -518,10 +525,12 @@ async def percolate_to_neo4j_with_embedding(
         except Exception as e:
             logger.warning(f"Failed to queue embedding for {conv_hash}: {e}")
             # Non-fatal: Node created successfully, embedding will retry
-        
-        logger.info(f"Created {nodes_created} nodes in Neo4j + pending embedding queued")
+
+        logger.info(
+            f"Created {nodes_created} nodes in Neo4j + pending embedding queued"
+        )
         return nodes_created
-        
+
     except Exception as e:
         logger.error(f"Neo4j percolation failed: {e}")
         raise
@@ -532,9 +541,9 @@ def _create_decision_nodes(
 ) -> int:
     """
     Extract decisions from messages and create Decision nodes in Neo4j (synchronous version).
-    
+
     Only the first matching sentence per message containing a decision keyword is extracted.
-    
+
     Note: This is the synchronous version used by legacy percolate_to_neo4j function.
     For async operations, use _create_decision_nodes_async.
     """
@@ -544,7 +553,9 @@ def _create_decision_nodes(
     if data.messages:
         for i, msg in enumerate(data.messages):
             # Handle both dict and Message object formats
-            msg_content = msg.get("content", "") if isinstance(msg, dict) else msg.content
+            msg_content = (
+                msg.get("content", "") if isinstance(msg, dict) else msg.content
+            )
             content_lower = msg_content.lower()
             for keyword in decision_keywords:
                 if keyword in content_lower:
@@ -581,9 +592,10 @@ def batch_percolate_sessions():
     driver = None
     try:
         import time
+
         start_time = time.time()
         logger.info("→ Scheduler execution started: batch_percolate_sessions")
-        
+
         sessions_path = Path(settings.obsidian_vault_path) / "Sessions"
         if not sessions_path.exists():
             logger.warning(f"Sessions path does not exist: {sessions_path}")
@@ -593,10 +605,10 @@ def batch_percolate_sessions():
             settings.neo4j_uri, auth=(settings.neo4j_user, settings.neo4j_password)
         )
         engine = PercolationEngine(driver)
-        
+
         logger.debug(f"Initiating percolation from: {sessions_path}")
         stats = engine.percolate_from_vault(sessions_path)
-        
+
         elapsed_ms = (time.time() - start_time) * 1000
         logger.info(
             f"✓ Scheduler completed in {elapsed_ms:.0f}ms: "
@@ -765,7 +777,11 @@ async def capture_conversation(
 
         logger.info(
             "Capture processed",
-            extra={"platform": data.platform, "file": str(file_path), "nodes": nodes_created},
+            extra={
+                "platform": data.platform,
+                "file": str(file_path),
+                "nodes": nodes_created,
+            },
         )
 
         return CaptureResponse(
@@ -787,17 +803,17 @@ async def capture_conversation(
 async def health_check_vectors() -> Dict[str, Any]:
     """
     Get vector store health metrics for monitoring.
-    
+
     Returns:
         dict: Health status with pending/ready/failed counts and worker state
     """
     try:
         vector_store = await get_vector_store()
         stats = await vector_store.get_stats()
-        
+
         pending_count = stats.get("pending_count", 0)
         failed_count = stats.get("failed_count", 0)
-        
+
         # Determine health status
         if failed_count > 100:
             status = "unhealthy"
@@ -805,7 +821,7 @@ async def health_check_vectors() -> Dict[str, Any]:
             status = "degraded"
         else:
             status = "healthy"
-        
+
         return {
             "status": status,
             "total_records": stats.get("total_records", 0),

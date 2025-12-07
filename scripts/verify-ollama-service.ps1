@@ -8,7 +8,7 @@ Write-Host "=============================================" -ForegroundColor Gree
 
 # Get the current machine's IP addresses
 $ipAddresses = Get-NetIPAddress | Where-Object {
-    $_.AddressFamily -eq 'IPv4' -and 
+    $_.AddressFamily -eq 'IPv4' -and
     $_.IPAddress -notlike '127.*' -and
     $_.IPAddress -notlike '169.254.*' -and
     $_.PrefixOrigin -ne 'WellKnown'

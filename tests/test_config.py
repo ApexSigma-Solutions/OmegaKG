@@ -14,7 +14,7 @@ def get_settings_keys() -> set:
     keys = set()
     for field_name, field_info in Settings.model_fields.items():
         # Get validation_alias if it exists, otherwise use field name
-        if hasattr(field_info, 'validation_alias') and field_info.validation_alias:
+        if hasattr(field_info, "validation_alias") and field_info.validation_alias:
             keys.add(str(field_info.validation_alias).upper())
         else:
             keys.add(field_name.upper())

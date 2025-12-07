@@ -92,7 +92,7 @@ async function captureConversation() {
     try {
         // Send message to content script to capture
         const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-        
+
         // Execute capture in content script
         const response = await chrome.tabs.sendMessage(tab.id, {
             type: 'TRIGGER_CAPTURE',
@@ -102,9 +102,9 @@ async function captureConversation() {
             // Update last capture timestamp
             const now = new Date().toLocaleString();
             await chrome.storage.local.set({ [STORAGE_KEYS.LAST_CAPTURE]: now });
-            
+
             updateStatus('✅ Conversation captured successfully!', 'success');
-            
+
             // Update debug panel if visible
             if (debugMode) {
                 document.getElementById('debugLastCapture').textContent = now;
@@ -162,4 +162,3 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 console.debug('[Omega_KG] Popup script loaded');
-
