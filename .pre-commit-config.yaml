@@ -14,7 +14,10 @@ repos:
     rev: v1.14.0
     hooks:
       - id: mypy
-        args: [--ignore-missing-imports, --python-version=3.12, --no-strict-optional, "omega_kg"]
+        # Run mypy only on the files changed by the commit (not the whole package) —
+        # CI will run the full, strict mypy checks. This avoids blocking local dev
+        # iterations while preserving strong typing in CI.
+        args: [--ignore-missing-imports, --python-version=3.12, --no-strict-optional]
         # Install common third-party type stubs so mypy can type-check here
         additional_dependencies: ["types-requests", "types-PyYAML"]
         # Removed `types-all` to avoid massive, sometimes-unavailable bundles on Windows.
