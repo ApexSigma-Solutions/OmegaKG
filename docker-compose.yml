@@ -11,10 +11,10 @@ networks:
 volumes:
   neo4j-data: # Named volume for the Neo4j database files
     driver: local
-    name: apexsigma.neo4j.data # Explicit, unambiguous name
+    name: ${NEO4J_VOLUME_NAME:-apexsigma.neo4j.data} # configurable named volume via .env
   postgres-data: # Named volume for PostgreSQL database files
     driver: local
-    name: apexsigma.postgres.data # PostgreSQL persistent data
+    name: ${POSTGRES_VOLUME_NAME:-apexsigma.postgres.data} # configurable named volume via .env
 
 services:
   # Neo4j Database Service
@@ -22,12 +22,12 @@ services:
   # Currently deferred to focus on Linear sync foundation
   neo4j-db:
     image: neo4j:5-community
-    container_name: apexsigma.neo4j.db # Consistent, human-readable name
+    container_name: ${NEO4J_CONTAINER_NAME:-apexsigma.neo4j.db} # Consistent, human-readable name (configurable via .env)
     restart: unless-stopped
     ports:
       # Expose ports to THE HOST MACHINE for external service access
-      - "7474:7474" # HTTP
-      - "7687:7687" # Bolt
+      - "${NEO4J_HTTP_HOST_PORT:-7474}:7474" # HTTP host:container
+      - "${NEO4J_BOLT_HOST_PORT:-7687}:7687" # Bolt host:container
     networks:
       - apexsigma.net
     volumes:
@@ -91,13 +91,13 @@ services:
   # Used for raw_linear_events persistence and processing queue
   postgres-db:
     image: pgvector/pgvector:pg16
-    container_name: apexsigma.postgres.db
+    container_name: ${POSTGRES_CONTAINER_NAME:-apexsigma.postgres.db}
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-omega_user}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-omega_dev_password}
       POSTGRES_DB: ${POSTGRES_DB:-omega_kg}
     ports:
-      - "5433:5432"
+      - "${POSTGRES_HOST_PORT:-5433}:5432"
     networks:
       - apexsigma.net
     volumes:
@@ -108,4 +108,3 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
-

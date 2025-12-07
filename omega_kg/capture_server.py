@@ -39,6 +39,11 @@ from omega_kg.parsers import parse_html_content
 # This import triggers the module-level logging for diagnostics
 from omega_kg.domain.common.embedding_service import generate_embedding
 
+# Vector storage and worker imports
+from omega_kg.vector_store import get_vector_store, VectorStore
+from omega_kg.workers.embedding_worker import start_worker, stop_worker
+from omega_kg.config import log_config_summary
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -51,11 +56,74 @@ MAX_HTML_SIZE = 500_000  # 500KB
 # --- App and Engine Initialization ---
 
 
+async def wait_for_vector_store(max_retries: int = 30, initial_delay: float = 2.0) -> "VectorStore":
+    """
+    Wait for vector store to become available with exponential backoff.
+    
+    Designed for Windows Task Scheduler startup where Docker containers
+    (PostgreSQL) may not be ready when the server starts at login.
+    
+    Args:
+        max_retries: Maximum number of connection attempts (default: 30, ~60s total)
+        initial_delay: Initial delay between retries in seconds (exponential backoff)
+    
+    Returns:
+        VectorStore: Initialized vector store instance
+        
+    Raises:
+        ConnectionError: If PostgreSQL is still unavailable after all retries
+    """
+    import asyncio
+    
+    for attempt in range(max_retries):
+        try:
+            vector_store = await get_vector_store()
+            if attempt > 0:
+                logger.info(f"✓ Vector store initialized after {attempt + 1} attempts")
+            else:
+                logger.info("✓ Vector store initialized")
+            return vector_store
+        except Exception as e:
+            if attempt < max_retries - 1:
+                # Exponential backoff capped at 10 seconds
+                wait_time = min(initial_delay * (1.5 ** attempt), 10.0)
+                logger.warning(
+                    f"Vector store not ready (attempt {attempt + 1}/{max_retries}): {e}. "
+                    f"Retrying in {wait_time:.1f}s..."
+                )
+                await asyncio.sleep(wait_time)
+            else:
+                logger.error(
+                    f"Failed to initialize vector store after {max_retries} attempts. "
+                    f"Ensure PostgreSQL is running."
+                )
+                raise ConnectionError(
+                    f"PostgreSQL unavailable after {max_retries} attempts: {e}"
+                )
+
+
 # Lifespan for scheduler
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Lifespan event handler to schedule batch percolation on server startup."""
-    logger.debug("Entering lifespan")
+    """Lifespan event handler to initialize vector store, start worker, and schedule batch percolation."""
+    logger.info("Starting Omega_KG Capture Server...")
+    
+    # Initialize vector store (with retry for Task Scheduler startup)
+    try:
+        vector_store = await wait_for_vector_store()
+    except ConnectionError as e:
+        logger.error(f"Startup failed - vector store unavailable: {e}")
+        raise
+    
+    # Start embedding worker
+    try:
+        await start_worker()
+        logger.info("✓ Embedding worker started (polling every 10s)")
+    except Exception as e:
+        logger.error(f"Failed to start embedding worker: {e}")
+        raise
+    
+    # Start scheduler for batch percolation
     try:
         scheduler = AsyncIOScheduler()
         scheduler.add_job(
@@ -63,13 +131,38 @@ async def lifespan(app: FastAPI):
         )
         scheduler.start()
         logger.info("✓ Session percolation scheduled (every 5 minutes)")
-        logger.debug("Scheduler started")
-        yield
-        logger.debug("Yield returned")
-        scheduler.shutdown()
     except Exception as e:
-        logger.exception(f"Lifespan error: {e}")
+        logger.error(f"Failed to start scheduler: {e}")
         raise
+    
+    # Log startup summary
+    logger.info(log_config_summary())
+    
+    yield
+    
+    # Shutdown sequence
+    logger.info("Shutting down Omega_KG Capture Server...")
+    
+    # Stop embedding worker gracefully
+    try:
+        await stop_worker()
+        logger.info("✓ Embedding worker stopped")
+    except Exception as e:
+        logger.error(f"Error stopping embedding worker: {e}")
+    
+    # Stop scheduler
+    try:
+        scheduler.shutdown()
+        logger.info("✓ Scheduler stopped")
+    except Exception as e:
+        logger.error(f"Error stopping scheduler: {e}")
+    
+    # Close vector store pool
+    try:
+        await VectorStore.close_pool()
+        logger.info("✓ Vector store pool closed")
+    except Exception as e:
+        logger.error(f"Error closing vector store: {e}")
 
 
 app = FastAPI(
@@ -348,9 +441,9 @@ async def percolate_to_neo4j_with_embedding(
     driver: Optional[GraphDatabase.driver] = None,
 ) -> int:
     """
-    Percolates a captured conversation to Neo4j WITH embedding generation.
-    Creates a ChatSession node with 1024-dim embedding vector.
-    Async function to support embedding generation.
+    Percolates a captured conversation to Neo4j WITH pending vector record creation.
+    Creates a ChatSession node and queues embedding generation via vector_store.
+    Captures complete immediately; embeddings are generated asynchronously by worker.
     """
     own_driver = False
     if driver is None:
@@ -362,73 +455,58 @@ async def percolate_to_neo4j_with_embedding(
     try:
         conv_hash = generate_conversation_hash(data)
         
-        # Generate embedding from conversation content
-        # Combine title + first 5 messages for semantic representation
-        embed_text_parts = [data.title or ""]
-        if data.messages:
-            for msg in data.messages[:5]:
-                content = msg.get("content", "") if isinstance(msg, dict) else msg.content
-                embed_text_parts.append(content[:500])  # Limit each message
-        embed_text = " ".join(embed_text_parts)[:2000]  # Total limit
-        
-        embedding = None
-        try:
-            embedding = await generate_embedding(embed_text)
-            logger.info(f"✓ Generated {len(embedding)}-dim embedding for conversation {conv_hash}")
-        except Exception as e:
-            logger.warning(f"Embedding generation failed for {conv_hash}: {e}")
-        
+        # Create ChatSession in Neo4j (WITHOUT immediate embedding)
         with driver.session() as session:
-            # Create ChatSession with embedding
-            if embedding:
-                result = session.run(
-                    """
-                    MERGE (s:ChatSession {conversation_hash: $hash})
-                    ON CREATE SET
-                        s.date = date($date), s.platform = $platform, s.filepath = $filepath,
-                        s.url = $url, s.message_count = $msg_count, s.created_at = datetime($created_at),
-                        s.embedding = $embedding
-                    ON MATCH SET
-                        s.updated_at = datetime($created_at),
-                        s.embedding = $embedding
-                    RETURN s
-                    """,
-                    hash=conv_hash,
-                    date=datetime.now().strftime("%Y-%m-%d"),
-                    platform=data.platform,
-                    filepath=str(file_path),
-                    url=data.url,
-                    msg_count=len(data.messages) if data.messages else 0,
-                    created_at=datetime.now().isoformat(),
-                    embedding=embedding,
-                )
-            else:
-                result = session.run(
-                    """
-                    MERGE (s:ChatSession {conversation_hash: $hash})
-                    ON CREATE SET
-                        s.date = date($date), s.platform = $platform, s.filepath = $filepath,
-                        s.url = $url, s.message_count = $msg_count, s.created_at = datetime($created_at)
-                    ON MATCH SET
-                        s.updated_at = datetime($created_at)
-                    RETURN s
-                    """,
-                    hash=conv_hash,
-                    date=datetime.now().strftime("%Y-%m-%d"),
-                    platform=data.platform,
-                    filepath=str(file_path),
-                    url=data.url,
-                    msg_count=len(data.messages) if data.messages else 0,
-                    created_at=datetime.now().isoformat(),
-                )
+            result = session.run(
+                """
+                MERGE (s:ChatSession {conversation_hash: $hash})
+                ON CREATE SET
+                    s.date = date($date), s.platform = $platform, s.filepath = $filepath,
+                    s.url = $url, s.message_count = $msg_count, s.created_at = datetime($created_at)
+                ON MATCH SET
+                    s.updated_at = datetime($created_at)
+                RETURN id(s) AS session_id
+                """,
+                hash=conv_hash,
+                date=datetime.now().strftime("%Y-%m-%d"),
+                platform=data.platform,
+                filepath=str(file_path),
+                url=data.url,
+                msg_count=len(data.messages) if data.messages else 0,
+                created_at=datetime.now().isoformat(),
+            )
             
-            nodes_created = 1 if result.single() else 0
+            record = result.single()
+            if not record:
+                logger.warning(f"Failed to create ChatSession node for {conv_hash}")
+                return 0
+            
+            session_id = record["session_id"]
+            nodes_created = 1
+            
+            # Create Decision nodes
             nodes_created += _create_decision_nodes(session, conv_hash, data)
         
-        logger.info(f"Created {nodes_created} nodes in Neo4j (with embedding: {embedding is not None})")
+        # Queue pending embedding via vector_store (async, non-blocking)
+        try:
+            vector_store = await get_vector_store()
+            vector_id = await vector_store.store_pending(
+                message_id=session_id,
+                node_label="ChatSession"
+            )
+            logger.info(
+                f"✓ Queued embedding for ChatSession {conv_hash} "
+                f"(neo4j_id={session_id}, vector_id={vector_id})"
+            )
+        except Exception as e:
+            logger.warning(f"Failed to queue embedding for {conv_hash}: {e}")
+            # Non-fatal: Node created successfully, embedding will retry
+        
+        logger.info(f"Created {nodes_created} nodes in Neo4j + pending embedding queued")
         return nodes_created
+        
     except Exception as e:
-        logger.error(f"Neo4j percolation with embedding failed: {e}")
+        logger.error(f"Neo4j percolation failed: {e}")
         raise
     finally:
         if own_driver:
@@ -683,7 +761,49 @@ async def capture_conversation(
         )
 
 
-# --- ENDPOINT 2: Linear Webhook (NEW) ---
+# --- ENDPOINT 2: Health Check (Vector Store) ---
+@app.get("/health/vectors")
+async def health_check_vectors() -> Dict[str, Any]:
+    """
+    Get vector store health metrics for monitoring.
+    
+    Returns:
+        dict: Health status with pending/ready/failed counts and worker state
+    """
+    try:
+        vector_store = await get_vector_store()
+        stats = await vector_store.get_stats()
+        
+        pending_count = stats.get("pending_count", 0)
+        failed_count = stats.get("failed_count", 0)
+        
+        # Determine health status
+        if failed_count > 100:
+            status = "unhealthy"
+        elif pending_count > 1000:
+            status = "degraded"
+        else:
+            status = "healthy"
+        
+        return {
+            "status": status,
+            "total_records": stats.get("total_records", 0),
+            "pending_count": pending_count,
+            "ready_count": stats.get("ready_count", 0),
+            "failed_count": failed_count,
+            "avg_retry_count": round(stats.get("avg_retry_count", 0), 2),
+            "worker_running": True,
+        }
+    except Exception as e:
+        logger.error(f"Vector health check failed: {e}")
+        return {
+            "status": "unhealthy",
+            "error": str(e),
+            "worker_running": False,
+        }
+
+
+# --- ENDPOINT 3: Linear Webhook (NEW) ---
 @app.post("/webhook/linear")
 async def linear_webhook_endpoint(request: Request):
     """
