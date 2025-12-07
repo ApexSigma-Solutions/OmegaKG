@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-"""Test app with scheduler added"""
+"""Minimal FastAPI app to test lifespan behavior"""
 
 import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 logging.basicConfig(
     level=logging.DEBUG, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -12,21 +11,17 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-async def dummy_job():
-    """Dummy scheduled job"""
-    logger.debug("Dummy job executed")
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Test lifespan with scheduler"""
+    """Test lifespan"""
     logger.info("[LIFESPAN] Startup phase starting...")
 
     # Initialize vector store
     from omega_kg.vector_store import get_vector_store
 
     logger.info("[LIFESPAN] Initializing vector store...")
-    vector_store = await get_vector_store()
+    # initialize pool; no local variable needed
+    await get_vector_store()
     logger.info("[LIFESPAN] ✓ Vector store initialized")
 
     # Start worker
@@ -36,22 +31,11 @@ async def lifespan(app: FastAPI):
     await start_worker()
     logger.info("[LIFESPAN] ✓ Worker started")
 
-    # Add scheduler
-    logger.info("[LIFESPAN] Starting scheduler...")
-    scheduler = AsyncIOScheduler()
-    scheduler.add_job(dummy_job, "interval", seconds=30, id="dummy_job")
-    scheduler.start()
-    logger.info("[LIFESPAN] ✓ Scheduler started")
-
     logger.info("[LIFESPAN] About to yield (startup complete)...")
     yield
     logger.info("[LIFESPAN] Yield returned (shutdown starting)...")
 
     # Shutdown
-    logger.info("[LIFESPAN] Stopping scheduler...")
-    scheduler.shutdown()
-    logger.info("[LIFESPAN] ✓ Scheduler stopped")
-
     logger.info("[LIFESPAN] Stopping worker...")
     await stop_worker()
     logger.info("[LIFESPAN] ✓ Worker stopped")
@@ -76,5 +60,5 @@ async def health():
 if __name__ == "__main__":
     import uvicorn
 
-    logger.info("Starting scheduler test server on 127.0.0.1:8888...")
+    logger.info("Starting minimal test server on 127.0.0.1:8888...")
     uvicorn.run(app, host="127.0.0.1", port=8888)
