@@ -59,3 +59,6 @@ docker_backups/
 #Ignore vscode AI rules
 .github\instructions\codacy.instructions.md
 nul
+
+# Local private keys and dev DB
+Omega_KG_Capture.pem
