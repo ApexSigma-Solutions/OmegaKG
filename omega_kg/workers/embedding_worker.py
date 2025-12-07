@@ -206,13 +206,15 @@ class EmbeddingWorker:
         self, message_id: int, node_label: str
     ) -> Optional[str]:
         """
-        Fetch message content from Neo4j by node ID and label.
+        Fetch message content from Neo4j by node ID and label asynchronously.
         
         Implements strategic content extraction patterns per node type:
         - ChatMessage: Simple content field
         - LinearIssue: Title + Description (compound context)
         - ChatSession: Summary field with fallback
         - Decision: Multi-field coalesce
+        
+        Uses AsyncGraphDriver for non-blocking, pooled connections.
         
         Args:
             message_id: Neo4j internal node ID (from id(n))
@@ -227,15 +229,7 @@ class EmbeddingWorker:
         logger.debug(f"Fetching message: message_id={message_id}, node_label={node_label}")
 
         try:
-            # Import Neo4j driver from settings
-            from neo4j import GraphDatabase
-            from omega_kg.settings import settings
-
-            # Create driver instance (reuse connection pattern from lifecycle.py)
-            driver = GraphDatabase.driver(
-                settings.neo4j_uri,
-                auth=(settings.neo4j_user, settings.neo4j_password),
-            )
+            from omega_kg.database.graph import graph_driver
 
             # Strategic query patterns per node type
             query_map = {
@@ -271,14 +265,14 @@ class EmbeddingWorker:
                 """,
             )
 
-            # Execute query synchronously (Neo4j driver is sync)
-            with driver.session() as session:
-                result = session.run(query, message_id=message_id)
-                record = result.single()
+            # Execute query asynchronously using shared async driver
+            async with graph_driver.session() as session:
+                result = await session.run(query, message_id=message_id)
+                record = await result.single()
 
                 if record:
                     text = record.get("text")
-                    if text:
+                    if text and isinstance(text, str):
                         logger.debug(
                             f"Fetched text for {node_label}:{message_id} "
                             f"({len(text)} chars)"
@@ -299,10 +293,6 @@ class EmbeddingWorker:
                 f"node_label={node_label}, error={e}"
             )
             return None
-        finally:
-            # Close driver to prevent connection leaks
-            if "driver" in locals():
-                driver.close()
 
 
 # Singleton instance

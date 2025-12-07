@@ -1,14 +1,15 @@
 import os
 import uuid
-from typing import Any, Dict, Tuple, Optional
+from typing import Any, Dict, Optional, Tuple
+
+from bitwarden_sdk import BitwardenClient
+from bitwarden_sdk.schemas import ClientSettings, DeviceType
 from pydantic import Field
 from pydantic_settings import (
     BaseSettings,
     PydanticBaseSettingsSource,
     SettingsConfigDict,
 )
-from bitwarden_sdk import BitwardenClient
-from bitwarden_sdk.schemas import DeviceType, ClientSettings
 
 
 class BitwardenSettingsSource(PydanticBaseSettingsSource):
@@ -147,7 +148,21 @@ class Settings(BaseSettings):
         "ollama", validation_alias="EMBEDDING_PROVIDER"
     )
     ollama_base_url: str = Field(
-        "http://localhost:11434", validation_alias="OLLAMA_BASE_URL"
+        "http://0.0.0.0:11434", validation_alias="OLLAMA_BASE_URL"
+    )
+
+    # --- Quipu Monitoring Configuration ---
+    ollama_host_url: str = Field(
+        "http://localhost:11434", validation_alias="OLLAMA_HOST_URL"
+    )
+    heartbeat_interval_sec: int = Field(
+        60, validation_alias="HEARTBEAT_INTERVAL_SEC"
+    )
+    quipu_service_name: str = Field(
+        "ollama-server-01", validation_alias="QUIPU_SERVICE_NAME"
+    )
+    omega_pg_conn: Optional[str] = Field(
+        None, validation_alias="OMEGA_PG_CONN"
     )
 
     # --- Paths ---
@@ -163,6 +178,13 @@ class Settings(BaseSettings):
     @property
     def database_url(self) -> str:
         return f"postgresql+asyncpg://{self.postgres_user}:{self.postgres_password}@{self.postgres_server}:{self.postgres_port}/{self.postgres_db}"
+
+    @property
+    def sync_database_url(self) -> str:
+        """Synchronous PostgreSQL connection string for psycopg2."""
+        if self.omega_pg_conn:
+            return self.omega_pg_conn
+        return f"postgresql://{self.postgres_user}:{self.postgres_password}@{self.postgres_server}:{self.postgres_port}/{self.postgres_db}"
 
     @classmethod
     def settings_customise_sources(

@@ -100,16 +100,16 @@ class GraphWriter:
         if embedding is not None:
             issue_query += ", i.embedding = $embedding"
 
-        # Safe handling of Optional timestamps
+        # Safe handling of Optional timestamps - store None instead of current time for missing data
         created_at_iso = (
             issue.createdAt.isoformat()
             if issue.createdAt
-            else datetime.now().isoformat()
+            else None
         )
         updated_at_iso = (
             issue.updatedAt.isoformat()
             if issue.updatedAt
-            else datetime.now().isoformat()
+            else None
         )
         status_name = issue.state.name if issue.state else "Unknown"
 

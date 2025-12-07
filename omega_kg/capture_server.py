@@ -189,13 +189,17 @@ def generate_conversation_hash(data: ConversationData) -> str:
         str: An 8-character hash string.
     """
     # Limit to first 5 messages and first 500 characters for scalability
-    limited_messages = data.messages[:5]
+    if not data.messages:
+        limited_messages = []
+    else:
+        limited_messages = data.messages[:5]
     # Handle both dict and Message object formats
     messages_text = "|".join(
         (msg.get("content", "") if isinstance(msg, dict) else msg.content)[:100]
         for msg in limited_messages
     )
-    content = f"{data.platform}-{data.url}-{len(data.messages)}-{messages_text}"
+    msg_count = len(data.messages) if data.messages else 0
+    content = f"{data.platform}-{data.url}-{msg_count}-{messages_text}"
     hash_obj = hashlib.md5(content.encode())
     return hash_obj.hexdigest()[:8]
 
@@ -231,16 +235,18 @@ def format_conversation_markdown(data: ConversationData) -> str:
         f"platform: {data.platform}",
         f"url: {data.url}",
         f"conversation_hash: {conv_hash}",
-        f"message_count: {len(data.messages)}",
+        f"message_count: {len(data.messages) if data.messages else 0}",
     ]
 
     # Add Participants (Roles) - handle both dict and Message object formats
-    roles = list(
-        set(
-            msg.get("role", "unknown") if isinstance(msg, dict) else msg.role
-            for msg in data.messages
+    roles = []
+    if data.messages:
+        roles = list(
+            set(
+                msg.get("role", "unknown") if isinstance(msg, dict) else msg.role
+                for msg in data.messages
+            )
         )
-    )
     participants_str = ", ".join(sorted(roles))
     frontmatter_lines.append(f"participants: {participants_str}")
 
@@ -264,7 +270,8 @@ def format_conversation_markdown(data: ConversationData) -> str:
         "---\n",
     ]
 
-    for i, msg in enumerate(data.messages, 1):
+    messages_list = data.messages or []
+    for i, msg in enumerate(messages_list, 1):
         # Handle both dict and Message object formats
         if isinstance(msg, dict):
             role = msg.get("role", "unknown")
@@ -294,11 +301,9 @@ def write_to_obsidian(platform: str, content: str, conversation_hash: str) -> Pa
     the 'AI_Conversations' folder (hardcoded convention; see project architecture).
     Creates a subfolder for the platform and names the file using the current date
     and conversation hash.
-    Creates a subfolder for the platform and names the file using the current date
-    and conversation hash.
 
     Args:
-        platform (str): The AI platform name (used for subfolder).
+        platform (str): The AI platform name (used for subfolder). Must be safe (no path traversal).
         content (str): The markdown content to write.
         conversation_hash (str): Unique hash for the conversation.
 
@@ -306,9 +311,19 @@ def write_to_obsidian(platform: str, content: str, conversation_hash: str) -> Pa
         Path: The path to the written markdown file.
 
     Raises:
-        ValueError: If the Obsidian vault path does not exist.
+        ValueError: If the Obsidian vault path does not exist or platform contains path traversal.
         IOError: If writing the file fails.
     """
+    # Validate platform parameter to prevent path traversal
+    if not platform or ".." in platform or "/" in platform or "\\" in platform:
+        raise ValueError(f"Invalid platform name: {platform} (contains path traversal characters)")
+    
+    # Normalize platform name to safe directory name
+    import re
+    platform_folder = re.sub(r'[<>:"|?*\x00-\x1f]', "", platform.replace(" ", "_"))
+    if not platform_folder:
+        platform_folder = "unknown"
+    
     vault_path = Path(settings.obsidian_vault_path)
     if not vault_path.exists():
         logger.warning(
@@ -316,8 +331,14 @@ def write_to_obsidian(platform: str, content: str, conversation_hash: str) -> Pa
         )
         vault_path.mkdir(parents=True, exist_ok=True)
 
-    platform_folder = platform.replace(" ", "_")
-    ai_conv_path = vault_path / "AI_Conversations" / platform_folder
+    # Resolve path to ensure we stay within vault directory (prevent path traversal)
+    ai_conv_path = (vault_path / "AI_Conversations" / platform_folder).resolve()
+    
+    # Verify the resolved path is still within the vault directory
+    vault_resolved = vault_path.resolve()
+    if not str(ai_conv_path).startswith(str(vault_resolved)):
+        raise ValueError(f"Path traversal detected: {platform_folder} would escape vault directory")
+    
     ai_conv_path.mkdir(parents=True, exist_ok=True)
 
     date_str = datetime.now().strftime("%Y-%m-%d")
@@ -369,6 +390,7 @@ def _create_chat_session(
     session, conv_hash: str, file_path: Path, data: ConversationData
 ) -> int:
     """Create or update a ChatSession node in Neo4j."""
+    msg_count = len(data.messages) if data.messages else 0
     result = session.run(
         """
         MERGE (s:ChatSession {conversation_hash: $hash})
@@ -384,35 +406,75 @@ def _create_chat_session(
         platform=data.platform,
         filepath=str(file_path),
         url=data.url,
-        msg_count=len(data.messages),
+        msg_count=msg_count,
         created_at=datetime.now().isoformat(),
     )
     return 1 if result.single() else 0
 
 
+async def _create_decision_nodes_async(
+    session: "neo4j.work.async_.AsyncSession", conv_hash: str, data: ConversationData
+) -> int:
+    """
+    Extract decisions from messages and create Decision nodes in Neo4j (async version).
+    
+    Only the first matching sentence per message containing a decision keyword is extracted.
+    """
+    # Use keywords from settings
+    decision_keywords = settings.decision_keywords
+    nodes_created = 0
+    if data.messages:
+        for i, msg in enumerate(data.messages):
+            # Handle both dict and Message object formats
+            msg_content = msg.get("content", "") if isinstance(msg, dict) else msg.content
+            content_lower = msg_content.lower()
+            for keyword in decision_keywords:
+                if keyword in content_lower:
+                    sentences = msg_content.split(".")
+                    for sentence in sentences:
+                        if keyword in sentence.lower():
+                            decision_content = sentence.strip()
+                            result = await session.run(
+                                """
+                                MATCH (s:ChatSession {conversation_hash: $hash})
+                                CREATE (d:Decision {
+                                    content: $content, decision_id: $dec_id,
+                                    extracted_at: datetime($created_at)
+                                })
+                                CREATE (s)-[:CONTAINS]->(d)
+                                RETURN d
+                                """,
+                                hash=conv_hash,
+                                content=decision_content,
+                                dec_id=f"{conv_hash}-dec-{i}",
+                                created_at=datetime.now().isoformat(),
+                            )
+                            record = await result.single()
+                            if record:
+                                nodes_created += 1
+                            break
+    return nodes_created
+
+
 async def percolate_to_neo4j_with_embedding(
     file_path: Path,
     data: ConversationData,
-    driver: Optional[GraphDatabase.driver] = None,
 ) -> int:
     """
     Percolates a captured conversation to Neo4j WITH pending vector record creation.
     Creates a ChatSession node and queues embedding generation via vector_store.
     Captures complete immediately; embeddings are generated asynchronously by worker.
+    
+    Uses AsyncGraphDriver for non-blocking Neo4j operations.
     """
-    own_driver = False
-    if driver is None:
-        driver = GraphDatabase.driver(
-            settings.neo4j_uri, auth=(settings.neo4j_user, settings.neo4j_password)
-        )
-        own_driver = True
+    from omega_kg.database.graph import graph_driver
     
     try:
         conv_hash = generate_conversation_hash(data)
         
-        # Create ChatSession in Neo4j (WITHOUT immediate embedding)
-        with driver.session() as session:
-            result = session.run(
+        # Create ChatSession in Neo4j (WITHOUT immediate embedding) using async driver
+        async with graph_driver.session() as session:
+            result = await session.run(
                 """
                 MERGE (s:ChatSession {conversation_hash: $hash})
                 ON CREATE SET
@@ -431,7 +493,7 @@ async def percolate_to_neo4j_with_embedding(
                 created_at=datetime.now().isoformat(),
             )
             
-            record = result.single()
+            record = await result.single()
             if not record:
                 logger.warning(f"Failed to create ChatSession node for {conv_hash}")
                 return 0
@@ -439,8 +501,8 @@ async def percolate_to_neo4j_with_embedding(
             session_id = record["session_id"]
             nodes_created = 1
             
-            # Create Decision nodes
-            nodes_created += _create_decision_nodes(session, conv_hash, data)
+            # Create Decision nodes (async)
+            nodes_created += await _create_decision_nodes_async(session, conv_hash, data)
         
         # Queue pending embedding via vector_store (async, non-blocking)
         try:
@@ -463,18 +525,18 @@ async def percolate_to_neo4j_with_embedding(
     except Exception as e:
         logger.error(f"Neo4j percolation failed: {e}")
         raise
-    finally:
-        if own_driver:
-            driver.close()
 
 
 def _create_decision_nodes(
     session: "neo4j.work.session.Session", conv_hash: str, data: ConversationData
 ) -> int:
     """
-    Extract decisions from messages and create Decision nodes in Neo4j.
-
+    Extract decisions from messages and create Decision nodes in Neo4j (synchronous version).
+    
     Only the first matching sentence per message containing a decision keyword is extracted.
+    
+    Note: This is the synchronous version used by legacy percolate_to_neo4j function.
+    For async operations, use _create_decision_nodes_async.
     """
     # Use keywords from settings
     decision_keywords = settings.decision_keywords
@@ -516,6 +578,7 @@ def batch_percolate_sessions():
     Batch percolates all session logs from the Obsidian vault to Neo4j.
     Intended to run periodically via scheduler.
     """
+    driver = None
     try:
         import time
         start_time = time.time()
@@ -541,9 +604,12 @@ def batch_percolate_sessions():
             f"{stats['commits']} commits, {stats['links']} decision links"
         )
         logger.debug(f"Stats detail: {stats}")
-        driver.close()
     except Exception as e:
         logger.error(f"Batch session percolation failed: {e}", exc_info=True)
+    finally:
+        # Ensure driver is always closed to prevent resource leaks
+        if driver is not None:
+            driver.close()
 
 
 # ===================================================================
