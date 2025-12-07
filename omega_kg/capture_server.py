@@ -11,7 +11,7 @@ import logging
 import neo4j
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, Security, Request
@@ -165,7 +165,8 @@ class ConversationData(BaseModel):
     url: Optional[str] = None
     title: Optional[str] = "Untitled Capture"
     tags: List[str] = []
-    messages: Optional[List[Dict[str, str]]] = []
+    # messages can be dicts or Message objects depending on caller
+    messages: Optional[List[Union[Dict[str, Any], Message]]] = []
     raw_html: Optional[str] = None
     metadata: Optional[Dict] = None
 
