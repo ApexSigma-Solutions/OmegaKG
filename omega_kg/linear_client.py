@@ -5,9 +5,11 @@ This module acts as the "Linear Adapter" for the application.
 It uses the 'settings' object from omega_kg.settings for credentials.
 """
 
-import httpx
 import logging
-from typing import Optional, Dict, Any, List
+from typing import Any, Dict, List, Optional
+
+import httpx
+
 from omega_kg.settings import settings
 
 # Set up logger

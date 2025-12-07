@@ -5,8 +5,15 @@ This test ensures that all settings in omega_kg.settings.Settings
 match the .env.example file, preventing configuration drift.
 """
 
+import os
 import pytest
 from pathlib import Path
+
+# Set required environment variables before importing Settings
+# to prevent validation errors during module import
+os.environ.setdefault("NEO4J_PASSWORD", "test-password")
+os.environ.setdefault("LINEAR_WEBHOOK_SECRET", "test-secret")
+
 from omega_kg.settings import Settings
 
 

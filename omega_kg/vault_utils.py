@@ -168,23 +168,17 @@ class VaultUtils:
         # rglob is recursive
         for note_path in self.vault_path.rglob("*.md"):
             try:
-                # We use a quick check first to avoid parsing frontmatter for every file
-                # This is a heuristic optimization
-                with note_path.open("r", encoding="utf-8", errors="ignore") as f:
-                    # Read first 2k bytes which should cover frontmatter
-                    head = f.read(2048)
-                    if linear_id not in head:
-                        continue
-
-                # If potentially found, parse properly
+                # Parse frontmatter once (removed fragile 2KB heuristic)
                 metadata = self.read_note_frontmatter(note_path)
-                if str(metadata.get("linear_id")) == linear_id:
+                if metadata and str(metadata.get("linear_id")) == linear_id:
+                    logger.info(f"Found matching note for linear_id {linear_id}: {note_path}")
                     return note_path
 
             except Exception as e:
-                logger.warning(f"Error scanning {note_path}: {e}")
+                logger.warning(f"Error scanning {note_path} for linear_id: {e}")
                 continue
 
+        logger.info(f"No note found for linear_id: {linear_id}")
         return None
 
 

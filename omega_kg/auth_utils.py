@@ -47,6 +47,13 @@ def get_static_api_key(api_key_header: str = Security(API_KEY_HEADER)) -> str:
             detail="Server misconfiguration: EXTENSION_API_KEY not set",
         )
 
+    # Check if header is present before comparing to prevent TypeError
+    if not api_key_header:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Invalid or missing Bootstrap API Key",
+        )
+
     if hmac.compare_digest(api_key_header, EXTENSION_API_KEY):
         return api_key_header
 
