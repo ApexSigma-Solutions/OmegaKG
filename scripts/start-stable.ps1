@@ -85,7 +85,7 @@ if (Test-Path $envFile) {
 if (-not $SkipChecks) {
     Write-Host "🔍 Running pre-flight infrastructure checks..." -ForegroundColor Yellow
     $allPassed = $true
-    
+
     # PostgreSQL check (port 5433)
     $pgCheck = Test-NetConnection -ComputerName localhost -Port 5433 -WarningAction SilentlyContinue -InformationLevel Quiet
     if ($pgCheck) {
@@ -95,7 +95,7 @@ if (-not $SkipChecks) {
         Write-Host "     Run: docker-compose up -d postgres" -ForegroundColor DarkGray
         $allPassed = $false
     }
-    
+
     # Neo4j check (bolt port 7687)
     $neo4jCheck = Test-NetConnection -ComputerName localhost -Port 7687 -WarningAction SilentlyContinue -InformationLevel Quiet
     if ($neo4jCheck) {
@@ -105,7 +105,7 @@ if (-not $SkipChecks) {
         Write-Host "     Run: docker-compose up -d neo4j" -ForegroundColor DarkGray
         $allPassed = $false
     }
-    
+
     # Ollama check (optional)
     $ollamaCheck = Test-NetConnection -ComputerName localhost -Port 11434 -WarningAction SilentlyContinue -InformationLevel Quiet
     if ($ollamaCheck) {
@@ -113,9 +113,9 @@ if (-not $SkipChecks) {
     } else {
         Write-Host "  ⚠️  Ollama (port 11434) - NOT LISTENING (optional)" -ForegroundColor Yellow
     }
-    
+
     Write-Host ""
-    
+
     if (-not $allPassed) {
         Write-Host "⛔ Pre-flight checks FAILED. Start required services first." -ForegroundColor Red
         Write-Host "   Hint: cd $ProjectRoot && docker-compose up -d" -ForegroundColor DarkGray
@@ -179,7 +179,7 @@ if ($BackgroundMode) {
         Set-Location $root
         poetry run omega-kg serve 2>&1
     } -ArgumentList $ProjectRoot
-    
+
     $serverJob.Id | Out-File -FilePath $pidPath -Force
     Write-Host "  └─ Server started in background (Job ID: $($serverJob.Id))" -ForegroundColor DarkGray
     Write-Host "     Log: $logPath" -ForegroundColor DarkGray

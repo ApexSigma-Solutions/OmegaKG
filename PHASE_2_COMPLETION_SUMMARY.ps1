@@ -97,7 +97,7 @@ ARCHITECTURE OVERVIEW
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Write-Behind Pattern:
-  
+
   Capture Request
        ↓
   [Neo4j Insert]
@@ -115,7 +115,7 @@ Write-Behind Pattern:
 
 
 Status Lifecycle:
-  
+
   pending_embedding   ──[embedding generated]──→   ready
        ↑                                                ↓
        └────────[max retries exceeded]←─────  failed

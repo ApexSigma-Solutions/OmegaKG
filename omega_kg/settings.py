@@ -30,8 +30,7 @@ class BitwardenSettingsSource(PydanticBaseSettingsSource):
             # Standard SDK Pattern
             client = BitwardenClient(
                 settings=ClientSettings(
-                    device_type=DeviceType.SDK,
-                    user_agent="OmegaKG/4.4.2"
+                    device_type=DeviceType.SDK, user_agent="OmegaKG/4.4.2"
                 )
             )
             client.auth().login_access_token(bws_token)
@@ -103,7 +102,9 @@ class Settings(BaseSettings):
     chrome_extension_id: Optional[str] = Field(
         None, validation_alias="CHROME_EXTENSION_ID"
     )
-    extension_api_key: Optional[str] = Field(None, validation_alias="EXTENSION_API_KEY_PRD")
+    extension_api_key: Optional[str] = Field(
+        None, validation_alias="EXTENSION_API_KEY_PRD"
+    )
 
     # --- Email/SMTP (Legacy Restored) ---
     smtp_host: Optional[str] = Field(None, validation_alias="SMTP_HOST")
@@ -131,7 +132,9 @@ class Settings(BaseSettings):
     github_token: Optional[str] = Field(None, validation_alias="GITHUB_TOKEN")
 
     # --- AI Services ---
-    nanogpt_api_key: Optional[str] = Field(None, validation_alias="NANOGPT_OMEGAKG_API_KEY")
+    nanogpt_api_key: Optional[str] = Field(
+        None, validation_alias="NANOGPT_OMEGAKG_API_KEY"
+    )
     openrouter_api_key: Optional[str] = Field(
         None, validation_alias="OPENROUTER_API_KEY"
     )
@@ -144,9 +147,7 @@ class Settings(BaseSettings):
     )
 
     # --- Embedding Service Configuration (CRITICAL) ---
-    embedding_provider: str = Field(
-        "ollama", validation_alias="EMBEDDING_PROVIDER"
-    )
+    embedding_provider: str = Field("ollama", validation_alias="EMBEDDING_PROVIDER")
     ollama_base_url: str = Field(
         "http://0.0.0.0:11434", validation_alias="OLLAMA_BASE_URL"
     )
@@ -155,15 +156,11 @@ class Settings(BaseSettings):
     ollama_host_url: str = Field(
         "http://localhost:11434", validation_alias="OLLAMA_HOST_URL"
     )
-    heartbeat_interval_sec: int = Field(
-        60, validation_alias="HEARTBEAT_INTERVAL_SEC"
-    )
+    heartbeat_interval_sec: int = Field(60, validation_alias="HEARTBEAT_INTERVAL_SEC")
     quipu_service_name: str = Field(
         "ollama-server-01", validation_alias="QUIPU_SERVICE_NAME"
     )
-    omega_pg_conn: Optional[str] = Field(
-        None, validation_alias="OMEGA_PG_CONN"
-    )
+    omega_pg_conn: Optional[str] = Field(None, validation_alias="OMEGA_PG_CONN")
 
     # --- Paths ---
     obsidian_vault_path: str = Field("./vault", validation_alias="OBSIDIAN_VAULT_PATH")

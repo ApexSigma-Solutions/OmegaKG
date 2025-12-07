@@ -468,6 +468,6 @@ From `.env` file:
 
 ---
 
-**Version:** 1.0.0  
-**Last Updated:** 2025-11-30  
+**Version:** 1.0.0
+**Last Updated:** 2025-11-30
 **Author:** Omega_KG Team

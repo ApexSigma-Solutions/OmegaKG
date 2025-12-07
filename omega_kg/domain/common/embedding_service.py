@@ -14,7 +14,12 @@ import logging
 from typing import List
 
 import httpx
-from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_not_exception_type
+from tenacity import (
+    retry,
+    stop_after_attempt,
+    wait_exponential,
+    retry_if_not_exception_type,
+)
 
 from omega_kg.settings import settings
 
@@ -216,23 +221,24 @@ async def _embed_gemini(text: str) -> List[float]:
 def _embed_mock(text: str) -> List[float]:
     """
     Generate a deterministic mock embedding (1024 dims) based on text hash.
-    
+
     Used when real embedding services are unavailable or for testing.
-    
+
     Args:
         text: Input text
-        
+
     Returns:
         1024-dimension float vector (deterministic based on input)
     """
     import hashlib
-    
+
     # Create a deterministic seed from the text
     hash_digest = hashlib.sha256(text.encode()).digest()
-    seed = int.from_bytes(hash_digest[:4], byteorder='big')
-    
+    seed = int.from_bytes(hash_digest[:4], byteorder="big")
+
     # Use seeded random to generate 1024 floats
     import random
+
     rng = random.Random(seed)
     return [rng.random() for _ in range(EMBEDDING_DIMENSIONS)]
 
@@ -270,9 +276,7 @@ async def generate_embedding(text: str) -> List[float]:
         logger.debug(f"Generated {EMBEDDING_DIMENSIONS}-dim embedding via Ollama")
         return result
     except Exception as err:
-        logger.warning(
-            f"Ollama embedding failed ({err}); attempting Nano-GPT fallback"
-        )
+        logger.warning(f"Ollama embedding failed ({err}); attempting Nano-GPT fallback")
 
     # Try Nano-GPT (if key is configured)
     if settings.nanogpt_api_key:
@@ -294,14 +298,16 @@ async def generate_embedding(text: str) -> List[float]:
             )
             return result
         except Exception as err:
-            logger.warning(f"Gemini embedding also failed: {err}; using mock embeddings")
+            logger.warning(
+                f"Gemini embedding also failed: {err}; using mock embeddings"
+            )
 
     # Final fallback: use mock embeddings (deterministic, for development)
     try:
         result = _embed_mock(text)
         logger.warning(
-            f"Using mock embeddings (no real provider available). "
-            f"These are deterministic hash-based vectors suitable for development only."
+            "Using mock embeddings (no real provider available). "
+            "These are deterministic hash-based vectors suitable for development only."
         )
         return result
     except Exception as err:

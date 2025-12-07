@@ -76,7 +76,7 @@ New-NetFirewallRule -DisplayName "Ollama Server" -Direction Inbound -LocalPort 1
    $action = New-ScheduledTaskAction -Execute "ollama" -Argument "serve"
    $trigger = New-ScheduledTaskTrigger -AtStartup
    $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -Hidden -ExecutionTimeLimit 0
-   
+
    Register-ScheduledTask -Action $action -Trigger $trigger -Settings $settings -TaskName "OllamaService" -User "SYSTEM" -RunLevel Highest
    ```
 

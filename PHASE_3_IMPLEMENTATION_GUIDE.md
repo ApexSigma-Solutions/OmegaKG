@@ -4,8 +4,8 @@
 
 Phase 3 integrates the async vector worker into the FastAPI capture server, enabling immediate capture + async embedding generation for all incoming messages.
 
-**Current State:** Vector store and worker modules are ready; waiting to be wired into capture_server.py  
-**Blocking Issue:** Neo4j message fetcher in embedding_worker.py needs implementation first  
+**Current State:** Vector store and worker modules are ready; waiting to be wired into capture_server.py
+**Blocking Issue:** Neo4j message fetcher in embedding_worker.py needs implementation first
 **Estimated Duration:** 1-2 hours total (Phase 3 + Phase 4 blocking issue fix)
 
 ---
@@ -13,7 +13,7 @@ Phase 3 integrates the async vector worker into the FastAPI capture server, enab
 ## Phase 3a: Implement Neo4j Message Fetcher (BLOCKING)
 
 ### Location
-File: `omega_kg/workers/embedding_worker.py`  
+File: `omega_kg/workers/embedding_worker.py`
 Method: `_fetch_message_text(message_id: int, node_label: str) -> Optional[str]`
 
 ### Current Implementation
@@ -27,11 +27,11 @@ async def _fetch_message_text(
 ) -> Optional[str]:
     """
     Fetch message content from Neo4j by node ID and label.
-    
+
     Args:
         message_id: Neo4j node ID (internal identifier, from id(n))
         node_label: Neo4j node type (ChatMessage, LinearIssue, Decision)
-        
+
     Returns:
         str or None: Message content to embed, or None if not found
     """
@@ -47,9 +47,9 @@ async def _fetch_message_text(
 ### Query Pattern
 
 ```cypher
-MATCH (n:<node_label>) 
-WHERE id(n) = $message_id 
-RETURN 
+MATCH (n:<node_label>)
+WHERE id(n) = $message_id
+RETURN
   COALESCE(n.content, n.message, n.text, n.body) AS content
 ```
 
@@ -158,27 +158,27 @@ async def lifespan(app: FastAPI):
 async def lifespan(app: FastAPI):
     # Startup
     logger.info("Starting capture server...")
-    
+
     # Initialize vector store
     _vector_store = await get_vector_store()
     logger.info("Vector store initialized")
-    
+
     # Start embedding worker
     await start_worker()
     logger.info("Embedding worker started")
-    
+
     # Start existing scheduler (if any)
     # scheduler.start()
-    
+
     yield
-    
+
     # Shutdown
     logger.info("Shutting down capture server...")
-    
+
     # Stop worker gracefully
     await stop_worker()
     logger.info("Embedding worker stopped")
-    
+
     # Stop scheduler (if any)
     # scheduler.shutdown()
 
@@ -197,7 +197,7 @@ async def capture_message(
 ) -> dict:
     """
     Capture message from client.
-    
+
     Steps:
     1. Insert message into Neo4j
     2. Create pending vector record in PostgreSQL
@@ -206,7 +206,7 @@ async def capture_message(
     try:
         # 1. Your existing Neo4j insertion logic
         message_id = await insert_into_neo4j(request_data)
-        
+
         # 2. NEW: Create pending vector record
         node_label = request_data.get("type", "ChatMessage")
         vector_id = await vector_store.store_pending(
@@ -214,7 +214,7 @@ async def capture_message(
             node_label=node_label
         )
         logger.debug(f"Created pending vector: vector_id={vector_id}")
-        
+
         # 3. Return response (no waiting for embedding generation!)
         return {
             "status": "success",
@@ -222,7 +222,7 @@ async def capture_message(
             "vector_id": vector_id,
             "embedding_status": "pending"
         }
-        
+
     except Exception as e:
         logger.error(f"Capture failed: {e}")
         return {"status": "error", "message": str(e)}
@@ -237,7 +237,7 @@ async def health_check_vectors(
 ) -> dict:
     """
     Get vector store health metrics.
-    
+
     Returns: {
         "status": "healthy|degraded|unhealthy",
         "total_records": int,
@@ -251,7 +251,7 @@ async def health_check_vectors(
         stats = await vector_store.get_stats()
         pending_count = stats.get("pending_count", 0)
         failed_count = stats.get("failed_count", 0)
-        
+
         # Determine health status
         if failed_count > 100:  # Threshold
             status = "unhealthy"
@@ -259,7 +259,7 @@ async def health_check_vectors(
             status = "degraded"
         else:
             status = "healthy"
-        
+
         return {
             "status": status,
             "total_records": stats.get("total_records", 0),

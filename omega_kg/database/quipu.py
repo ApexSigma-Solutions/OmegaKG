@@ -2,6 +2,7 @@
 Quipu Database Module
 Handles PostgreSQL operations for heartbeat monitoring using synchronous psycopg2.
 """
+
 import logging
 from datetime import datetime
 from typing import Any, Dict, Optional

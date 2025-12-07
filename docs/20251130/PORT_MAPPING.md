@@ -91,12 +91,12 @@ services:
   omega-kg:
     ports:
       - "8765:8765"  # Capture server
-  
+
   neo4j:
     ports:
       - "7474:7474"  # Neo4j Browser
       - "7687:7687"  # Bolt protocol
-  
+
   postgres:
     ports:
       - "5433:5432"  # PostgreSQL (mapped to 5433 on host)

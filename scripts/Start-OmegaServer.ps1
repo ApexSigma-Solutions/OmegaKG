@@ -101,10 +101,10 @@ function Write-Log {
         [ValidateSet('INFO', 'SUCCESS', 'WARN', 'ERROR', 'DEBUG')]
         [string]$Level = 'INFO'
     )
-    
+
     $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
     $logEntry = "[$timestamp] [$Level] $Message"
-    
+
     # Console output with colors
     $color = switch ($Level) {
         'SUCCESS' { 'Green' }
@@ -113,11 +113,11 @@ function Write-Log {
         'DEBUG'   { 'DarkGray' }
         default   { 'Cyan' }
     }
-    
+
     if ($Level -ne 'DEBUG' -or $ShowDebug) {
         Write-Host $logEntry -ForegroundColor $color
     }
-    
+
     # File logging
     Add-Content -Path $script:LogFile -Value $logEntry -ErrorAction SilentlyContinue
 }
@@ -140,7 +140,7 @@ function Rotate-Log {
         Keeps up to 5 backup archives
     #>
     param([string]$Path)
-    
+
     $maxSize = 1MB
     $maxFiles = 5
 
@@ -149,7 +149,7 @@ function Rotate-Log {
     $size = (Get-Item $Path).Length
     if ($size -gt $maxSize) {
         Write-Log "Log file exceeded $maxSize, rotating..." -Level INFO
-        
+
         # Shift older archives (log.1 -> log.2, log.2 -> log.3, etc.)
         for ($i = $maxFiles; $i -ge 1; $i--) {
             $old = "$Path.$i"
@@ -171,14 +171,14 @@ function Rotate-Log {
 #region Environment Detection
 function Get-ActiveEnvironment {
     param([string]$RequestedEnv)
-    
+
     if ($RequestedEnv -ne 'auto') {
         return $RequestedEnv
     }
-    
+
     # Auto-detect from current directory
     $currentPath = (Get-Location).Path.ToLower()
-    
+
     if ($currentPath -like "*omega_kg_stable*") {
         return 'stable'
     }
@@ -196,18 +196,18 @@ function Get-ActiveEnvironment {
 
 function Initialize-Environment {
     param([string]$EnvName)
-    
+
     $config = $script:Environments[$EnvName]
     $projectPath = $config.Path
-    
+
     if (-not (Test-Path $projectPath)) {
         throw "Project path not found: $projectPath"
     }
-    
+
     # Change to project directory
     Set-Location $projectPath
     Write-Log "Working directory: $projectPath" -Level DEBUG
-    
+
     # Load .env file
     $envFile = Join-Path $projectPath ".env"
     if (Test-Path $envFile) {
@@ -224,7 +224,7 @@ function Initialize-Environment {
             }
         }
     }
-    
+
     # Activate virtual environment if not already active
     $venvPath = Join-Path $projectPath ".venv\Scripts\Activate.ps1"
     if (Test-Path $venvPath) {
@@ -233,10 +233,10 @@ function Initialize-Environment {
             & $venvPath
         }
     }
-    
+
     # Set environment marker
     $env:OMEGA_KG_ENV = $EnvName
-    
+
     return $config
 }
 #endregion
@@ -247,26 +247,26 @@ function Get-OmegaServerProcess {
     .SYNOPSIS
         Find running Omega_KG capture server processes
     #>
-    
+
     # Check for uvicorn processes
     $uvicornProcs = Get-CimInstance Win32_Process -Filter "Name = 'uvicorn.exe'" -ErrorAction SilentlyContinue |
         Where-Object { $_.CommandLine -match "omega_kg[._]capture[._]?server" }
-    
+
     # Check for python processes running uvicorn
     $pythonProcs = Get-CimInstance Win32_Process -Filter "Name = 'python.exe'" -ErrorAction SilentlyContinue |
         Where-Object { $_.CommandLine -match "uvicorn.*omega_kg" -or $_.CommandLine -match "capture.server|capture_server" }
-    
+
     # Combine and deduplicate
     $allProcs = @()
     if ($uvicornProcs) { $allProcs += $uvicornProcs }
     if ($pythonProcs) { $allProcs += $pythonProcs }
-    
+
     return $allProcs | Select-Object -Unique
 }
 
 function Get-PortProcess {
     param([int]$Port)
-    
+
     $netstat = netstat -ano | Select-String ":$Port\s"
     if ($netstat) {
         $procId = ($netstat -split '\s+')[-1]
@@ -281,25 +281,25 @@ function Stop-OmegaServer {
         Gracefully stop running Omega_KG server
     #>
     param([switch]$Force)
-    
+
     $processes = Get-OmegaServerProcess
-    
+
     if (-not $processes) {
         Write-Log "No running Omega_KG server found" -Level WARN
         return $false
     }
-    
+
     foreach ($proc in $processes) {
         Write-Log "Stopping server process (PID: $($proc.ProcessId))..." -Level INFO
-        
+
         try {
             $process = Get-Process -Id $proc.ProcessId -ErrorAction Stop
-            
+
             if (-not $Force) {
                 # Try graceful shutdown first
                 $process.CloseMainWindow() | Out-Null
                 $waited = $process.WaitForExit(5000)
-                
+
                 if (-not $waited) {
                     Write-Log "Graceful shutdown timed out, forcing..." -Level WARN
                     $process.Kill()
@@ -308,32 +308,32 @@ function Stop-OmegaServer {
             else {
                 $process.Kill()
             }
-            
+
             Write-Log "Process $($proc.ProcessId) stopped" -Level SUCCESS
         }
         catch {
             Write-Log "Failed to stop process $($proc.ProcessId): $_" -Level ERROR
         }
     }
-    
+
     # Clean up PID file
     if (Test-Path $script:PidFile) {
         Remove-Item $script:PidFile -Force -ErrorAction SilentlyContinue
     }
-    
+
     # Also check for background jobs
     $jobs = Get-Job -Name "OmegaKG_*" -ErrorAction SilentlyContinue
     if ($jobs) {
         $jobs | Stop-Job -PassThru | Remove-Job
         Write-Log "Cleaned up background jobs" -Level DEBUG
     }
-    
+
     return $true
 }
 
 function Test-PortAvailable {
     param([int]$Port)
-    
+
     $listener = Get-PortProcess -Port $Port
     return ($null -eq $listener)
 }
@@ -342,10 +342,10 @@ function Test-PortAvailable {
 #region Pre-Flight Checks
 function Invoke-PreFlightChecks {
     param([hashtable]$Config, [int]$TargetPort)
-    
+
     Write-Banner "Pre-Flight Checks"
     $allPassed = $true
-    
+
     # Check 1: Python version
     Write-Log "Checking Python version..." -Level INFO
     try {
@@ -363,7 +363,7 @@ function Invoke-PreFlightChecks {
         Write-Log "Python not found in PATH" -Level ERROR
         $allPassed = $false
     }
-    
+
     # Check 2: Poetry
     Write-Log "Checking Poetry..." -Level INFO
     try {
@@ -374,7 +374,7 @@ function Invoke-PreFlightChecks {
         Write-Log "Poetry not found in PATH" -Level ERROR
         $allPassed = $false
     }
-    
+
     # Check 3: Virtual environment
     Write-Log "Checking virtual environment..." -Level INFO
     if ($env:VIRTUAL_ENV) {
@@ -383,7 +383,7 @@ function Invoke-PreFlightChecks {
     else {
         Write-Log "Virtual environment not activated" -Level WARN
     }
-    
+
     # Check 4: Docker
     Write-Log "Checking Docker..." -Level INFO
     try {
@@ -400,7 +400,7 @@ function Invoke-PreFlightChecks {
         Write-Log "Docker not available" -Level ERROR
         $allPassed = $false
     }
-    
+
     # Check 5: Neo4j container
     Write-Log "Checking Neo4j container..." -Level INFO
     $neo4jContainer = docker ps -q -f "name=$($Config.ContainerPrefix).neo4j" 2>$null
@@ -410,7 +410,7 @@ function Invoke-PreFlightChecks {
     else {
         Write-Log "Neo4j container not running (will attempt to start)" -Level WARN
     }
-    
+
     # Check 6: Port availability
     Write-Log "Checking port $TargetPort availability..." -Level INFO
     if (Test-PortAvailable -Port $TargetPort) {
@@ -425,7 +425,7 @@ function Invoke-PreFlightChecks {
             Write-Log "Port $TargetPort in use by unknown process" -Level WARN
         }
     }
-    
+
     return $allPassed
 }
 #endregion
@@ -433,16 +433,16 @@ function Invoke-PreFlightChecks {
 #region Server Start Functions
 function Start-ServerForeground {
     param([hashtable]$Config, [int]$Port)
-    
+
     Write-Banner "Starting Server (Foreground)"
     Write-Log "Server will run at http://127.0.0.1:$Port" -Level INFO
     Write-Log "Press Ctrl+C to stop" -Level INFO
     Write-Host ""
-    
+
     # Save process ID info
     $processId = [System.Diagnostics.Process]::GetCurrentProcess().Id
     Set-Content -Path $script:PidFile -Value $processId
-    
+
     try {
         poetry run uvicorn omega_kg.capture_server:app --host 127.0.0.1 --port $Port --log-level info
     }
@@ -453,25 +453,25 @@ function Start-ServerForeground {
 
 function Start-ServerBackground {
     param([hashtable]$Config, [int]$Port)
-    
+
     Write-Banner "Starting Server (Background)"
-    
+
     $projectPath = $Config.Path
     $jobName = "OmegaKG_$($env:OMEGA_KG_ENV)_$Port"
-    
+
     # Remove any existing job with same name
     Get-Job -Name $jobName -ErrorAction SilentlyContinue | Stop-Job -PassThru | Remove-Job
-    
+
     $job = Start-Job -Name $jobName -ScriptBlock {
         param($path, $port)
         Set-Location $path
-        
+
         # Activate venv
         $venvActivate = Join-Path $path ".venv\Scripts\Activate.ps1"
         if (Test-Path $venvActivate) {
             & $venvActivate
         }
-        
+
         # Load .env
         $envFile = Join-Path $path ".env"
         if (Test-Path $envFile) {
@@ -487,17 +487,17 @@ function Start-ServerBackground {
                 }
             }
         }
-        
+
         poetry run uvicorn omega_kg.capture_server:app --host 127.0.0.1 --port $port --log-level info
     } -ArgumentList $projectPath, $Port
-    
+
     # Wait a moment and check if it started
     Start-Sleep -Seconds 3
-    
+
     if ($job.State -eq 'Running') {
         # Save job info
         Set-Content -Path $script:PidFile -Value "JOB:$($job.Id)"
-        
+
         Write-Log "Server started in background (Job ID: $($job.Id))" -Level SUCCESS
         Write-Log "Server running at http://127.0.0.1:$Port" -Level INFO
         Write-Log "" -Level INFO
@@ -515,12 +515,12 @@ function Start-ServerBackground {
 
 function Start-ServerNewTerminal {
     param([hashtable]$Config, [int]$Port)
-    
+
     Write-Banner "Starting Server (New Terminal)"
-    
+
     $projectPath = $Config.Path
     $envName = $env:OMEGA_KG_ENV
-    
+
     # Build the command to run in new terminal
     $command = @"
 Set-Location '$projectPath'
@@ -556,16 +556,16 @@ Write-Host 'Starting server... (Ctrl+C to stop)' -ForegroundColor Yellow
 Write-Host ''
 poetry run uvicorn omega_kg.capture_server:app --host 127.0.0.1 --port $Port --log-level info
 "@
-    
+
     # Encode command for passing to new PowerShell instance
     $bytes = [System.Text.Encoding]::Unicode.GetBytes($command)
     $encodedCommand = [Convert]::ToBase64String($bytes)
-    
+
     $process = Start-Process pwsh -ArgumentList "-NoExit", "-EncodedCommand", $encodedCommand -PassThru
-    
+
     # Save PID
     Set-Content -Path $script:PidFile -Value $process.Id
-    
+
     Write-Log "Server starting in new terminal window (PID: $($process.Id))" -Level SUCCESS
     Write-Log "Server will be at http://127.0.0.1:$Port" -Level INFO
 }
@@ -574,21 +574,21 @@ poetry run uvicorn omega_kg.capture_server:app --host 127.0.0.1 --port $Port --l
 #region Status Display
 function Show-ServerStatus {
     Write-Banner "Omega_KG Server Status"
-    
+
     $processes = Get-OmegaServerProcess
-    
+
     if ($processes) {
         Write-Log "Server is RUNNING" -Level SUCCESS
         foreach ($proc in $processes) {
             Write-Host ""
             Write-Host "  Process ID:    $($proc.ProcessId)" -ForegroundColor White
             Write-Host "  Process Name:  $($proc.Name)" -ForegroundColor White
-            
+
             # Try to extract port from command line
             if ($proc.CommandLine -match '--port\s+(\d+)') {
                 Write-Host "  Port:          $($Matches[1])" -ForegroundColor White
             }
-            
+
             # Get process start time
             $ps = Get-Process -Id $proc.ProcessId -ErrorAction SilentlyContinue
             if ($ps) {
@@ -600,7 +600,7 @@ function Show-ServerStatus {
     else {
         Write-Log "Server is NOT RUNNING" -Level WARN
     }
-    
+
     # Check background jobs
     $jobs = Get-Job -Name "OmegaKG_*" -ErrorAction SilentlyContinue
     if ($jobs) {
@@ -610,7 +610,7 @@ function Show-ServerStatus {
             Write-Host "  Job $($job.Id): $($job.Name) - State: $($job.State)" -ForegroundColor White
         }
     }
-    
+
     # Show port status
     Write-Host ""
     Write-Log "Port Status:" -Level INFO
@@ -621,7 +621,7 @@ function Show-ServerStatus {
         $color = if ($inUse) { "Yellow" } else { "Green" }
         Write-Host "  $env (port $port): $status" -ForegroundColor $color
     }
-    
+
     # Docker services
     Write-Host ""
     Write-Log "Docker Services:" -Level INFO
@@ -644,32 +644,32 @@ function Main {
         $backupLog = $script:LogFile -replace '\.log$', "_$(Get-Date -Format 'yyyyMMdd_HHmmss').log"
         Move-Item $script:LogFile $backupLog -Force
     }
-    
+
     Write-Log "=== Omega_KG Server Manager Started ===" -Level DEBUG
-    
+
     # Determine environment
     $activeEnv = Get-ActiveEnvironment -RequestedEnv $Environment
     Write-Log "Environment: $activeEnv" -Level DEBUG
-    
+
     # Handle status mode early
     if ($Mode -eq 'status') {
         Show-ServerStatus
         return
     }
-    
+
     # Handle stop mode
     if ($Mode -eq 'stop') {
         Write-Banner "Stopping Server"
         Stop-OmegaServer -Force:$Force
         return
     }
-    
+
     # Initialize environment and get config
     $config = Initialize-Environment -EnvName $activeEnv
-    
+
     # Determine port
     $targetPort = if ($Port -gt 0) { $Port } else { $config.DefaultPort }
-    
+
     # Handle restart mode
     if ($Mode -eq 'restart') {
         Write-Banner "Restarting Server"
@@ -677,7 +677,7 @@ function Main {
         Start-Sleep -Seconds 2
         $Mode = 'foreground'  # Default to foreground after restart
     }
-    
+
     # Check for existing processes
     $existingProcs = Get-OmegaServerProcess
     if ($existingProcs -and -not $Force) {
@@ -690,7 +690,7 @@ function Main {
         Stop-OmegaServer -Force
         Start-Sleep -Seconds 2
     }
-    
+
     # Check port availability
     if (-not (Test-PortAvailable -Port $targetPort)) {
         $portProc = Get-PortProcess -Port $targetPort
@@ -705,7 +705,7 @@ function Main {
             return
         }
     }
-    
+
     # Run pre-flight checks
     if (-not $SkipChecks) {
         $checksPassed = Invoke-PreFlightChecks -Config $config -TargetPort $targetPort
@@ -717,7 +717,7 @@ function Main {
     else {
         Write-Log "Skipping pre-flight checks" -Level WARN
     }
-    
+
     # Start server based on mode
     switch ($Mode) {
         'foreground' {
@@ -742,5 +742,3 @@ catch {
     exit 1
 }
 #endregion
-
-

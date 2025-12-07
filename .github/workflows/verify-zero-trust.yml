@@ -27,7 +27,7 @@ jobs:
   verify-dev:
     name: Verify DEV Environment
     runs-on: ubuntu-latest
-    
+
     env:
       # DEV environment variables
       OMEGA_ENV: dev
@@ -44,7 +44,7 @@ jobs:
       BWS_ACCESS_TOKEN: ${{ secrets.BWS_ACCESS_TOKEN_DEV }}
       # Secret IDs for Bitwarden (DEV project)
       LINEAR_WEBHOOK_SECRET_ID: ${{ secrets.LINEAR_WEBHOOK_SECRET_DEV_ID }}
-      
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -100,7 +100,7 @@ jobs:
   verify-stable:
     name: Verify STABLE Environment
     runs-on: ubuntu-latest
-    
+
     env:
       # STABLE environment variables
       OMEGA_ENV: stable
@@ -117,7 +117,7 @@ jobs:
       BWS_ACCESS_TOKEN: ${{ secrets.BWS_ACCESS_TOKEN_STABLE }}
       # Secret IDs for Bitwarden (PRD project)
       LINEAR_WEBHOOK_SECRET_PRD_ID: ${{ secrets.LINEAR_WEBHOOK_SECRET_PRD_ID }}
-      
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -174,7 +174,7 @@ jobs:
     name: Verify Environment Isolation
     runs-on: ubuntu-latest
     needs: [verify-dev, verify-stable]
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -197,37 +197,37 @@ jobs:
           echo "═══════════════════════════════════════════════════════════════"
           echo " VERIFYING ENVIRONMENT ISOLATION (NO CROSS-CONTAMINATION)"
           echo "═══════════════════════════════════════════════════════════════"
-          
+
           # Test DEV settings
           export OMEGA_ENV=dev
           export POSTGRES_DB=omega_kg_dev
           export POSTGRES_PORT=5434
           export APP_PORT=8765
           export NEO4J_URI=bolt://localhost:7688
-          
+
           DEV_RESULT=$(poetry run python -c "
           from omega_kg.settings import settings
           print(f'{settings.postgres_db}|{settings.postgres_port}|{settings.app_port}')
           " 2>/dev/null || echo "ERROR")
-          
+
           echo "DEV config: $DEV_RESULT"
-          
+
           if [[ "$DEV_RESULT" != "omega_kg_dev|5434|8765" ]]; then
             echo "❌ DEV configuration incorrect: $DEV_RESULT"
             exit 1
           fi
           echo "✅ DEV environment correctly isolated"
-          
+
           # Clear Python module cache
           unset OMEGA_ENV POSTGRES_DB POSTGRES_PORT APP_PORT NEO4J_URI
-          
+
           # Test STABLE settings
           export OMEGA_ENV=stable
           export POSTGRES_DB=omega_kg_stable
           export POSTGRES_PORT=5433
           export APP_PORT=8002
           export NEO4J_URI=bolt://localhost:7687
-          
+
           STABLE_RESULT=$(poetry run python -c "
           import sys
           # Force reimport
@@ -237,15 +237,15 @@ jobs:
           from omega_kg.settings import settings
           print(f'{settings.postgres_db}|{settings.postgres_port}|{settings.app_port}')
           " 2>/dev/null || echo "ERROR")
-          
+
           echo "STABLE config: $STABLE_RESULT"
-          
+
           if [[ "$STABLE_RESULT" != "omega_kg_stable|5433|8002" ]]; then
             echo "❌ STABLE configuration incorrect: $STABLE_RESULT"
             exit 1
           fi
           echo "✅ STABLE environment correctly isolated"
-          
+
           echo ""
           echo "═══════════════════════════════════════════════════════════════"
           echo " ✅ ALL ISOLATION CHECKS PASSED"
@@ -259,7 +259,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [verify-dev, verify-stable, verify-isolation]
     if: always()
-    
+
     steps:
       - name: Check results
         run: |
@@ -271,7 +271,7 @@ jobs:
           echo "STABLE Verification:   ${{ needs.verify-stable.result }}"
           echo "Isolation Check:       ${{ needs.verify-isolation.result }}"
           echo ""
-          
+
           if [[ "${{ needs.verify-dev.result }}" == "success" ]] && \
              [[ "${{ needs.verify-stable.result }}" == "success" ]] && \
              [[ "${{ needs.verify-isolation.result }}" == "success" ]]; then

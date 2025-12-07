@@ -50,7 +50,7 @@ if (Test-Path $vaultPath) {
     $fileCount = ($conversationFiles | Measure-Object).Count
     Write-Host "   ✓ Vault path exists: $vaultPath"
     Write-Host "   ✓ Found $fileCount conversation markdown files"
-    
+
     if ($fileCount -gt 0) {
         Write-Host "   Sample files:"
         $conversationFiles | Select-Object -First 3 | ForEach-Object {
@@ -67,7 +67,7 @@ Write-Host "2. NEO4J GRAPH DATABASE" -ForegroundColor Yellow
 try {
     $cypher_query = "MATCH (cs:ChatSession) RETURN COUNT(cs) as count"
     $result = & docker exec apexsigma.neo4j.stable cypher-shell -u $NEO4J_USER -p "$NEO4J_PASSWORD" "$cypher_query" 2>&1 | Select-String -Pattern "^\d+"
-    
+
     if ($result) {
         $chatCount = [int]($result.ToString().Trim())
         Write-Host "   ✓ Neo4j connected"
@@ -75,16 +75,16 @@ try {
     } else {
         Write-Host "   ✗ Could not query Neo4j" -ForegroundColor Red
     }
-    
+
     # Check Decision nodes
     $decision_query = "MATCH (d:Decision) RETURN COUNT(d) as count"
     $result2 = & docker exec apexsigma.neo4j.stable cypher-shell -u $NEO4J_USER -p "$NEO4J_PASSWORD" "$decision_query" 2>&1 | Select-String -Pattern "^\d+"
-    
+
     if ($result2) {
         $decisionCount = [int]($result2.ToString().Trim())
         Write-Host "   ✓ Found $decisionCount Decision nodes" -ForegroundColor Green
     }
-    
+
     # Sample recent ChatSessions
     $sample_query = "MATCH (cs:ChatSession) RETURN cs.id, cs.platform, cs.created_at ORDER BY cs.created_at DESC LIMIT 3"
     Write-Host "   Recent ChatSessions:"
@@ -103,14 +103,14 @@ try {
     # Check if tables exist
     $psql_cmd = "psql -U $POSTGRES_USER -d $POSTGRES_DB -h $POSTGRES_SERVER -p $POSTGRES_PORT -t -c `"SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' ORDER BY table_name;`" 2>&1"
     $tables = Invoke-Expression $psql_cmd -ErrorAction SilentlyContinue
-    
+
     if ($tables) {
         Write-Host "   ✓ PostgreSQL connected"
         Write-Host "   ✓ Found tables:"
         $tables | Where-Object { $_ -match '\w' } | ForEach-Object {
             Write-Host "     - $_" -ForegroundColor Green
         }
-        
+
         # Check for vector/embedding data if tables exist
         $vector_check = "psql -U $POSTGRES_USER -d $POSTGRES_DB -h $POSTGRES_SERVER -p $POSTGRES_PORT -t -c `"SELECT COUNT(*) FROM information_schema.tables WHERE table_name LIKE '%embedding%' OR table_name LIKE '%vector%';`" 2>&1"
         $vector_count = Invoke-Expression $vector_check -ErrorAction SilentlyContinue

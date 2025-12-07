@@ -171,7 +171,9 @@ class VaultUtils:
                 # Parse frontmatter once (removed fragile 2KB heuristic)
                 metadata = self.read_note_frontmatter(note_path)
                 if metadata and str(metadata.get("linear_id")) == linear_id:
-                    logger.info(f"Found matching note for linear_id {linear_id}: {note_path}")
+                    logger.info(
+                        f"Found matching note for linear_id {linear_id}: {note_path}"
+                    )
                     return note_path
 
             except Exception as e:

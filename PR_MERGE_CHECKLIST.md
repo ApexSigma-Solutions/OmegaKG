@@ -25,8 +25,8 @@
 ## 🔧 Manual Actions Required
 
 ### 1. Remove Duplicate CI Step (CRITICAL)
-**File**: `.github/workflows/ci.yml`  
-**Lines**: 40-43  
+**File**: `.github/workflows/ci.yml`
+**Lines**: 40-43
 **Action**: Delete the duplicate "Run Pre-commit Hooks" step
 
 ```yaml
@@ -38,7 +38,7 @@
 ```
 
 ### 2. Verify .gitignore Security Patterns
-**File**: `.gitignore`  
+**File**: `.gitignore`
 **Action**: Ensure these patterns are present at the end:
 
 ```
@@ -129,5 +129,5 @@ git log --all --full-history -- Omega_KG_Capture.pem
 
 ---
 
-**Status**: Ready for merge after manual fixes above  
+**Status**: Ready for merge after manual fixes above
 **Priority**: CRITICAL - Security issue must be resolved before merge

@@ -71,7 +71,7 @@ function showStatus(type, message) {
     statusMessage.className = `status-message ${type}`;
     statusMessage.textContent = message;
     console.debug(`[Omega_KG] Status (${type}): ${message}`);
-    
+
     // Auto-hide success messages after 3 seconds
     if (type === 'success') {
         setTimeout(() => {
