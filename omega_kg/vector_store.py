@@ -139,12 +139,15 @@ class VectorStore:
 
         try:
             async with self.pool.acquire() as conn:
-                result = cast(Optional[int], await conn.fetchval(
-                    query,
-                    message_id,
-                    node_label,
-                    VectorStatus.PENDING_EMBEDDING,
-                ))
+                result = cast(
+                    Optional[int],
+                    await conn.fetchval(
+                        query,
+                        message_id,
+                        node_label,
+                        VectorStatus.PENDING_EMBEDDING,
+                    ),
+                )
 
             if result:
                 logger.debug(
@@ -159,9 +162,10 @@ class VectorStore:
                     WHERE message_id = $1 AND node_label = $2;
                 """
                 async with self.pool.acquire() as conn:
-                    existing_id = cast(Optional[int], await conn.fetchval(
-                        fetch_query, message_id, node_label
-                    ))
+                    existing_id = cast(
+                        Optional[int],
+                        await conn.fetchval(fetch_query, message_id, node_label),
+                    )
                 logger.debug(
                     f"Pending record already exists: message_id={message_id}, "
                     f"node_label={node_label}, vector_id={existing_id}"
