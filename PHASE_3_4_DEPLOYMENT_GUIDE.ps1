@@ -25,8 +25,8 @@ Strategic Query Patterns Implemented:
   ✓ Generic: Fallback for unknown node types
 
 Query Pattern (example for ChatMessage):
-  MATCH (n:ChatMessage) 
-  WHERE id(n) = `$message_id` 
+  MATCH (n:ChatMessage)
+  WHERE id(n) = `$message_id`
   RETURN n.content AS text
 
 ✅ PHASE 3: CAPTURE SERVER INTEGRATION

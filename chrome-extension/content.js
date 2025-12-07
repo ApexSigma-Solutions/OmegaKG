@@ -537,7 +537,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     try {
       // Trigger capture conversation and get result
       const captureSuccess = await capture.captureConversation();
-      
+
       if (captureSuccess) {
         // Send success response
         sendResponse({ success: true });

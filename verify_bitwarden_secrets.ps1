@@ -71,10 +71,10 @@ print("Testing Bitwarden connection...")
 try:
     # Try to import and use Bitwarden SDK
     from bitwarden_client import BitwardenClient, AuthenticateRequest
-    
+
     # Initialize client
     client = BitwardenClient(api_url="https://api.bitwarden.com")
-    
+
     # Authenticate with token
     client.auth.authenticate_with_api_key(
         request=AuthenticateRequest(
@@ -82,9 +82,9 @@ try:
             client_secret=bws_token.split(':')[1] if ':' in bws_token else ''
         )
     )
-    
+
     print("✓ Connected to Bitwarden")
-    
+
     # List of secret IDs to verify
     secret_ids = {
         'LINEAR_WEBHOOK_SECRET_PRD_ID': 'c4e28fe5-a690-47c1-bf2a-b3a40115fc5f',
@@ -96,7 +96,7 @@ try:
         'GEMINI_API_KEY_PRD_ID': 'fee6a433-1a72-424c-b58d-b3a40111feb1',
         'JWT_SECRET_KEY_ID': '6549fb7b-e676-4205-a5e7-b3a40110845b',
     }
-    
+
     print("\nVerifying secret IDs...")
     for key_name, secret_id in secret_ids.items():
         try:
@@ -104,7 +104,7 @@ try:
             print(f"✓ {key_name}: {secret_id}")
         except Exception as e:
             print(f"❌ {key_name}: Failed - {str(e)}")
-    
+
 except ImportError:
     print("⚠️  Bitwarden SDK not installed")
     print("   Install with: pip install bitwarden-client")
@@ -128,23 +128,23 @@ sys.path.insert(0, 'D:\\projects\\Omega_KG_stable')
 
 try:
     from omega_kg.settings import Settings
-    
+
     # Initialize settings (this will trigger Bitwarden integration)
     settings = Settings()
-    
+
     print("✓ Settings initialized with Bitwarden")
     print(f"  NEO4J_USER: {settings.neo4j_user}")
     print(f"  NEO4J_URI: {settings.neo4j_uri}")
     print(f"  POSTGRES_DB: {settings.postgres_db}")
     print(f"  POSTGRES_USER: {settings.postgres_user}")
-    
+
     # Check if using Bitwarden (neo4j_password should NOT be the fallback)
     fallback_password = "neo4j_secure_password_123"
     if settings.neo4j_password != fallback_password:
         print(f"✓ NEO4J_PASSWORD: Retrieved from Bitwarden (not using fallback)")
     else:
         print(f"⚠️  NEO4J_PASSWORD: Using local fallback (Bitwarden may not have provided it)")
-    
+
 except Exception as e:
     print(f"❌ Error initializing settings: {e}")
     import traceback

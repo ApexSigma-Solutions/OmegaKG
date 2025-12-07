@@ -23,17 +23,17 @@ foreach ($Dir in $DirectoriesToSync) {
     $Dst = Join-Path $DestPath $Dir
 
     Write-Host "📂 Syncing directory: $Dir..." -NoNewline
-    
+
     # Robocopy is faster/safer than Copy-Item for recursion
     # /MIR : Mirror (copy new, delete extra in dest)
     # /XD  : Exclude Directories (__pycache__)
     # /NFL /NDL : No File/Dir Logging (Quiet)
     $null = robocopy $Src $Dst /MIR /XD "__pycache__" ".pytest_cache" /NFL /NDL
-    
-    if ($LASTEXITCODE -le 7) { 
-        Write-Host " [OK]" -ForegroundColor Green 
-    } else { 
-        Write-Host " [FAIL]" -ForegroundColor Red 
+
+    if ($LASTEXITCODE -le 7) {
+        Write-Host " [OK]" -ForegroundColor Green
+    } else {
+        Write-Host " [FAIL]" -ForegroundColor Red
     }
 }
 
@@ -43,7 +43,7 @@ $FilesToSync = @("pyproject.toml", "poetry.lock", "alembic.ini", "README.md")
 foreach ($File in $FilesToSync) {
     $SrcFile = Join-Path $SourcePath $File
     $DstFile = Join-Path $DestPath $File
-    
+
     if (Test-Path $SrcFile) {
         Copy-Item $SrcFile $DstFile -Force
         Write-Host "📄 Copied: $File" -ForegroundColor Green

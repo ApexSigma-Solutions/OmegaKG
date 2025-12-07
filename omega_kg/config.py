@@ -140,7 +140,9 @@ OLLAMA_EMBEDDING_ENDPOINT = f"{OLLAMA_BASE_URL.rstrip('/')}/api/embeddings"
 # ============================================================================
 # LOGGING & MONITORING
 # ============================================================================
-ENABLE_VECTOR_DEBUG_LOGGING = os.getenv("ENABLE_VECTOR_DEBUG_LOGGING", "false").lower() == "true"
+ENABLE_VECTOR_DEBUG_LOGGING = (
+    os.getenv("ENABLE_VECTOR_DEBUG_LOGGING", "false").lower() == "true"
+)
 """Enable verbose debug logging for vector operations."""
 
 VECTOR_METRICS_ENABLED = os.getenv("VECTOR_METRICS_ENABLED", "true").lower() == "true"
@@ -163,7 +165,7 @@ VECTOR_SCHEMA_VERSION = "1.0.0"
 def log_config_summary() -> str:
     """
     Generate a summary of active configuration for logging at startup.
-    
+
     Returns:
         str: Multi-line configuration summary
     """

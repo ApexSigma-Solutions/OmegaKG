@@ -295,13 +295,13 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
         console.warn("[Omega_KG] Server health check timed out");
         return;
       }
-      
+
       // Check for network errors (no response received)
       if (error.name === 'TypeError' && error.message.includes('fetch')) {
         console.warn("[Omega_KG] Server offline - network error:", error.message);
         return;
       }
-      
+
       // Other errors
       console.warn("[Omega_KG] Server health check error:", error.message);
     }

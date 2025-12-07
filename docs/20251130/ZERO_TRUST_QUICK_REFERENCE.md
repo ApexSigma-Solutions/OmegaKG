@@ -16,7 +16,7 @@
 - **Secrets UUIDs**: 8 separate secret IDs (no _PRD_ suffix)
 - **Configuration**: `BWS_ACCESS_TOKEN=0.6a85fd67-...` (ACTIVE)
 - **Current State**: Bitwarden fetching secrets at runtime
-- **Examples**: 
+- **Examples**:
   - LINEAR_WEBHOOK_SECRET_ID (dev)
   - POSTGRES_PASSWORD_ID (dev)
   - NEO4J_PASSWORD_ID (dev)
@@ -137,7 +137,7 @@ If BWS_ACCESS_TOKEN missing or Bitwarden unavailable:
    ```ini
    # Change from:
    BWS_ACCESS_TOKEN= <place_your_machine_account_token_here>
-   
+
    # To:
    BWS_ACCESS_TOKEN=<actual_token_from_bitwarden>
    ```
@@ -182,24 +182,24 @@ class BitwardenSettingsSource(PydanticBaseSettingsSource):
         bws_token = os.getenv("BWS_ACCESS_TOKEN")
         if not bws_token:
             return {}  # Skip to next source (env_settings, dotenv)
-        
+
         # 2. Authenticate and fetch secrets
         client = BitwardenClient(device_type=DeviceType.SDK)
         client.auth.login_access_token(bws_token)
-        
+
         # 3. Map config keys to Bitwarden UUIDs
         secret_mappings = {
             "postgres_password": "POSTGRES_PASSWORD_PRD_ID",
             # ... more mappings
         }
-        
+
         # 4. Fetch each secret
         for config_key, uuid_env_var in secret_mappings.items():
             uuid = os.getenv(uuid_env_var)
             if uuid:
                 secret = client.secrets.get(uuid.UUID(uuid))
                 fetched_secrets[config_key] = secret.value
-        
+
         return fetched_secrets
 
 # Settings class injects BitwardenSettingsSource with highest priority
@@ -218,16 +218,16 @@ class Settings(BaseSettings):
 
 ## Verification Checklist
 
-✅ Dev .env has active BWS_ACCESS_TOKEN  
-✅ Dev has 8 secret UUIDs mapped  
-✅ Stable .env has placeholder BWS_ACCESS_TOKEN  
-✅ Stable has 10 secret UUIDs mapped  
-✅ Both use separate Bitwarden projects (DEV vs PRD)  
-✅ BitwardenSettingsSource implemented in settings.py  
-✅ Hybrid mode (Bitwarden primary, .env fallback)  
-✅ No plaintext secrets in git-committed code  
-✅ Fallback values are non-production only  
-✅ Settings source priority correctly ordered  
+✅ Dev .env has active BWS_ACCESS_TOKEN
+✅ Dev has 8 secret UUIDs mapped
+✅ Stable .env has placeholder BWS_ACCESS_TOKEN
+✅ Stable has 10 secret UUIDs mapped
+✅ Both use separate Bitwarden projects (DEV vs PRD)
+✅ BitwardenSettingsSource implemented in settings.py
+✅ Hybrid mode (Bitwarden primary, .env fallback)
+✅ No plaintext secrets in git-committed code
+✅ Fallback values are non-production only
+✅ Settings source priority correctly ordered
 
 ---
 

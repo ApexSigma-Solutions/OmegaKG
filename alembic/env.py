@@ -19,6 +19,7 @@ if config.config_file_name is not None:
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
 from omega_kg.settings import settings
+
 target_metadata = None
 
 # Set the database URL from settings

@@ -4,9 +4,13 @@
 import asyncio
 import asyncpg
 from omega_kg.config import (
-    POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB, 
-    POSTGRES_SERVER, POSTGRES_PORT
+    POSTGRES_USER,
+    POSTGRES_PASSWORD,
+    POSTGRES_DB,
+    POSTGRES_SERVER,
+    POSTGRES_PORT,
 )
+
 
 async def check_embeddings():
     conn = await asyncpg.connect(
@@ -16,20 +20,20 @@ async def check_embeddings():
         host=POSTGRES_SERVER,
         port=POSTGRES_PORT,
     )
-    
+
     print("=" * 70)
     print("CHECKING POSTGRESQL EMBEDDINGS")
     print("=" * 70)
-    
+
     # Get latest records
     rows = await conn.fetch("""
-        SELECT id, message_id, node_label, status, retry_count, 
+        SELECT id, message_id, node_label, status, retry_count,
                created_at, updated_at
-        FROM omega_vectors_1024 
-        ORDER BY id DESC 
+        FROM omega_vectors_1024
+        ORDER BY id DESC
         LIMIT 5
     """)
-    
+
     if not rows:
         print("\n✗ No records found in omega_vectors_1024 table")
     else:
@@ -43,21 +47,22 @@ async def check_embeddings():
             print(f"  Created: {row['created_at']}")
             print(f"  Updated: {row['updated_at']}")
             print("  " + "-" * 66)
-    
+
     # Get count by status
     stats = await conn.fetch("""
         SELECT status, COUNT(*) as count
         FROM omega_vectors_1024
         GROUP BY status
     """)
-    
+
     if stats:
         print("\nStatus Summary:")
         for stat in stats:
             print(f"  {stat['status']}: {stat['count']}")
-    
+
     await conn.close()
     print("\n" + "=" * 70)
+
 
 if __name__ == "__main__":
     asyncio.run(check_embeddings())

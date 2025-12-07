@@ -11,7 +11,7 @@ payload = {
     "session_id": "SMOKE_TEST_001",
     "message": "Phase 3 verification test: The eagle has landed.",
     "platform": "Terminal",
-    "node_label": "ChatMessage"
+    "node_label": "ChatMessage",
 }
 
 print("=" * 70)
@@ -27,18 +27,16 @@ try:
     print("[STEP 2/4] Sending capture request...")
     start = time.time()
     response = requests.post(
-        "http://localhost:8002/v1/capture",
-        json=payload,
-        timeout=10
+        "http://localhost:8002/v1/capture", json=payload, timeout=10
     )
     elapsed = time.time() - start
-    
+
     # Check response
     if response.status_code == 200:
         print(f"✓ Request succeeded in {elapsed*1000:.0f}ms")
         data = response.json()
         print(f"  Response: {json.dumps(data, indent=2)}")
-        
+
         if "vector_id" in data:
             vector_id = data["vector_id"]
             print(f"  ✓ Vector ID: {vector_id}")
@@ -49,17 +47,24 @@ try:
         print(f"✗ Request failed with status {response.status_code}")
         print(f"  Response: {response.text}")
         sys.exit(1)
-    
+
     # Wait for worker to process
     print("\n[STEP 3/4] Waiting for worker to process embedding (10s)...")
     time.sleep(10)
-    
+
     # Query PostgreSQL
     print("[STEP 4/4] Querying PostgreSQL for embedding status...")
     import asyncio
     import asyncpg
-    from omega_kg.config import POSTGRES_SERVER, POSTGRES_PORT, POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB, VECTOR_TABLE_NAME
-    
+    from omega_kg.config import (
+        POSTGRES_SERVER,
+        POSTGRES_PORT,
+        POSTGRES_USER,
+        POSTGRES_PASSWORD,
+        POSTGRES_DB,
+        VECTOR_TABLE_NAME,
+    )
+
     async def check_embedding():
         try:
             conn = await asyncpg.connect(
@@ -69,29 +74,29 @@ try:
                 host=POSTGRES_SERVER,
                 port=POSTGRES_PORT,
             )
-            
+
             result = await conn.fetchrow(
                 f"SELECT id, message_id, status, retry_count, created_at, updated_at FROM {VECTOR_TABLE_NAME} ORDER BY id DESC LIMIT 1"
             )
-            
+
             await conn.close()
             return result
         except Exception as e:
             print(f"✗ Database error: {e}")
             return None
-    
+
     record = asyncio.run(check_embedding())
-    
+
     if record:
-        print(f"✓ Found embedding record:")
+        print("✓ Found embedding record:")
         print(f"  ID: {record['id']}")
         print(f"  Message ID: {record['message_id']}")
         print(f"  Status: {record['status']}")
         print(f"  Retry count: {record['retry_count']}")
         print(f"  Created: {record['created_at']}")
         print(f"  Updated: {record['updated_at']}")
-        
-        if record['status'] == 'ready':
+
+        if record["status"] == "ready":
             print("\n" + "=" * 70)
             print("✅ SMOKE TEST PASSED - Vector embedding pipeline is operational!")
             print("=" * 70)
@@ -100,12 +105,13 @@ try:
     else:
         print("✗ No embedding record found in database")
         sys.exit(1)
-        
+
 except requests.exceptions.ConnectionError as e:
     print(f"✗ Cannot connect to server: {e}")
     sys.exit(1)
 except Exception as e:
     print(f"✗ Unexpected error: {e}")
     import traceback
+
     traceback.print_exc()
     sys.exit(1)

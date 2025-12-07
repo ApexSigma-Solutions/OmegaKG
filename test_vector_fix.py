@@ -1,6 +1,5 @@
 """Quick test to verify vector embedding conversion"""
-import asyncio
-from omega_kg.vector_store import VectorStore
+
 from omega_kg.config import VECTOR_EMBEDDING_DIMENSION
 
 # Test the vector string conversion
@@ -12,4 +11,4 @@ embedding_str = "[" + ",".join(f"{v:.6f}" for v in embedding) + "]"
 print(f"String length: {len(embedding_str)}")
 print(f"First 100 chars: {embedding_str[:100]}")
 print(f"Last 100 chars: {embedding_str[-100:]}")
-print(f"\n✓ Vector conversion test passed!")
+print("\n✓ Vector conversion test passed!")

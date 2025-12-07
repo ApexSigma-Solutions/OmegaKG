@@ -172,7 +172,7 @@ WHERE status = 'pending_embedding'
 -- Use: Run periodically (e.g., nightly) via background job
 -- Safety: Only targets pending_embedding status; does NOT affect failed or ready
 -- BACKUP FIRST: Consider backing up table before running in production
--- 
+--
 -- Execution (commented out by default):
 -- DELETE FROM omega_vectors_1024
 -- WHERE status = 'pending_embedding'
