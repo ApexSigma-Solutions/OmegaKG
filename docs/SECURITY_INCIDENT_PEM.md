@@ -316,9 +316,9 @@ rm test.pem
 
 ## References
 
-- [SECURITY.md](./SECURITY.md) - Security policy and best practices
-- [PR_MERGE_CHECKLIST.md](./PR_MERGE_CHECKLIST.md) - Merge verification steps
-- [.pre-commit-config.yaml](./.pre-commit-config.yaml) - Security hooks configuration
+- [SECURITY.md](../SECURITY.md) - Security policy and best practices
+- [PR_MERGE_CHECKLIST.md](../PR_MERGE_CHECKLIST.md) - Merge verification steps
+- [.pre-commit-config.yaml](../.pre-commit-config.yaml) - Security hooks configuration
 - [git-filter-repo Documentation](https://github.com/newren/git-filter-repo)
 - [Chrome Extension Key Management](https://developer.chrome.com/docs/extensions/mv3/manifest/key/)
 

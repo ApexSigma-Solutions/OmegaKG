@@ -85,7 +85,7 @@ fi
 echo ""
 
 echo "4. Checking git history for sensitive files..."
-HISTORY_CHECK=$(git log --all --full-history --oneline -- "*.pem" "*.key" "Omega_KG_Capture.pem" 2>/dev/null | head -5 || true)
+HISTORY_CHECK=$(git log --all --full-history --oneline -- "*.pem" "*.key" 2>/dev/null | head -5 || true)
 if [ -z "$HISTORY_CHECK" ]; then
     print_result 0 "No sensitive files found in git history"
 else
