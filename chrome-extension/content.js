@@ -535,6 +535,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   // Handle async capture operation
   (async () => {
     try {
+<<<<<<< HEAD
       // Trigger capture conversation
       await capture.captureConversation();
       
@@ -545,6 +546,27 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       sendResponse({ 
         success: false, 
         error: error.message || 'Unknown error during capture' 
+=======
+      // Trigger capture conversation and get result
+      const captureSuccess = await capture.captureConversation();
+      
+      if (captureSuccess) {
+        // Send success response
+        sendResponse({ success: true });
+      } else {
+        // captureConversation returned false, indicating failure (no messages, duplicate, or server error)
+        console.error('[Omega_KG] Capture failed (no messages, duplicate, or server error)');
+        sendResponse({
+          success: false,
+          error: 'Capture failed: no messages extracted, duplicate conversation, or server error'
+        });
+      }
+    } catch (error) {
+      console.error('[Omega_KG] Error handling TRIGGER_CAPTURE:', error);
+      sendResponse({
+        success: false,
+        error: error.message || 'Unknown error during capture'
+>>>>>>> omega_kg_1/apply-pr81-to-beta
       });
     }
   })();

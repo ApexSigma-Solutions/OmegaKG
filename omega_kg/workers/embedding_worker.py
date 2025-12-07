@@ -206,7 +206,11 @@ class EmbeddingWorker:
         self, message_id: int, node_label: str
     ) -> Optional[str]:
         """
+<<<<<<< HEAD
         Fetch message content from Neo4j by node ID and label.
+=======
+        Fetch message content from Neo4j by node ID and label asynchronously.
+>>>>>>> omega_kg_1/apply-pr81-to-beta
         
         Implements strategic content extraction patterns per node type:
         - ChatMessage: Simple content field
@@ -214,6 +218,11 @@ class EmbeddingWorker:
         - ChatSession: Summary field with fallback
         - Decision: Multi-field coalesce
         
+<<<<<<< HEAD
+=======
+        Uses AsyncGraphDriver for non-blocking, pooled connections.
+        
+>>>>>>> omega_kg_1/apply-pr81-to-beta
         Args:
             message_id: Neo4j internal node ID (from id(n))
             node_label: Neo4j node type (ChatMessage, LinearIssue, Decision, ChatSession)
@@ -227,6 +236,7 @@ class EmbeddingWorker:
         logger.debug(f"Fetching message: message_id={message_id}, node_label={node_label}")
 
         try:
+<<<<<<< HEAD
             # Import Neo4j driver from settings
             from neo4j import GraphDatabase
             from omega_kg.settings import settings
@@ -236,6 +246,9 @@ class EmbeddingWorker:
                 settings.neo4j_uri,
                 auth=(settings.neo4j_user, settings.neo4j_password),
             )
+=======
+            from omega_kg.database.graph import graph_driver
+>>>>>>> omega_kg_1/apply-pr81-to-beta
 
             # Strategic query patterns per node type
             query_map = {
@@ -271,6 +284,7 @@ class EmbeddingWorker:
                 """,
             )
 
+<<<<<<< HEAD
             # Execute query synchronously (Neo4j driver is sync)
             with driver.session() as session:
                 result = session.run(query, message_id=message_id)
@@ -279,6 +293,16 @@ class EmbeddingWorker:
                 if record:
                     text = record.get("text")
                     if text:
+=======
+            # Execute query asynchronously using shared async driver
+            async with graph_driver.session() as session:
+                result = await session.run(query, message_id=message_id)
+                record = await result.single()
+
+                if record:
+                    text = record.get("text")
+                    if text and isinstance(text, str):
+>>>>>>> omega_kg_1/apply-pr81-to-beta
                         logger.debug(
                             f"Fetched text for {node_label}:{message_id} "
                             f"({len(text)} chars)"
@@ -299,10 +323,13 @@ class EmbeddingWorker:
                 f"node_label={node_label}, error={e}"
             )
             return None
+<<<<<<< HEAD
         finally:
             # Close driver to prevent connection leaks
             if "driver" in locals():
                 driver.close()
+=======
+>>>>>>> omega_kg_1/apply-pr81-to-beta
 
 
 # Singleton instance

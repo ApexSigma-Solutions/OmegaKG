@@ -253,7 +253,13 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
         signal: AbortSignal.timeout(5000), // 5 second timeout
       });
 
+<<<<<<< HEAD
       // Validate response status before parsing JSON
+=======
+      // Only access response properties if fetch succeeded
+      // Validate response status before parsing JSON
+      // response.ok is true only for 2xx status codes
+>>>>>>> omega_kg_1/apply-pr81-to-beta
       if (!response.ok) {
         // Handle client errors (4xx) and server errors (5xx) separately
         if (response.status >= 400 && response.status < 500) {
@@ -270,16 +276,31 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
             errorText
           );
           return;
+<<<<<<< HEAD
         }
       }
 
       // Parse JSON only if response is OK
+=======
+        } else {
+          // Handle 1xx (informational) and 3xx (redirect) responses
+          // These are unexpected for a health check endpoint
+          console.warn(
+            `[Omega_KG] Server health check returned unexpected status ${response.status} (informational/redirect)`
+          );
+          return;
+        }
+      }
+
+      // Parse JSON only if response is OK (2xx status)
+>>>>>>> omega_kg_1/apply-pr81-to-beta
       const data = await response.json();
       console.log(
         "[Omega_KG] Server status:",
         data.status,
       );
     } catch (error) {
+<<<<<<< HEAD
       // Structured error handling for network failures
       if (error.name === 'AbortError' || error.name === 'TimeoutError') {
         console.warn("[Omega_KG] Server health check timed out");
@@ -288,6 +309,23 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
       } else {
         console.warn("[Omega_KG] Server health check error:", error.message);
       }
+=======
+      // Check for timeout/abort errors FIRST (before any response access)
+      // These occur when fetch() throws before a response is received
+      if (error.name === 'AbortError' || error.name === 'TimeoutError') {
+        console.warn("[Omega_KG] Server health check timed out");
+        return;
+      }
+      
+      // Check for network errors (no response received)
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        console.warn("[Omega_KG] Server offline - network error:", error.message);
+        return;
+      }
+      
+      // Other errors
+      console.warn("[Omega_KG] Server health check error:", error.message);
+>>>>>>> omega_kg_1/apply-pr81-to-beta
     }
   }
 });
