@@ -63,7 +63,8 @@ async def lifespan(app: FastAPI):
 
     # Initialize vector store
     try:
-        vector_store = await get_vector_store()
+        # initialize vector store connection pool; no local variable needed
+        await get_vector_store()
         logger.info("✓ Vector store initialized")
     except Exception as e:
         logger.error(f"Failed to initialize vector store: {e}")
