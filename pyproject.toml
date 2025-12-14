@@ -30,6 +30,7 @@ dependencies = [
     "psycopg2-binary (>=2.9.0,<3.0.0)",
     "python-dotenv (>=1.0.0,<2.0.0)",
     "requests (>=2.31.0,<3.0.0)",
+    "psutil (>=7.1.3,<8.0.0)",
 ]
 
 [project.scripts]
@@ -59,6 +60,7 @@ pytest-dotenv = "^0.5.2"
 mypy = "^1.14.0"
 bandit = "^1.8.0"
 pytest-asyncio = "^1.3.0"
+testcontainers = {extras = ["neo4j", "postgres"], version = "^4.13.3"}
 
 
 [tool.poetry.group.docs.dependencies]
@@ -66,22 +68,7 @@ mkdocs = "^1.6.1"
 mkdocs-material = "^9.6.22"
 mkdocstrings = {extras = ["python"], version = "^0.30.1"}
 
-[tool.pytest.ini_options]
-minversion = "7.0"
-testpaths = ["tests", "tests/integration"]
-python_files = ["test_*.py", "*_test.py"]
-python_classes = ["Test*"]
-python_functions = ["test_*"]
-addopts = "-v --tb=short --strict-markers --junitxml=junit.xml"
-asyncio_mode = "auto"
-markers = [
-     "unit: unit tests",
-     "integration: integration tests requiring live services (PostgreSQL, Neo4j, etc.)",
-     "slow: slow running tests",
-    "requires_neo4j: integration test that requires a live Neo4j instance",
-    "requires_postgres: integration test that requires a live PostgreSQL instance",
-    "not_requires_neo4j: tests that do not require Neo4j database connection",
- ]
+# Pytest configuration is managed in pytest.ini
 
 [tool.coverage.run]
 source = ["omega_kg"]
