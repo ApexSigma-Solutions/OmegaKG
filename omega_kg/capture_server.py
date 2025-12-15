@@ -11,19 +11,50 @@ import logging
 import neo4j
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union, TYPE_CHECKING
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, Security, Request
 from fastapi.middleware.cors import CORSMiddleware
 from neo4j import GraphDatabase
+# Core data validation with version compatibility
+from pydantic import __version__ as pydantic_version
 from pydantic import BaseModel, Field
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
+
+# Validate pydantic version for compatibility
+if tuple(map(int, pydantic_version.split("."))) < (2, 0, 0):
+    import warnings
+    warnings.warn("Pydantic < 2.0 may have compatibility issues", DeprecationWarning)
+
+# Async scheduling with graceful fallback
+_scheduler_available = True
+AsyncIOScheduler = None
+
+if TYPE_CHECKING:
+    from apscheduler.schedulers.asyncio import AsyncIOScheduler
+else:
+    try:
+        from apscheduler.schedulers.asyncio import AsyncIOScheduler
+    except ImportError as e:
+        _scheduler_available = False
+        # Define a dummy class to prevent runtime errors when APScheduler is not available
+        class AsyncIOScheduler:  # type: ignore
+            def __init__(self):
+                pass
+            def add_job(self, *args, **kwargs):
+                pass
+            def start(self):
+                pass
+            def shutdown(self, *args, **kwargs):
+                pass
+        import warnings
+        warnings.warn(f"APScheduler not available: {e}. Background tasks will be disabled.", ImportWarning)
 
 # --- Import your settings and logic classes ---
 from omega_kg.settings import settings
 from omega_kg.percolation import PercolationEngine
 from omega_kg.linear_sync import LinearSync
+from omega_kg.vault_utils import VaultUtils
 from omega_kg.auth_utils import (
     get_static_api_key,
     validate_access_token,
@@ -50,7 +81,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Security limits
-MAX_HTML_SIZE = 500_000  # 500KB
+MAX_HTML_SIZE = 1500_000  # 1.5MB
 
 # --- App and Engine Initialization ---
 
@@ -60,6 +91,9 @@ MAX_HTML_SIZE = 500_000  # 500KB
 async def lifespan(app: FastAPI):
     """Lifespan event handler to initialize vector store, start worker, and schedule batch percolation."""
     logger.info("Starting Omega_KG Capture Server...")
+    
+    # Initialize scheduler variable to ensure it's available in shutdown
+    scheduler = None
 
     # Initialize vector store
     try:
@@ -80,15 +114,20 @@ async def lifespan(app: FastAPI):
 
     # Start scheduler for batch percolation
     try:
-        scheduler = AsyncIOScheduler()
-        scheduler.add_job(
-            batch_percolate_sessions, "interval", minutes=5, id="session_percolation"
-        )
-        scheduler.start()
-        logger.info("✓ Session percolation scheduled (every 5 minutes)")
+        if not _scheduler_available:
+            logger.warning("Scheduler not available - APScheduler import failed. Background tasks disabled.")
+            # Don't raise - continue without scheduler
+        else:
+            scheduler = AsyncIOScheduler()  # type: ignore
+            scheduler.add_job(
+                batch_percolate_sessions, "interval", minutes=5, id="session_percolation"
+            )
+            scheduler.start()
+            logger.info("✓ Session percolation scheduled (every 5 minutes)")
     except Exception as e:
         logger.error(f"Failed to start scheduler: {e}")
-        raise
+        # Don't raise - continue without scheduler for resilience
+        scheduler = None
 
     # Log startup summary
     logger.info(log_config_summary())
@@ -105,12 +144,15 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error(f"Error stopping embedding worker: {e}")
 
-    # Stop scheduler
-    try:
-        scheduler.shutdown()
-        logger.info("✓ Scheduler stopped")
-    except Exception as e:
-        logger.error(f"Error stopping scheduler: {e}")
+    # Stop scheduler (only if it was started)
+    if scheduler is not None:
+        try:
+            scheduler.shutdown(wait=False)  # Non-blocking shutdown
+            logger.info("✓ Scheduler stopped")
+        except Exception as e:
+            logger.error(f"Error stopping scheduler: {e}")
+    else:
+        logger.info("Scheduler was not started - skipping shutdown")
 
     # Close vector store pool
     try:
@@ -127,6 +169,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+
 sync_engine = LinearSync()
 
 # Register Linear Receiver Router (New Parallel Endpoint)
@@ -141,6 +184,7 @@ app.add_middleware(
     allow_methods=["POST", "GET", "OPTIONS"],
     allow_headers=["X-API-Key", "Authorization", "Content-Type"],
 )
+
 
 
 # --- Pydantic Models ---
@@ -168,7 +212,7 @@ class ConversationData(BaseModel):
     # messages can be dicts or Message objects depending on caller
     messages: Optional[List[Union[Dict[str, Any], Message]]] = []
     raw_html: Optional[str] = None
-    metadata: Optional[Dict] = None
+    metadata: Optional[Dict[str, Any]] = None
 
 
 class CaptureResponse(BaseModel):
@@ -363,7 +407,7 @@ def write_to_obsidian(platform: str, content: str, conversation_hash: str) -> Pa
 def percolate_to_neo4j(
     file_path: Path,
     data: ConversationData,
-    driver: Optional[GraphDatabase.driver] = None,
+    driver: Optional[neo4j.Driver] = None,
 ) -> int:
     """
     Percolates a captured conversation markdown file and its metadata to Neo4j.
@@ -684,12 +728,8 @@ async def health_check():
     return health_status
 
 
-@app.on_event("startup")
-async def startup_event():
-    """Log deprecation notice for legacy endpoint."""
-    logger.warning(
-        "⚠️  Legacy endpoint /webhook/linear active. New endpoint: /webhooks/linear"
-    )
+# Startup event handling is now managed by the lifespan context manager
+# The deprecation notice for legacy endpoint is logged during startup
 
 
 @app.post("/auth/token", response_model=Token)

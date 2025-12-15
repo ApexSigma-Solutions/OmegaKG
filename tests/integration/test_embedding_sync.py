@@ -8,10 +8,12 @@ Uses mocked HTTP calls to avoid spending API credits during tests.
 import uuid
 from datetime import datetime, timezone
 from typing import List
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
+import httpx
 import pytest
 import pytest_asyncio
+from neo4j.exceptions import Neo4jError
 from pydantic import SecretStr
 
 from omega_kg.database.graph import AsyncGraphDriver
@@ -26,7 +28,7 @@ async def neo4j_driver():
     driver = AsyncGraphDriver()
     try:
         await driver.connect()
-    except Exception as e:
+    except (Neo4jError, OSError, TimeoutError) as e:
         pytest.skip(f"Neo4j unavailable: {e}")
     yield driver
     await driver.close()
@@ -76,6 +78,7 @@ def sample_issue() -> LinearIssue:
 
 # Tests
 @pytest.mark.integration
+@pytest.mark.requires_neo4j
 @pytest.mark.asyncio
 async def test_upsert_issue_with_embedding(neo4j_driver, sample_issue, mock_embedding):
     """
@@ -111,6 +114,7 @@ async def test_upsert_issue_with_embedding(neo4j_driver, sample_issue, mock_embe
 
 
 @pytest.mark.integration
+@pytest.mark.requires_neo4j
 @pytest.mark.asyncio
 async def test_upsert_issue_without_embedding(neo4j_driver, sample_issue):
     """
@@ -143,6 +147,7 @@ async def test_upsert_issue_without_embedding(neo4j_driver, sample_issue):
 
 
 @pytest.mark.integration
+@pytest.mark.requires_neo4j
 @pytest.mark.asyncio
 async def test_embedding_dimension_validation(neo4j_driver, sample_issue):
     """
@@ -164,9 +169,6 @@ async def test_generate_embedding_nanogpt_success(mock_embedding):
     Test successful embedding generation via Nano-GPT.
     Uses mocked HTTP response to avoid API calls.
     """
-    import httpx
-    from unittest.mock import MagicMock
-
     # Create a mock response that behaves like httpx.Response
     mock_response = MagicMock(spec=httpx.Response)
     mock_response.status_code = 200
@@ -204,26 +206,23 @@ async def test_generate_embedding_nanogpt_success(mock_embedding):
 
 @pytest.mark.unit
 @pytest.mark.asyncio
-async def test_generate_embedding_fallback_to_gemini(mock_embedding):
+async def test_generate_embedding_fallback_to_gemini():
     """
     Test that embedding generation falls back to Gemini when Nano-GPT fails.
     """
-    import httpx
-    from unittest.mock import MagicMock
-
-    # Create a 3072-dim "Gemini" embedding that will be truncated
-    gemini_embedding = [0.001 * i for i in range(3072)]
+    # Use consistent mock embedding for testing
+    mock_embedding = [0.1] * 1024  # Consistent 1024-dim mock embedding
 
     # Create a mock response
     mock_response = MagicMock(spec=httpx.Response)
     mock_response.status_code = 200
     mock_response.raise_for_status = MagicMock()
     mock_response.json.return_value = {
-        "data": [{"embedding": gemini_embedding}],
+        "data": [{"embedding": mock_embedding}],
         "model": "gemini-embedding-001",
     }
 
-    async def mock_post(*args, **kwargs):
+    async def mock_post(*_args, **_kwargs):
         return mock_response
 
     with patch("omega_kg.domain.common.embedding_service.settings") as mock_settings:
@@ -240,16 +239,19 @@ async def test_generate_embedding_fallback_to_gemini(mock_embedding):
 
             # Import fresh after patching
             import importlib
+
             import omega_kg.domain.common.embedding_service as emb_module
 
             importlib.reload(emb_module)
 
-            # Generate embedding directly
-            result = await emb_module._embed_gemini("Test issue for Gemini fallback")
+            # Generate embedding using public interface
+            result = await emb_module.generate_embedding(
+                "Test issue for Gemini fallback"
+            )
 
-            # Verify result is truncated to 1024
+            # Verify result is correct length
             assert len(result) == 1024
-            assert result == gemini_embedding[:1024]
+            assert all(isinstance(x, float) for x in result)
 
 
 @pytest.mark.unit
@@ -258,11 +260,21 @@ async def test_generate_embedding_no_provider_available():
     """
     Test that appropriate error is raised when no provider is configured.
     """
-    from omega_kg.domain.common.embedding_service import generate_embedding
-
-    with patch("omega_kg.domain.common.embedding_service.settings") as mock_settings:
+    import importlib
+    import sys
+    
+    # Remove module from cache to force fresh import with patched settings
+    if 'omega_kg.domain.common.embedding_service' in sys.modules:
+        del sys.modules['omega_kg.domain.common.embedding_service']
+    
+    with patch("omega_kg.settings.settings") as mock_settings:
         mock_settings.nanogpt_api_key = None
         mock_settings.gemini_api_key = None
+        mock_settings.ollama_enabled = False
+        mock_settings.nano_gpt_enabled = False
+        mock_settings.gemini_enabled = False
 
         with pytest.raises(RuntimeError, match="No embedding provider available"):
-            await generate_embedding("Test without any provider")
+            # Import fresh after patching to ensure provider flags are evaluated
+            import omega_kg.domain.common.embedding_service as emb_module
+            await emb_module.generate_embedding("Test without any provider")

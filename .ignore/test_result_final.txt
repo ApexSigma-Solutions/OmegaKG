@@ -1,0 +1,5 @@
+Checking Health...
+D:\projects\Omega_KG_dev\scripts\curl_test.ps1 : Health Check Failed. Is server running? Error: Unable to connect to the remote server
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,curl_test.ps1
+ 

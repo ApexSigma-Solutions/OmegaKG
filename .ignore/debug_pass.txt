@@ -1,0 +1,4 @@
+2025-12-06 15:16:53,184 - omega_kg.domain.common.embedding_service - INFO - \u2713 Embedding Service initialized with provider: ollama, Ollama base URL: http://localhost:11434
+2025-12-06 15:16:53,189 - omega_kg.vault_utils - INFO - VaultUtils initialized. Vault path: vault
+2025-12-06 15:16:53,189 - omega_kg.linear_sync - INFO - LinearSync engine initialized.
+Import success
