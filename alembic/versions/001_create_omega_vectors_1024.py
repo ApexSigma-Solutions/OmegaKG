@@ -20,10 +20,11 @@ Deployment Notes:
 - Column constraints ensure data integrity
 - Updated_at timestamp enables TTL-based cleanup
 """
-from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.dialects import postgresql
 from pgvector.sqlalchemy import Vector
+from sqlalchemy.dialects import postgresql
+
+from alembic import op
 
 revision = '001_create_omega_vectors_1024'
 down_revision = None
@@ -99,16 +100,14 @@ def upgrade() -> None:
     op.create_index(
         'idx_omega_vectors_message_id',
         'omega_vectors_1024',
-        ['message_id'],
-        comment='Fast lookup by source message_id'
+        ['message_id']
     )
     
     # Index 2: status for worker polling (all status types)
     op.create_index(
         'idx_omega_vectors_status',
         'omega_vectors_1024',
-        ['status'],
-        comment='Worker polls for records by status'
+        ['status']
     )
     
     # Index 3: Partial index for pending records (performance optimization)
@@ -117,8 +116,7 @@ def upgrade() -> None:
         'idx_omega_vectors_pending',
         'omega_vectors_1024',
         ['message_id'],
-        postgresql_where=sa.text("status = 'pending_embedding'"),
-        comment='Partial index optimizes polling for pending embeddings'
+        postgresql_where=sa.text("status = 'pending_embedding'")
     )
     
     # Index 4: Composite index for TTL cleanup queries
@@ -126,8 +124,7 @@ def upgrade() -> None:
         'idx_omega_vectors_cleanup',
         'omega_vectors_1024',
         ['updated_at'],
-        postgresql_where=sa.text("status = 'pending_embedding'"),
-        comment='Partial index for TTL-based cleanup of stale pending records'
+        postgresql_where=sa.text("status = 'pending_embedding'")
     )
     
     # Index 5: Retry tracking for failure analysis
@@ -135,8 +132,7 @@ def upgrade() -> None:
         'idx_omega_vectors_failed_retry',
         'omega_vectors_1024',
         ['retry_count', 'updated_at'],
-        postgresql_where=sa.text("status = 'failed'"),
-        comment='Tracks failed records for alerting and manual retry'
+        postgresql_where=sa.text("status = 'failed'")
     )
 
 

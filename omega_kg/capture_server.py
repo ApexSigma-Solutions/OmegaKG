@@ -43,6 +43,7 @@ from omega_kg.domain.common.embedding_service import generate_embedding
 from omega_kg.vector_store import get_vector_store, VectorStore
 from omega_kg.workers.embedding_worker import start_worker, stop_worker
 from omega_kg.config import log_config_summary
+from omega_kg.ollama_service import ensure_ollama_running, get_ollama_status
 
 # Configure logging
 logging.basicConfig(
@@ -61,6 +62,18 @@ MAX_HTML_SIZE = 500_000  # 500KB
 async def lifespan(app: FastAPI):
     """Lifespan event handler to initialize vector store, start worker, and schedule batch percolation."""
     logger.info("Starting Omega_KG Capture Server...")
+    
+    # Ensure Ollama is running before starting embedding worker
+    try:
+        if ensure_ollama_running():
+            ollama_status = get_ollama_status()
+            logger.info(f"✓ Ollama service running at {ollama_status['url']}")
+            if ollama_status.get('models_loaded'):
+                logger.info(f"  Models loaded: {', '.join(ollama_status['models_loaded'])}")
+        else:
+            logger.warning("⚠ Ollama service not available - embedding worker may fail")
+    except Exception as e:
+        logger.warning(f"⚠ Could not verify Ollama status: {e}")
     
     # Initialize vector store
     try:
@@ -638,6 +651,7 @@ async def health_check():
         "vault_accessible": False,
         "neo4j_connected": False,
         "postgres_connected": False,
+        "ollama_available": False,
     }
     try:
         vault_path = Path(settings.obsidian_vault_path)
@@ -666,6 +680,17 @@ async def health_check():
     except Exception as e:
         logger.warning(f"PostgreSQL check failed: {e}")
         health_status["postgres_error"] = str(e)
+    
+    # Ollama Health Check
+    try:
+        ollama_status = get_ollama_status()
+        health_status["ollama_available"] = ollama_status["running"]
+        health_status["ollama_url"] = ollama_status["url"]
+        if ollama_status.get("models_loaded"):
+            health_status["ollama_models"] = ollama_status["models_loaded"]
+    except Exception as e:
+        logger.warning(f"Ollama check failed: {e}")
+        health_status["ollama_error"] = str(e)
 
     return health_status
 
