@@ -1,11 +1,7 @@
 """Create omega_vectors_1024 table with pgvector support and status tracking
 
 Revision ID: 001_create_omega_vectors_1024
-<<<<<<< HEAD
 Revises: 
-=======
-Revises:
->>>>>>> omega_kg_1/apply-pr81-to-beta
 Create Date: 2025-12-02 23:00:00.000000
 
 Phase 7 (TN-LINEAR-07): Vector Enrichment
@@ -27,15 +23,12 @@ Deployment Notes:
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
-<<<<<<< HEAD
-=======
 from pgvector.sqlalchemy import Vector
 
 revision = '001_create_omega_vectors_1024'
 down_revision = None
 branch_labels = None
 depends_on = None
->>>>>>> omega_kg_1/apply-pr81-to-beta
 
 
 def upgrade() -> None:
@@ -58,11 +51,7 @@ def upgrade() -> None:
         ),
         sa.Column(
             'embedding',
-<<<<<<< HEAD
-            postgresql.VECTOR(1024),
-=======
             Vector(1024),
->>>>>>> omega_kg_1/apply-pr81-to-beta
             nullable=True,
             comment='1024-dimension BGE-M3 embedding vector; NULL while pending'
         ),

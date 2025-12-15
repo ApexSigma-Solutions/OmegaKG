@@ -535,21 +535,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   // Handle async capture operation
   (async () => {
     try {
-<<<<<<< HEAD
-      // Trigger capture conversation
-      await capture.captureConversation();
-      
-      // Send success response
-      sendResponse({ success: true });
-    } catch (error) {
-      console.error('[Omega_KG] Error handling TRIGGER_CAPTURE:', error);
-      sendResponse({ 
-        success: false, 
-        error: error.message || 'Unknown error during capture' 
-=======
       // Trigger capture conversation and get result
       const captureSuccess = await capture.captureConversation();
-      
+
       if (captureSuccess) {
         // Send success response
         sendResponse({ success: true });
@@ -563,11 +551,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       }
     } catch (error) {
       console.error('[Omega_KG] Error handling TRIGGER_CAPTURE:', error);
-      sendResponse({
-        success: false,
-        error: error.message || 'Unknown error during capture'
->>>>>>> omega_kg_1/apply-pr81-to-beta
-      });
+      sendResponse({ success: false, error: error.message || 'Unknown error during capture' });
     }
   })();
 
