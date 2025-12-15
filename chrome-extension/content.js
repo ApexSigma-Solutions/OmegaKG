@@ -441,7 +441,7 @@ class ChatCapture {
         '[data-testid*="message" i], [data-test-id*="message" i]',
     );
     console.log(
-      `Found ${messageElements.length} elements with messagerelated attributes`,
+      `Found ${messageElements.length} elements with message-related attributes`,
     );
 
     // Group by selector patterns
