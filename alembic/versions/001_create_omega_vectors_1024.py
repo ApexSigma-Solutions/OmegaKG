@@ -20,12 +20,13 @@ Deployment Notes:
 - Column constraints ensure data integrity
 - Updated_at timestamp enables TTL-based cleanup
 """
-
-from alembic import op
 import sqlalchemy as sa
 from pgvector.sqlalchemy import Vector
+from sqlalchemy.dialects import postgresql
 
-revision = "001_create_omega_vectors_1024"
+from alembic import op
+
+revision = '001_create_omega_vectors_1024'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -37,106 +38,101 @@ def upgrade() -> None:
     Includes columns for embedding storage, status tracking, and retry handling.
     """
     # Ensure pgvector extension exists
-    op.execute("CREATE EXTENSION IF NOT EXISTS vector")
-
+    op.execute('CREATE EXTENSION IF NOT EXISTS vector')
+    
     # Create main table
     op.create_table(
-        "omega_vectors_1024",
-        sa.Column("id", sa.BigInteger(), nullable=False, autoincrement=True),
+        'omega_vectors_1024',
+        sa.Column('id', sa.BigInteger(), nullable=False, autoincrement=True),
         sa.Column(
-            "message_id",
+            'message_id',
             sa.BigInteger(),
             nullable=False,
-            comment="Foreign key to source message/issue; enables cascade cleanup",
+            comment='Foreign key to source message/issue; enables cascade cleanup'
         ),
         sa.Column(
-            "embedding",
+            'embedding',
             Vector(1024),
             nullable=True,
-            comment="1024-dimension BGE-M3 embedding vector; NULL while pending",
+            comment='1024-dimension BGE-M3 embedding vector; NULL while pending'
         ),
         sa.Column(
-            "status",
+            'status',
             sa.String(32),
             nullable=False,
-            server_default="pending_embedding",
-            comment="Lifecycle status: pending_embedding → ready | failed",
+            server_default='pending_embedding',
+            comment='Lifecycle status: pending_embedding → ready | failed'
         ),
         sa.Column(
-            "retry_count",
+            'retry_count',
             sa.Integer(),
             nullable=False,
-            server_default="0",
-            comment="Retry counter; prevents infinite loops on persistent failures",
+            server_default='0',
+            comment='Retry counter; prevents infinite loops on persistent failures'
         ),
         sa.Column(
-            "created_at",
+            'created_at',
             sa.DateTime(timezone=True),
             nullable=False,
             server_default=sa.func.now(),
-            comment="Timestamp when record was created",
+            comment='Timestamp when record was created'
         ),
         sa.Column(
-            "updated_at",
+            'updated_at',
             sa.DateTime(timezone=True),
             nullable=False,
             server_default=sa.func.now(),
             onupdate=sa.func.now(),
-            comment="Timestamp of last status/retry update; used for TTL cleanup",
+            comment='Timestamp of last status/retry update; used for TTL cleanup'
         ),
-        sa.PrimaryKeyConstraint("id"),
+        sa.PrimaryKeyConstraint('id'),
         sa.CheckConstraint(
             "status IN ('pending_embedding', 'ready', 'failed')",
-            name="ck_omega_vectors_status",
+            name='ck_omega_vectors_status'
         ),
-        comment="Vector storage for semantic embeddings. "
-        + "Status-driven lifecycle enables at-least-once processing with durability.",
+        comment='Vector storage for semantic embeddings. ' +
+                'Status-driven lifecycle enables at-least-once processing with durability.'
     )
 
     # Primary key index (auto-created by sa.PrimaryKeyConstraint)
-
+    
     # Index 1: message_id for foreign key operations
     op.create_index(
-        "idx_omega_vectors_message_id",
-        "omega_vectors_1024",
-        ["message_id"],
-        comment="Fast lookup by source message_id",
+        'idx_omega_vectors_message_id',
+        'omega_vectors_1024',
+        ['message_id']
     )
-
+    
     # Index 2: status for worker polling (all status types)
     op.create_index(
-        "idx_omega_vectors_status",
-        "omega_vectors_1024",
-        ["status"],
-        comment="Worker polls for records by status",
+        'idx_omega_vectors_status',
+        'omega_vectors_1024',
+        ['status']
     )
-
+    
     # Index 3: Partial index for pending records (performance optimization)
     # This index is smaller and faster than full status index for worker queries
     op.create_index(
-        "idx_omega_vectors_pending",
-        "omega_vectors_1024",
-        ["message_id"],
-        postgresql_where=sa.text("status = 'pending_embedding'"),
-        comment="Partial index optimizes polling for pending embeddings",
+        'idx_omega_vectors_pending',
+        'omega_vectors_1024',
+        ['message_id'],
+        postgresql_where=sa.text("status = 'pending_embedding'")
     )
-
+    
     # Index 4: Composite index for TTL cleanup queries
     op.create_index(
-        "idx_omega_vectors_cleanup",
-        "omega_vectors_1024",
-        ["updated_at"],
-        postgresql_where=sa.text("status = 'pending_embedding'"),
-        comment="Partial index for TTL-based cleanup of stale pending records",
+        'idx_omega_vectors_cleanup',
+        'omega_vectors_1024',
+        ['updated_at'],
+        postgresql_where=sa.text("status = 'pending_embedding'")
     )
-
+    
     # Index 5: Retry tracking for failure analysis
     op.create_index(
-        "idx_omega_vectors_failed_retry",
-        "omega_vectors_1024",
-        ["retry_count", "updated_at"],
-        postgresql_where=sa.text("status = 'failed'"),
-        comment="Tracks failed records for alerting and manual retry",
+        'idx_omega_vectors_failed_retry',
+        'omega_vectors_1024',
+        ['retry_count', 'updated_at'],
+        postgresql_where=sa.text("status = 'failed'")
     )
 
 
@@ -146,7 +142,7 @@ def downgrade() -> None:
     WARNING: This destroys all embedding data. Use only for rollback.
     """
     # Indexes are automatically dropped when table is dropped
-    op.drop_table("omega_vectors_1024")
-
+    op.drop_table('omega_vectors_1024')
+    
     # Note: pgvector extension is left in place to avoid breaking other systems
     # If needed to fully clean up, manually execute: DROP EXTENSION IF EXISTS vector CASCADE;

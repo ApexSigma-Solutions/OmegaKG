@@ -62,3 +62,5 @@ nul
 
 # Local private keys and dev DB
 Omega_KG_Capture.pem
+
+dev_data/
