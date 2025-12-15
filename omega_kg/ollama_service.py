@@ -150,8 +150,8 @@ def get_ollama_status() -> dict:
             if response.status_code == 200:
                 models = response.json().get("models", [])
                 status["models_loaded"] = [m.get("name", "unknown") for m in models]
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Could not get loaded models from Ollama: {e}")
             
     except Exception as e:
         logger.debug(f"Error getting Ollama status: {e}")
