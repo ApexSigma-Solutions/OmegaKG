@@ -117,6 +117,7 @@ Where To Look First
 - `omega_kg/percolation.py` & `omega_kg/parsers.py` — parsing and extraction logic.
 - `omega_kg/settings.py` — environment variables and validation.
 
-Next Steps / PR Guidance
------------------------
-- If you'd like, I can open a PR with this file and a short workspace `settings.json` for VS Code. Tell me whether to target the `beta` branch or `copilot/stuck-ox`.
+## Contributing
+
+For guidance on branch strategy, PR workflows, or development questions, please reach out to the project maintainers or consult the repository's contribution guidelines.
+
