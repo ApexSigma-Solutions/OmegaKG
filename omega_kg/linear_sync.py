@@ -25,11 +25,16 @@ class LinearSync:
         """
         Initializes the LinearSync engine.
         """
-        self.vault_utils = VaultUtils()
         self.driver = GraphDatabase.driver(
             settings.neo4j_uri, auth=(settings.neo4j_user, settings.neo4j_password)
         )
         logger.info("LinearSync engine initialized.")
+
+    @property
+    def vault_utils(self) -> VaultUtils:
+        if not hasattr(self, '_vault_utils'):
+            self._vault_utils = VaultUtils()
+        return self._vault_utils
 
     async def verify_linear_signature(self, request: Request) -> bytes:
         """

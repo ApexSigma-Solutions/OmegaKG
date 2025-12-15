@@ -15,6 +15,8 @@ import pytest
 # Configure logging for better debugging
 logger = logging.getLogger(__name__)
 
+import pytest
+
 # Set required environment variables before importing Settings
 # to prevent validation errors during module import
 os.environ.setdefault("NEO4J_PASSWORD", "test-password")
@@ -99,18 +101,19 @@ def get_settings_fields() -> Dict[str, str]:
     Raises:
         AttributeError: If Settings model doesn't have expected attributes
     """
+    from pydantic import AliasChoices
+
     field_mappings = {}
+    for field_name, field_info in Settings.model_fields.items():
+        # Get validation_alias if it exists, otherwise use field_name
+        alias = field_info.validation_alias or field_name.upper()
 
-    try:
-        for field_name, field_info in Settings.model_fields.items():
-            # Handle different types of validation_alias safely
-            alias = _extract_field_alias(field_name, field_info)
-            field_mappings[field_name] = alias
+        # Handle AliasChoices objects (which are not hashable)
+        if isinstance(alias, AliasChoices):
+            # For AliasChoices, use the first choice as the representative alias
+            alias = alias.choices[0] if alias.choices else field_name.upper()
 
-        logger.debug(f"Extracted {len(field_mappings)} field mappings from Settings")
-
-    except AttributeError as e:
-        raise AttributeError(f"Unable to access Settings model fields: {e}")
+        field_mappings[field_name] = alias
 
     return field_mappings
 
@@ -331,6 +334,7 @@ def _fail_with_detailed_message(
     pytest.fail("\n".join(error_parts))
 
 
+@pytest.mark.unit
 def test_settings_have_env_example_entries():
     """
     Verify all Settings fields have corresponding .env.example entries.
@@ -350,6 +354,7 @@ def test_settings_have_env_example_entries():
         _fail_with_detailed_message(missing_entries)
 
 
+@pytest.mark.unit
 def test_env_example_keys_exist_in_settings():
     """
     Verify all non-exempted .env.example keys exist in Settings.
@@ -382,6 +387,7 @@ def test_env_example_keys_exist_in_settings():
         pytest.fail(f"Error during orphaned keys validation: {e}")
 
 
+@pytest.mark.unit
 def test_bitwarden_id_keys_are_exempted():
     """
     Verify all *_ID keys in .env.example are properly exempted.
@@ -414,6 +420,7 @@ def test_bitwarden_id_keys_are_exempted():
         pytest.fail(f"Error during Bitwarden ID validation: {e}")
 
 
+@pytest.mark.unit
 def test_env_example_exists():
     """
     Sanity check: Verify .env.example file exists.
@@ -424,6 +431,7 @@ def test_env_example_exists():
     assert env_example_path.exists(), f".env.example not found at {env_example_path}"
 
 
+@pytest.mark.unit
 def test_settings_can_be_instantiated():
     """
     Verify Settings can be instantiated (catches Pydantic validation errors).

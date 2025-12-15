@@ -1,4 +1,8 @@
+import asyncio
 import logging
+
+# --- LOGGING SETUP ---
+import os
 import time
 from datetime import datetime, timezone
 
@@ -6,9 +10,6 @@ import requests
 
 from omega_kg.database.quipu import init_heartbeat_table, insert_heartbeat
 from omega_kg.settings import settings
-
-# --- LOGGING SETUP ---
-import os
 
 log_level = os.getenv("LOG_LEVEL", "INFO")
 logging.basicConfig(
@@ -56,11 +57,11 @@ def check_ollama_health():
         return "ERROR", 0, None, {"error": str(e)}
 
 
-def run_heartbeat_loop():
+async def run_heartbeat_loop():
     """Main Service Loop"""
     logger.info("Starting Quipu Heartbeat Monitor...")
 
-    if not init_heartbeat_table():
+    if not await init_heartbeat_table():
         logger.critical("Could not initialize Database. Service aborting.")
         return
 
@@ -73,7 +74,7 @@ def run_heartbeat_loop():
             timestamp = datetime.now(timezone.utc)
             status, latency, model, meta = check_ollama_health()
 
-            success = insert_heartbeat(
+            success = await insert_heartbeat(
                 service_name=settings.quipu_service_name,
                 timestamp=timestamp,
                 status=status,
@@ -101,4 +102,4 @@ def run_heartbeat_loop():
 
 
 if __name__ == "__main__":
-    run_heartbeat_loop()
+    asyncio.run(run_heartbeat_loop())

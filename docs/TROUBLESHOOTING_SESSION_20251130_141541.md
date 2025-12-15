@@ -2,9 +2,9 @@
 
 ## Executive Summary
 
-**Incident Type**: Silent Failure - Embedding Service Initialization Failure
-**Severity**: P0 - Critical Functionality Loss
-**Status**: Active - Requires Immediate Resolution
+**Incident Type**: Silent Failure - Embedding Service Initialization Failure  
+**Severity**: P0 - Critical Functionality Loss  
+**Status**: Active - Requires Immediate Resolution  
 **Affected Components**: Embedding Service, Ollama Integration, Vector Operations
 
 **Key Findings**:
@@ -155,7 +155,7 @@ INFO - Application startup complete
 **Execute in Neo4j Browser** (http://localhost:7474):
 
 ```cypher
-MATCH (n)
+MATCH (n) 
 WHERE n.embedding IS NOT NULL
 RETURN labels(n) as Type, count(n) as Count
 ```
@@ -204,16 +204,16 @@ http://googleusercontent.com/immersive_entry_chip/0
 async def validate_configuration():
     """Validate critical configuration on startup"""
     settings = get_settings()
-
+    
     # Critical configuration checks
     if not settings.embedding_provider:
         logger.error("❌ EMBEDDING_PROVIDER not configured")
         raise RuntimeError("Embedding provider configuration missing")
-
+    
     if settings.embedding_provider == "ollama" and not settings.ollama_base_url:
         logger.error("❌ OLLAMA_BASE_URL not configured for Ollama provider")
         raise RuntimeError("Ollama configuration incomplete")
-
+    
     # Test Ollama connectivity
     try:
         await test_ollama_connection()
@@ -221,7 +221,7 @@ async def validate_configuration():
     except Exception as e:
         logger.error(f"❌ Ollama connection failed: {e}")
         raise RuntimeError(f"Ollama unavailable: {e}")
-
+    
     logger.info("✅ Configuration validation passed")
 ```
 
@@ -232,21 +232,21 @@ async def validate_configuration():
 def __init__(self):
     self.provider = settings.embedding_provider
     self.ollama_url = settings.ollama_base_url
-
+    
     # Explicit initialization logging
     logger.info(f"Embedding Service initializing with provider: {self.provider}")
-
+    
     if self.provider == "ollama":
         if not self.ollama_url:
             logger.error("❌ OLLAMA_BASE_URL not set - cannot initialize Ollama client")
             raise ConfigurationError("Ollama URL configuration missing")
-
+        
         logger.info(f"✅ Ollama client configured for {self.ollama_url}")
         logger.info(f"✅ Using model: {settings.ollama_model}")
-
+    
     elif self.provider == "mock":
         logger.warning("⚠️ Running in MOCK MODE - no vector operations will be performed")
-
+    
     else:
         logger.error(f"❌ Unknown embedding provider: {self.provider}")
         raise ConfigurationError(f"Unsupported provider: {self.provider}")
@@ -264,16 +264,16 @@ Write-Host "=====================================" -ForegroundColor Cyan
 # Check .env file exists
 if (Test-Path .env) {
     Write-Host "✅ .env file found" -ForegroundColor Green
-
+    
     # Load and verify critical variables
     $envContent = Get-Content .env
-
+    
     if ($envContent -match "EMBEDDING_PROVIDER=ollama") {
         Write-Host "✅ EMBEDDING_PROVIDER=ollama configured" -ForegroundColor Green
     } else {
         Write-Host "❌ EMBEDDING_PROVIDER not set to ollama" -ForegroundColor Red
     }
-
+    
     if ($envContent -match "OLLAMA_BASE_URL=http://localhost:11434") {
         Write-Host "✅ OLLAMA_BASE_URL configured" -ForegroundColor Green
     } else {
@@ -288,7 +288,7 @@ Write-Host "`n🌐 Testing Ollama connectivity..." -ForegroundColor Cyan
 try {
     $response = Invoke-RestMethod -Uri "http://localhost:11434/api/tags" -Method Get -TimeoutSec 5
     Write-Host "✅ Ollama server responding" -ForegroundColor Green
-
+    
     if ($response.models.name -contains "nomic-embed-text") {
         Write-Host "✅ nomic-embed-text model available" -ForegroundColor Green
     } else {
@@ -335,10 +335,17 @@ If hardened configuration fails:
    ```powershell
    # Terminate current server
    CTRL+C
+<<<<<<< HEAD
 
    # Restore from backup .env if available
    Copy-Item .env.backup .env -Force
 
+=======
+   
+   # Restore from backup .env if available
+   Copy-Item .env.backup .env -Force
+   
+>>>>>>> pr-88
    # Restart with explicit environment
    $env:EMBEDDING_PROVIDER="ollama"
    $env:OLLAMA_BASE_URL="http://localhost:11434"
@@ -370,7 +377,7 @@ If hardened configuration fails:
 
 ---
 
-**Incident Duration**: Ongoing since 2025-11-30 12:52:26 UTC
-**Files Modified**: Pending resolution
-**Status**: 🔴 **CRITICAL** - Awaiting hardened configuration deployment
+**Incident Duration**: Ongoing since 2025-11-30 12:52:26 UTC  
+**Files Modified**: Pending resolution  
+**Status**: 🔴 **CRITICAL** - Awaiting hardened configuration deployment  
 **Next Review**: 2025-11-30 14:30 UTC
