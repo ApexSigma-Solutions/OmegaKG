@@ -1,44 +1,74 @@
 # Code Style & Conventions — Omega_KG
 
-This document summarizes required code style, patterns, and developer conventions used across Omega_KG.
+## Python Style
+- **Formatter**: Black (configured in pyproject.toml)
+- **Linter**: Ruff (configured in pyproject.toml)
+- **Type checker**: MyPy (configured in pyproject.toml)
+- **Line length**: Default Black (~88 chars)
+- **Naming**:
+  - Classes: PascalCase (e.g., TaskLifecycle, Settings)
+  - Functions/methods: snake_case (e.g., validate_settings, extract_messages)
+  - Constants: UPPER_SNAKE_CASE
+  - Private: Leading underscore (e.g., _internal_method)
 
-## General
-- Use **Python 3.12+** and Poetry for dependency management.
-- Format with **Black** and lint with **Ruff**.
-- Type hints are required — `mypy` is enabled in CI with `check_untyped_defs=True`.
-- Use `logger = logging.getLogger(__name__)` for module-level loggers.
-- All file read/write operations use `encoding="utf-8"`.
-- Keep imports ordered: standard library, third-party, local.
+## Type Hints
+- All functions and methods should have type hints
+- Use `from typing import ...` or built-in types (list, dict, etc. in Python 3.9+)
+- Return types explicitly annotated
 
-## Docstrings & Comments
-- Docstrings follow the **Google-style** format (mkdocstrings expects this).
-- Add inline comments for complex logic or unusual implementations.
+## Docstrings
+- **Style**: Google-style docstrings (for mkdocstrings extraction)
+- **Format**:
+  ```python
+  def function_name(param1: str, param2: int) -> bool:
+      """Short description on one line.
 
-## Error Handling
-- Use specific exception types, e.g., `ServiceUnavailable`, `AuthError`, `ConnectionError` rather than broad `Exception`.
+      Longer description if needed.
+
+      Args:
+          param1: Description of param1
+          param2: Description of param2
+
+      Returns:
+          Description of return value
+
+      Raises:
+          ValueError: When something is invalid
+      """
+  ```
+
+## Imports
+- Organize: standard library → third-party → local imports
+- One import per line for clarity
+- Sort alphabetically (pre-commit will enforce via ruff)
+
+## Neo4j Integration Pattern
+```python
+from omega_kg.settings import settings
+from neo4j import GraphDatabase
+
+driver = GraphDatabase.driver(settings.neo4j_uri, auth=(settings.neo4j_user, settings.neo4j_password))
+with driver.session() as session:
+    result = session.run("MATCH (n) RETURN n LIMIT 1")
+```
+
+## Configuration
+- All config via `omega_kg/settings.py` (Pydantic BaseSettings)
+- Environment variables from `.env` file (see `.env.example`)
+- Access: `from omega_kg.settings import settings` then `settings.neo4j_uri`, etc.
 
 ## Testing
-- Tests are organized under `tests/` with markers including `unit`, `integration`, `requires_neo4j`, `requires_postgres`, `slow`, and `not_requires_neo4j`.
-- Use `pytest-asyncio` for async tests when needed.
-- Aim for ≥80% coverage for new features; overall coverage threshold 70% is enforced.
-- For Neo4j-required tests, use mocks where possible and mark tests with `requires_neo4j`.
+- Test files in `tests/` with `test_*.py` naming
+- Markers: `@pytest.mark.unit`, `@pytest.mark.requires_neo4j`, `@pytest.mark.slow`
+- Fixtures in `tests/conftest.py`
+- Coverage target: >=80% (configured in pyproject.toml)
 
-## Pre-commit
-- Pre-commit hooks enforce formatting, linting, and basic checks before commits. Run `poetry run pre-commit run --all-files`.
+## Pre-commit Hooks
+- `.pre-commit-config.yaml` defines checks: Ruff, MyPy, Bandit, etc.
+- Run locally: `poetry run pre-commit run --all-files`
+- Runs automatically on commit (after `poetry run pre-commit install`)
 
-## Branching & PRs
-- Branch from `alpha` for feature work; open PR to `alpha`.
-- Use `beta` for development integration branches.
-- Tests and linters must pass before merging.
-
-## Neo4j & Postgres
-- Use `neo4j` driver version `>=6.0.2,<7.0.0` as specified in `pyproject.toml`.
-- Ensure Neo4j schema changes are managed in `neo4j_schema.py` and tests cover migration points.
-
-## Additional Project Guidelines
-- Maintain dual persistence: update both Neo4j schema (graph nodes/relations) and Obsidian frontmatter for tasks.
-- Follow `AGENTS.md` and `docs/` for CI, health checks and operational notes.
-- Avoid committing `.env` or local secrets; use Bitwarden secret mappings or `.env.example` as template.
-
----
-This memory is derived from `AGENTS.md`, `pyproject.toml`, and `README.md` and is intended to be a short, practical reference for new contributors.
+## Comment Style
+- Use `#` for inline comments
+- Use docstrings for function/class documentation
+- Avoid commented-out code; use git history instead

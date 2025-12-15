@@ -60,7 +60,19 @@ docker_backups/
 .github\instructions\codacy.instructions.md
 nul
 
-# Local private keys and dev DB
-Omega_KG_Capture.pem
+# Security - Private keys and certificates
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+*.jks
+*_rsa
+*_dsa
+*_ecdsa
+*_ed25519
+id_rsa*
+*.priv
 
-dev_data/
+# Specific sensitive files
+Omega_KG_Capture.pem

@@ -350,6 +350,20 @@ APP_PORT=8765
 3. Make changes and test: `poetry run pytest`
 4. Submit a pull request
 
+See [SECURITY.md](./SECURITY.md) for security best practices and vulnerability reporting.
+
+---
+
+## Security
+
+We take security seriously. Please review our [Security Policy](./SECURITY.md) for:
+- Reporting security vulnerabilities
+- Security best practices
+- Secret management guidelines
+- Pre-commit security hooks
+
+**Never commit private keys, API keys, or credentials to the repository.**
+
 ---
 
 ## License
@@ -362,5 +376,6 @@ MIT License — see [LICENSE](./LICENSE) for details.
 
 - 📖 [Full Documentation](./docs/index.md)
 - 🐛 [Report Issues](https://github.com/ApexSigma-Solutions/omega_kg/issues)
+- 🔒 [Security Policy](./SECURITY.md)
 - 📋 [API Reference](./docs/reference.md)
 - 🌐 [Port Configuration](./docs/PORT_MAPPING.md)
