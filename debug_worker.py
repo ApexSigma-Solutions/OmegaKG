@@ -11,7 +11,11 @@ logger = logging.getLogger(__name__)
 
 
 async def test_worker_startup():
-    """Test if worker startup hangs or causes issues"""
+    """
+    Run a smoke test that exercises startup and shutdown of the embedding worker and the vector store.
+    
+    Initializes the vector store, starts the embedding worker, waits briefly to verify the worker remains active, stops the worker, and closes the vector store's connection pool. Logs progress at each step and re-raises any exception encountered.
+    """
     logger.info("Testing worker startup...")
 
     try:

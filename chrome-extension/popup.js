@@ -18,9 +18,9 @@ const configLink = document.getElementById('configLink');
 let debugMode = false;
 
 /**
- * Update status message
- * @param {string} message - Status message
- * @param {string} type - Message type ('success', 'error', 'info')
+ * Set the popup status text and apply a visual state class.
+ * @param {string} message - Text to display in the status area.
+ * @param {'success'|'error'|'info'} [type='info'] - Visual state to apply: 'success', 'error', or 'info'.
  */
 function updateStatus(message, type = 'info') {
     statusDiv.textContent = message;
@@ -28,7 +28,12 @@ function updateStatus(message, type = 'info') {
 }
 
 /**
- * Load and display debug information
+ * Populate the debug panel with stored configuration and server health.
+ *
+ * Reads the API key, server URL, and last capture timestamp from chrome.storage.local,
+ * updates the debug panel DOM elements (API key status, server URL, last capture) and
+ * performs a GET to the server's /health endpoint to set the server status.
+ * Any errors encountered while loading debug information are caught and logged to the console.
  */
 async function loadDebugInfo() {
     try {
@@ -65,7 +70,10 @@ async function loadDebugInfo() {
 }
 
 /**
- * Check if API key is configured
+ * Update the popup UI to reflect whether an API key is configured.
+ *
+ * Reads the stored API key and sets the status message, enables or disables
+ * the capture button, and updates the button text to indicate required action.
  */
 async function checkConfiguration() {
     const data = await chrome.storage.local.get(STORAGE_KEYS.API_KEY);
@@ -83,7 +91,10 @@ async function checkConfiguration() {
 }
 
 /**
- * Trigger conversation capture
+ * Initiates a conversation capture from the active tab, updates UI status, and stores the capture timestamp.
+ *
+ * On success, saves the capture time to local storage under STORAGE_KEYS.LAST_CAPTURE and updates the debug panel if visible.
+ * On failure or error, updates the status element with an error message and re-enables the capture button.
  */
 async function captureConversation() {
     updateStatus('⏳ Capturing...', 'info');
@@ -121,7 +132,9 @@ async function captureConversation() {
 }
 
 /**
- * Toggle debug panel
+ * Toggle the debug panel visibility and load debug information when enabling it.
+ *
+ * Flips the `debugMode` flag, adds or removes the panel's `show` class, and calls `loadDebugInfo` when the panel is shown.
  */
 function toggleDebugMode() {
     debugMode = !debugMode;

@@ -13,6 +13,11 @@ from omega_kg.config import (
 
 
 async def check_embeddings():
+    """
+    Check the embedding records in the omega_vectors_1024 PostgreSQL table and print a brief report.
+    
+    Queries the database for the latest five rows (id, message_id, node_label, status, retry_count, created_at, updated_at) and prints each row if present; then retrieves and prints an aggregation of counts grouped by status. Establishes and closes a PostgreSQL connection as part of its operation.
+    """
     conn = await asyncpg.connect(
         user=POSTGRES_USER,
         password=POSTGRES_PASSWORD,
