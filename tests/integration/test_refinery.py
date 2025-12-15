@@ -74,7 +74,7 @@ def test_vault(tmp_path: Path) -> Path:
 
 
 @pytest.fixture
-def seed_linear_event(test_db_session: AsyncSession):
+async def seed_linear_event(test_db_session: AsyncSession):
     """
     Factory fixture to seed RawLinearEvent records.
 

@@ -2,45 +2,39 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Project Overview
+## What is Omega_KG?
 
-**Omega_KG** is a Neo4j-powered knowledge management system that bridges Obsidian vaults, Linear tasks, and Git commits. It captures AI conversations through a Chrome extension, manages task lifecycles with automated state transitions, and maintains a comprehensive knowledge graph.
+Omega_KG is a **FastAPI-based knowledge management system** that automatically captures AI conversations (ChatGPT, Claude, Gemini, etc.) and transforms them into a searchable knowledge graph. It uses a Chrome extension to capture conversations, a FastAPI capture server to process them, and dual databases (PostgreSQL for events/vectors + Neo4j for graph relationships) to store and connect ideas.
 
-## Development Commands
+**System Flow**: Chrome Extension → Capture Server (FastAPI) → Obsidian Vault + Neo4j + PostgreSQL
 
-### Environment Setup
+---
+
+## Common Development Commands
+
+### Project Setup
 ```bash
 # Install dependencies
 poetry install --with dev
 
-# Copy environment template and configure required secrets
+# Create environment config
 cp .env.example .env
-# Edit .env with NEO4J_PASSWORD, OBSIDIAN_VAULT_PATH, EXTENSION_API_KEY,
-# LINEAR_WEBHOOK_SECRET, CHROME_EXTENSION_ID, JWT_SECRET_KEY (all required)
+# Edit .env with OBSIDIAN_VAULT_PATH, NEO4J_PASSWORD, POSTGRES_PASSWORD, etc.
+
+# Start databases
+docker compose up -d neo4j-db postgres-db
 ```
 
-### Running the System
+### Development Server
 ```bash
-# Initialize Neo4j schema (run once)
-poetry run omega init
-
-# Start capture server (FastAPI on port 8765)
+# Start capture server (port 8765)
 poetry run capture-server
 
-# Sync Obsidian vault to Neo4j
-poetry run omega sync [--mock]
+# Run lifecycle checks (task state management)
+poetry run python -m omega_kg.lifecycle --dry-run
 
-# Enforce task lifecycle rules
-poetry run omega lifecycle [--dry-run] [--no-email]
-
-# System health check
-poetry run omega status
-
-# View task statistics
-poetry run omega stats
-
-# List stale tasks
-poetry run omega stale
+# Run CLI commands
+poetry run omega --help
 ```
 
 ### Testing
@@ -48,265 +42,374 @@ poetry run omega stale
 # Run all tests
 poetry run pytest
 
-# Run specific test markers
-poetry run pytest -m unit
-poetry run pytest -m integration
-poetry run pytest -m requires_neo4j
-poetry run pytest -m "not requires_neo4j"
+# Run specific test types
+poetry run pytest -m "unit"                    # Unit tests only
+poetry run pytest -m "integration"             # Integration tests
+poetry run pytest -m "requires_neo4j"          # Neo4j required
 
-# Run single test file
-poetry run pytest tests/test_lifecycle.py
+# Run with coverage
+poetry run pytest --cov=omega_kg --cov-report=xml
 
-# Run with coverage (generates terminal, HTML, and XML reports)
-poetry run pytest --cov=omega_kg --cov-report=html
-
-# Coverage with specific formats
-poetry run pytest --cov=omega_kg --cov-report=term-missing
-poetry run pytest --cov=omega_kg --cov-report=xml:coverage.xml
-
-# Coverage helper script (recommended)
-python scripts/coverage-report.py quick   # Quick unit test coverage
-python scripts/coverage-report.py full    # Full coverage with HTML report
-python scripts/coverage-report.py view    # Open HTML report in browser
-python scripts/coverage-report.py minimal # Check threshold only (70%)
-
-# Smoke test capture server
-poetry run python scripts/smoke-test-capture-server.py
+# Run specific test file
+poetry run pytest tests/test_capture.py -v
 ```
-
-**Coverage Documentation:** See [COVERAGE.md](COVERAGE.md) for detailed coverage guide.
 
 ### Code Quality
 ```bash
-# Linting
-poetry run ruff check .
-
-# Type checking
-poetry run mypy omega_kg/
-
-# Code formatting
-poetry run black .
-
-# Run pre-commit hooks
+# Install pre-commit hooks
 poetry run pre-commit install
+
+# Run all quality checks
 poetry run pre-commit run --all-files
+
+# Individual tools
+poetry run ruff check .                        # Lint
+poetry run ruff check --fix .                  # Lint + auto-fix
+poetry run ruff format .                       # Format code
+poetry run mypy omega_kg                       # Type checking
+poetry run bandit -c pyproject.toml -ll -r .   # Security linting
+```
+
+### Docker
+```bash
+# Start all services
+docker compose up -d
+
+# View logs
+docker compose logs -f omega-kg
+
+# Restart specific service
+docker compose restart neo4j-db
+
+# Stop all services
+docker compose down
 ```
 
 ### Documentation
 ```bash
-# Serve docs locally
+# Serve documentation locally
 poetry run mkdocs serve
-# View at http://localhost:8000
+
+# Build documentation
+poetry run mkdocs build
 ```
+
+### PowerShell Scripts (Windows)
+```powershell
+.\scripts\Start-OmegaKGDev.ps1           # Quick start dev environment
+.\scripts\smoke_test.py                   # Run smoke tests
+.\scripts\diagnose-extension.ps1          # Debug extension issues
+.\scripts\load-extension.ps1              # Load Chrome extension
+```
+
+---
 
 ## Architecture Overview
 
-### Core Data Flow
+### What Makes This Project Unique
 
-**Capture Flow**: Chrome Extension → FastAPI (`/capture`) → Markdown File (Obsidian vault) → Percolation → Neo4j (ChatSession + Decision nodes)
+1. **Dual Database Strategy**: PostgreSQL for events/vectors + Neo4j for graph relationships
+2. **Zero-Trust Security**: Bitwarden SDK integration with fallback to environment variables
+3. **Async Everything**: Async/await throughout (FastAPI, SQLAlchemy, Neo4j, asyncpg)
+4. **Write-Behind Pattern**: Immediate capture, async embedding generation
+5. **Task Lifecycle Automation**: Auto-state transitions with APScheduler (Draft → Ready → Active → Blocked → Completed → Archived)
+6. **Multi-Provider Fallback**: Embedding generation with Ollama → Gemini → Perplexity fallback
+7. **Chrome Extension Integration**: Real-time conversation capture from multiple AI platforms
+8. **Linear Task Management**: Bidirectional sync with Linear for task automation
 
-**Task Lifecycle Flow**: Neo4j Query (find violations) → Update Node → Update Obsidian Frontmatter → Email Report (optional)
+### Core Components
 
-**Linear Webhook Flow**: Linear → FastAPI (`/webhook/linear`) → HMAC Verification → Update Neo4j Task → Update Obsidian Frontmatter
+**Capture Server** (`capture_server.py`, 33KB):
+- FastAPI application (port 8765) with lifespan management
+- Receives conversations from Chrome extension via `POST /capture`
+- Saves to Obsidian vault, creates Neo4j graph relationships
+- Background scheduler for task lifecycle management (every 5 minutes)
+- Embedding worker initialization
 
-**Sync Flow**: Obsidian Tasks/*.md Files → Parse Frontmatter → MERGE Task Nodes in Neo4j
+**Chrome Extension** (`chrome-extension/`):
+- Manifest V3 extension
+- Captures conversations from supported AI platforms
+- Supported: Claude, ChatGPT, Gemini, Perplexity, DeepSeek, Mistral, Qwen
+- Sends data to capture server
 
-### Key Modules
+**Database Layer** (`database/`):
+- **PostgreSQL** (port 5433): Event storage, vector embeddings (pgvector)
+- **Neo4j** (ports 7474/7687): Graph relationships (Sessions → Decisions → Tasks → Commits)
 
-**`capture_server.py`** (FastAPI Server, Port 8765)
-- Authentication: Static API key (X-API-Key) → JWT token (Bearer)
-- Endpoints: `/auth/token`, `/capture`, `/webhook/linear`, `/health`
-- Background scheduler: Batch percolates session logs every 5 minutes
-- Dependencies: FastAPI, Uvicorn, APScheduler
+**Domain Models** (`domain/linear/`):
+- Pydantic models for Linear webhook processing
+- Data mapping and processing logic
+- Graph writer for Neo4j relationships
 
-**`lifecycle.py`** (Task State Machine)
-- Task states: `draft → ready → active → blocked → completed → archived`
-- Lifecycle rules: Draft decay (14d), stale active (30d), completion archive (90d)
-- Enforcement: Updates Neo4j properties + Obsidian frontmatter + markdown body
-- Reporting: Human-readable summary, optional email via SMTP
+### Directory Structure
 
-**`obsidian_sync.py`** (Vault ↔ Neo4j Sync)
-- Scans `Tasks/*.md` files, parses YAML frontmatter
-- MERGE Task nodes (creates if missing, updates if exists)
-- Graceful degradation: Falls back to mock mode on connection failure
-
-**`percolation.py`** (Markdown → Graph Extraction)
-- Extracts structured data from markdown using regex patterns
-- Task patterns: `[[PROJ-123]]`
-- Commit patterns: `#### Git Commit [repo]: hash`
-- Decision patterns: `## Decision` headers
-- Creates Task, Commit, and Decision nodes with relationships
-
-**`linear_sync.py`** (Linear Webhook Handler)
-- Verifies HMAC-SHA256 signature (constant-time comparison)
-- Routes webhook actions: `update` → sync issue, `remove` → handle deletion
-- Updates Neo4j Task properties: `linear_status`, `linear_priority`, `linear_updated`
-- Updates corresponding Obsidian file frontmatter
-
-**`linear_client.py`** (Linear GraphQL Adapter)
-- Creates Linear issues via GraphQL mutation (`issueCreate`)
-- Returns issue ID and identifier (e.g., "APX-123")
-
-**`smart_parser.py`** (Obsidian → Linear Creator)
-- Parses Obsidian notes: `@assignee/username`, `@label/label-name`, `@priority/[0-4]`
-- Creates Linear issues from markdown
-- Uses JSON maps for user/label lookups
-
-**`vault_utils.py`** (Filesystem Adapter)
-- Safe read/write operations on Obsidian vault
-- Methods: `read_note_frontmatter()`, `update_note_frontmatter()`, `resolve_path()`
-- UTF-8 encoding, graceful error handling
-
-**`ai_import.py`** (Conversation Bulk Importer)
-- Imports exported conversations from Claude/ChatGPT
-- Formats as markdown with frontmatter
-- Percolates to Neo4j: ChatSession nodes with timestamps
-
-**`neo4j_schema.py`** (Database Schema Manager)
-- Initializes constraints: `task_uid` (unique), `plan_id` (unique)
-- Initializes indexes: `task_status`, `task_created`
-- Health checks with graceful fallback to mock mode
-
-**`auth_utils.py`** (Authentication & Authorization)
-- Bootstrap auth: `get_static_api_key()` validates X-API-Key header
-- Dynamic auth: `create_access_token()` generates JWT, `validate_access_token()` validates
-- Token lifetime: `JWT_EXPIRATION_MINUTES` (default 24 hours)
-- Algorithm: HS256 (HMAC-SHA256)
-
-**`cli.py`** (Click CLI)
-- Entry point: `poetry run omega`
-- Commands: `init`, `sync`, `lifecycle`, `status`, `stats`, `stale`, `report`
-
-### Neo4j Data Model
-
-**Node Types**:
-- `ChatSession`: Conversation sessions (properties: `conversation_hash`, `date`, `platform`, `url`, `message_count`)
-- `Decision`: Key decisions extracted from conversations (properties: `decision_id`, `content`, `extracted_at`)
-- `Task`: Tasks with lifecycle states (properties: `uid` [unique], `title`, `status` [indexed], `created` [indexed], `linear_id`, `pinned`, `warned`, `transition_reason`)
-- `Commit`: Git commits (properties: `hash` [unique], `message`, `repo`, `timestamp`)
-- `Plan`: Parent planning containers (properties: `plan_id` [unique])
-
-**Relationships**:
-- `ChatSession -[:CONTAINS]-> Decision`
-- `Task -[:IMPLEMENTS]-> Decision`
-- `Commit -[:IMPLEMENTS]-> Task`
-- `Session -[:CONTAINS]-> Decision`
-
-### Obsidian Vault Structure
-
-Convention-based directory layout:
 ```
-vault/
-├── Tasks/                    # Task notes (synced to Neo4j)
-├── AI_Conversations/         # Captured conversations by platform
-│   ├── Claude/
-│   ├── ChatGPT/
-│   ├── Gemini/
-│   └── Perplexity/
-└── Sessions/                 # Session logs for percolation
+omega_kg/
+├── capture_server.py       # FastAPI entry point with lifespan management
+├── main.py                 # FastAPI app factory
+├── cli.py                  # CLI commands (poetry run omega)
+├── settings.py             # Configuration (Bitwarden + env vars)
+├── config.py               # Runtime configuration constants
+│
+├── database/               # Database layer
+│   ├── base.py             # SQLAlchemy Base
+│   ├── graph.py            # Neo4j async driver
+│   ├── session.py          # Async SQLAlchemy sessions
+│   └── quipu.py            # PostgreSQL helpers
+│
+├── domain/                 # Domain-driven design
+│   ├── linear/             # Linear integration
+│   │   ├── models.py       # Pydantic models
+│   │   ├── processor.py    # Webhook processing
+│   │   ├── mapper.py       # Data mapping logic
+│   │   └── graph_writer.py # Neo4j relationship creation
+│   └── common/
+│       └── embedding_service.py # Vector embedding service
+│
+├── models/                 # SQLAlchemy ORM models
+│   └── linear.py           # RawLinearEvent model
+│
+├── routers/                # FastAPI route modules
+│   └── linear_receiver.py  # Linear webhook endpoint
+│
+├── workers/                # Background workers
+│   └── embedding_worker.py # Async vector generation
+│
+├── lifecycle.py            # Task state automation
+├── linear_sync.py          # Linear API sync
+├── percolation.py          # Insight extraction
+├── vector_store.py         # PostgreSQL vector operations (pgvector)
+└── obsidian_sync.py        # Vault synchronization
 ```
 
-Files are markdown with YAML frontmatter containing metadata (uid, status, created, linear_id, etc.)
+### Key Relationships
 
-### Configuration (settings.py)
+**Graph Schema** (Neo4j):
+- `Session` → contains → `Decision`
+- `Decision` → becomes → `Task`
+- `Task` → implemented by → `Commit`
+- `Session` ↔ related_to ↔ `Session`
 
-Uses Pydantic BaseSettings with environment variables. All secrets are **required** (fail-fast on missing):
+### Supported AI Platforms
 
-**Required Secrets**:
-- `NEO4J_PASSWORD` - Neo4j database password
-- `OBSIDIAN_VAULT_PATH` - Path to Obsidian vault
-- `EXTENSION_API_KEY` - Chrome extension authentication
-- `LINEAR_WEBHOOK_SECRET` - Linear webhook HMAC verification
-- `CHROME_EXTENSION_ID` - CORS allowlist for extension
-- `JWT_SECRET_KEY` - JWT token signing (generate with `openssl rand -hex 32`)
-- `JWT_ALGORITHM` - JWT algorithm (default: HS256)
+| Platform     | Status | Auto-Capture |
+|--------------|--------|--------------|
+| ChatGPT      | ✅ Supported | Yes |
+| Claude       | ✅ Supported | Yes |
+| Gemini       | ✅ Supported | Yes |
+| Perplexity   | ✅ Supported | Yes |
+| DeepSeek     | ✅ Supported | Yes |
+| Mistral      | ✅ Supported | Yes |
+| Qwen         | ✅ Supported | Yes |
+| AI Studio    | ✅ Supported | Yes |
 
-**Optional Integrations**:
-- Linear API: `LINEAR_API_KEY`, `LINEAR_TEAM_ID`, `LINEAR_WORKSPACE_ID`, `LINEAR_PROJECT_ID`
-- Email: `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `EMAIL_TO`
-- GitHub: `GITHUB_TOKEN`
-- AI Services: `NANOGPT_API_KEY`, `OPENROUTER_API_KEY`, `PERPLEXITY_API_KEY`, `GEMINI_API_KEY`
+### Task Lifecycle Automation
 
-### Testing Patterns
+**States**: Draft → Ready → Active → Blocked → Completed → Archived
 
-**Shared Fixtures** (`tests/conftest.py`):
-- `mock_env_vars` - Monkeypatch environment variables
-- `test_vault_path` - Temporary vault directory
-- `mock_neo4j_driver` - Mocked Neo4j driver (context manager)
-- `mock_neo4j_session` - Mock session for queries
-- `sample_*_data` - Predefined test data objects
+**Auto-Transitions** (runs every 5 minutes):
+- Draft → Archived (inactive for 14 days)
+- Ready → Draft (needs more info)
+- Active → Blocked (no commits for 30 days)
+- Blocked → Archived (stuck too long)
+- Completed → Archived (after 90 days)
 
-**Test Markers**:
-- `@pytest.mark.unit` - Unit tests (no external dependencies)
-- `@pytest.mark.integration` - Integration tests
-- `@pytest.mark.requires_neo4j` - Tests requiring live Neo4j instance
-- `@pytest.mark.not_requires_neo4j` - Tests that work without Neo4j
-- `@pytest.mark.slow` - Long-running tests
+**Commands**:
+```bash
+# Preview lifecycle changes
+python -m omega_kg.lifecycle --dry-run
+```
 
-**Mock Pattern**: All modules support graceful degradation to `mock_mode=True` when Neo4j is unavailable.
+---
 
-## Critical Design Patterns
+## Configuration
 
-### 1. Graceful Degradation (Mock Mode)
-All major components fall back to mock mode on Neo4j connection failure. This prevents system crashes and enables testing without a live database.
+### Environment Variables
 
-### 2. Connection Health Checks
-Before operations, modules run simple queries (`RETURN 1`) to verify Neo4j connectivity. Raises exception on failure, triggering mock mode.
+**Required in `.env`**:
+```env
+# Obsidian vault location
+OBSIDIAN_VAULT_PATH=D:\path\to\vault
 
-### 3. Security via Constants
-- Static API key for bootstrap authentication (X-API-Key header)
-- JWT bearer tokens for ongoing authentication (Authorization: Bearer header)
-- HMAC-SHA256 signature verification for webhooks
-- Constant-time comparison (`hmac.compare_digest()`) prevents timing attacks
+# Neo4j
+NEO4J_URI=bolt://localhost:7687
+NEO4J_PASSWORD=your-password
 
-### 4. Frontmatter as Contract
-Markdown files carry metadata in YAML frontmatter. This is the source of truth for properties synced to Neo4j. Status field is indexed, UID field has unique constraint.
+# PostgreSQL
+POSTGRES_SERVER=127.0.0.1
+POSTGRES_PORT=5433
+POSTGRES_DB=omega_kg
+POSTGRES_USER=omega_user
+POSTGRES_PASSWORD=your-password
 
-### 5. Deterministic ID Generation
-- Task UIDs: Filename stem or frontmatter `uid`
-- Decision IDs: Hash of first 3 words → "DEC-XXXX" format
-- Conversation hash: MD5 of platform + URL + message count (8 chars)
+# Server
+APP_HOST=0.0.0.0
+APP_PORT=8765
 
-### 6. Cypher Query Parameterization
-All Neo4j queries use parameterized placeholders (`$variable`) to prevent injection and enable query optimization.
+# Extension authentication
+EXTENSION_API_KEY_PRD=your-api-key
+```
 
-## Important Development Notes
+### Configuration Sources (Priority Order)
+1. **Bitwarden Secrets** (if `BWS_ACCESS_TOKEN` set)
+2. **Environment Variables** (`.env`)
+3. **Defaults** (in `settings.py`)
 
-### Environment First
-Always verify `.env` configuration before debugging. Missing required secrets cause immediate failure on import. Test with `poetry run omega status`.
+---
 
-### Frontmatter Convention
-The YAML frontmatter in markdown files is the contract between Obsidian and Neo4j. Changes to files flow back to Neo4j via sync commands. The `status` field is indexed, `uid` is unique.
+## Development Workflow
 
-### Authentication Flow
-Chrome extension authenticates in two steps:
-1. Bootstrap: Send X-API-Key header → Receive JWT token
-2. Ongoing: Send Authorization: Bearer {token} header for all subsequent requests
+### Daily Development
+```bash
+# 1. Setup (first time only)
+poetry install --with dev
+cp .env.example .env
 
-### Percolation Scheduler
-The capture server runs a background scheduler (APScheduler) every 5 minutes to batch percolate session logs from the `Sessions/` directory. This extracts tasks, commits, and decision links.
+# 2. Start services
+docker compose up -d
 
-### CLI vs Server
-CLI commands are synchronous (Click, no asyncio). Capture server is async (FastAPI). Both use the same Neo4j driver but cannot share connections across event loops.
+# 3. Start development
+poetry run capture-server
 
-### Testing Without Neo4j
-Most tests use mocked Neo4j drivers. Use `@pytest.mark.requires_neo4j` for integration tests that need a live database. Run `pytest -m "not requires_neo4j"` to skip integration tests.
+# 4. Load Chrome extension
+.\scripts\load-extension.ps1  # Windows
+# OR manually: chrome://extensions → Load unpacked → chrome-extension/
+```
 
-### Lifecycle Enforcement
-The lifecycle module enforces time-based task state transitions:
-- Draft decay: 14 days (with warning at 10 days)
-- Stale active: 30 days with no commits
-- Completion archive: 90 days
+### Before Submitting PR
+```bash
+# Run quality checks
+poetry run pre-commit run --all-files
 
-Always run with `--dry-run` first to preview changes before applying.
+# Run tests
+poetry run pytest -m "unit"
 
-### Linear Webhook Security
-Linear webhooks must include valid HMAC-SHA256 signature in `X-Linear-Signature` header. Signature is computed from request body and `LINEAR_WEBHOOK_SECRET`. Verification uses constant-time comparison.
+# Run specific integration tests
+poetry run pytest -m "integration" -v
+```
 
-## Git Workflow
+### Port Reference
+| Service | Port | Access |
+|---------|------|--------|
+| Capture Server | 8765 | http://localhost:8765 |
+| Neo4j Browser | 7474 | http://localhost:7474 |
+| Neo4j Bolt | 7687 | Database connection |
+| PostgreSQL | 5433 | Database connection |
+| MkDocs Dev | 8000 | http://localhost:8000 |
 
-- **Main branch**: `alpha`
-- **Current branch**: `beta`
-- Create PRs targeting `alpha` branch
-- Commit messages follow conventional format: "feat:", "fix:", "chore:", etc.
-- Pre-commit hooks enforce code quality (black, ruff, mypy)
+---
+
+## Entry Points
+
+### Main Commands
+- **`poetry run capture-server`** - Start FastAPI server
+- **`poetry run omega`** - Main CLI
+- **`python -m omega_kg.lifecycle`** - Task lifecycle management
+
+### API Endpoints
+- `GET /health` - Health check with database status
+- `POST /capture` - Receives conversations from extension
+- `POST /linear/webhook` - Linear webhook receiver
+- `GET /docs` - Swagger API documentation
+
+---
+
+## Key Files
+
+- **`pyproject.toml`** - Dependencies, scripts, test config
+- **`docker-compose.yml`** - Database services (Neo4j, PostgreSQL)
+- **`.env.example`** - Complete environment template (157 lines)
+- **`pytest.ini`** - Test markers and configuration
+- **`.pre-commit-config.yaml`** - Code quality hooks
+
+---
+
+## Background Workers
+
+### Embedding Worker
+- Async worker in `workers/embedding_worker.py`
+- Polls PostgreSQL for pending embeddings every 10 seconds
+- Batch processing with retry mechanism
+- Provider fallback: Ollama → Gemini → Perplexity
+
+### Lifecycle Scheduler
+- Runs every 5 minutes (configured in `capture_server.py`)
+- Automates task state transitions
+- Auto-archives old drafts/completed tasks
+- Blocks tasks with no commits
+
+---
+
+## Testing Architecture
+
+### Test Markers
+- `unit` - Fast unit tests
+- `integration` - Requires live databases
+- `slow` - Long-running tests
+- `requires_neo4j` - Needs Neo4j instance
+- `requires_postgres` - Needs PostgreSQL instance
+
+### Current Test Status
+- ~80 tests total
+- Coverage: ~46% (81 tests passing)
+- Target: 80%+ coverage
+
+---
+
+## External Integrations
+
+### Linear (Task Management)
+- Webhook-based sync (`POST /linear/webhook`)
+- Creates tasks from decisions automatically
+- Tracks state changes in both systems
+
+### Obsidian Vault
+- Saves conversations as markdown files
+- Bidirectional sync with Neo4j graph
+- Frontmatter metadata for indexing
+
+### Embedding Providers
+- **Ollama** (local, default) - http://localhost:11434
+- **Gemini** (cloud fallback)
+- **Perplexity** (cloud fallback)
+
+---
+
+## Troubleshooting
+
+### Extension Issues
+```powershell
+# Diagnose extension
+.\scripts\diagnose-extension.ps1
+
+# Reload extension tabs
+.\scripts\reload-extension-tabs.ps1
+```
+
+### Server Issues
+```bash
+# Check server health
+curl http://localhost:8765/health
+
+# View server logs
+docker compose logs -f omega-kg
+```
+
+### Database Issues
+```bash
+# Check Neo4j connection
+docker compose exec neo4j-db cypher-shell -u neo4j -p password "MATCH (n) RETURN count(n)"
+
+# Check PostgreSQL
+docker compose exec postgres-db psql -U omega_user -d omega_kg -c "SELECT count(*) FROM raw_linear_events;"
+```
+
+---
+
+## See Also
+
+- **[Full Documentation](./docs/index.md)** - Comprehensive guides
+- **[Port Mapping](./docs/PORT_MAPPING.md)** - Network configuration
+- **[Developer Quickstart](./docs/20251130/DEVELOPER_QUICKSTART.md)** - Detailed setup
+- **[Testing Guide](./tests/README.md)** - Test suite documentation
+- **[README.md](./README.md)** - Project overview with architecture diagrams

@@ -53,9 +53,9 @@ docker_backups/
 .bevel/
 
 # Snyk Security Extension - AI Rules (auto-generated)
-.github\instructions\snyk_rules.instructions.md
+.github/instructions/snyk_rules.instructions.md
 
 
 #Ignore vscode AI rules
-.github\instructions\codacy.instructions.md
+.github/instructions/codacy.instructions.md
 nul

@@ -2,71 +2,56 @@
 
 This file provides guidance to agents when working with code in this repository.
 
-## Build & Test Commands
+## Dual-Agent Workflow Context
+This is a **Pattern A** project with memory bank at `./.kilocode/rules/memory-bank/`. Always read `activeContext.md` before starting tasks and update memory bank files as needed. Follow the dual-agent architecture with Kilo Code as governance layer and Roo Code as execution engine.
 
-- **Install dependencies**: `poetry install --with dev`
-- **Run single test**: `poetry run pytest tests/test_filename.py::test_function_name`
-- **Run tests with coverage**: `poetry run pytest --cov=omega_kg`
-- **Lint code**: `poetry run ruff check .`
-- **Format code**: `poetry run ruff format .`
-- **Type checking**: `poetry run mypy omega_kg/`
-- **Pre-commit hooks**: `poetry run pre-commit run --all-files`
+## Non-Obvious Project-Specific Patterns
 
-## Critical Project-Specific Patterns
+### Critical Hardcoded Conventions
+- **AI_Conversations folder**: Capture server writes to hardcoded `AI_Conversations/{platform}/` folder in Obsidian vault (capture_server.py:339)
+- **UID-based task files**: Tasks use glob pattern `f"Tasks/**/{uid}*.md"` for file discovery (lifecycle.py:358)
+- **Content ID format**: Conversations use `CAP-{YYYYMMDD}-{HASH}` format for frontmatter IDs (capture_server.py:225)
 
-### Hardcoded Conventions
-- **AI_Conversations folder**: Capture server writes to hardcoded `AI_Conversations/{platform}/` folder in Obsidian vault (capture_server.py:204)
-- **Task file naming**: Tasks use UID-based naming in `Tasks/` directory with glob pattern `f"Tasks/**/{uid}*.md"` (lifecycle.py:358)
+### Auto-Fallback Behaviors
+- **Mock mode activation**: System automatically switches to mock mode when Neo4j connection fails (lifecycle.py:118-120)
+- **Embedding worker**: Asynchronous worker polls every 10 seconds for pending embeddings (capture_server.py:75-76)
+- **Session scheduler**: Batch percolation runs every 5 minutes via APScheduler (capture_server.py:84-88)
 
-### Mock Mode Behavior
-- **Auto-fallback**: System automatically switches to mock mode when Neo4j connection fails (lifecycle.py:118-120)
-- **Mock data**: Lifecycle enforcement returns predefined mock results when no database connection (lifecycle.py:231-260)
+### Dual Persistence Architecture
+- **Neo4j + Markdown sync**: Tasks stored in both Neo4j AND Obsidian markdown files with frontmatter synchronization (lifecycle.py:317-391)
+- **Health validation**: Connection checks use `RETURN 1` query pattern (capture_server.py:667)
+- **Vector embedding**: ChatSession nodes queue embeddings via `store_pending()` then process asynchronously (capture_server.py:520-526)
 
-### Authentication & Security
-- **JWT tokens**: Chrome extension exchanges static API key for short-lived JWT tokens (capture_server.py:389-410)
-- **Environment-based configuration**: ALL configuration loaded from .env file using .env.example as template - no hardcoded secrets in code (settings.py:16-18)
-- **Portable configuration**: Copy .env.example to .env and fill values - application reads all settings from environment variables (settings.py:16-18)
+### Security & Authentication
+- **Bitwarden hybrid secrets**: Zero-trust configuration using Bitwarden SDK for environment variable injection (settings.py:15-67)
+- **JWT exchange flow**: Chrome extension exchanges static API key for short-lived JWT tokens (capture_server.py:695-716)
+- **CORS origins**: Chrome extension ID must match exactly in CORS configuration (capture_server.py:138)
 
-### Agent guidance
-- Always update `.env.example` whenever `settings.py` adds or removes a required environment variable. The `.env.example` is the canonical model for settings and helps agents know which keys to expect.
-- Avoid duplicating `.env` values in source or in docs; always use `.env.example` + local `.env` file for runtime secrets and local paths.
-- Pydantic uses `.env` at runtime via `settings.py`'s `env_file`. Treat `.env.example` as the schema/default model used for onboarding and automated checks.
-
-### Database Patterns
-- **Dual persistence**: Tasks stored in both Neo4j AND Obsidian markdown files with frontmatter sync (lifecycle.py:317-391)
-- **Session management**: All Neo4j operations use context manager pattern `with driver.session() as session:`
-- **Health checks**: Connection validation via `RETURN 1` query before operations (lifecycle.py:138)
-
-### Task Lifecycle Rules
+### Task Lifecycle Enforcement
 - **Draft → Archived**: 14 days (auto), 10 days (warn) unless pinned (lifecycle.py:63-77)
-- **Active → Blocked**: 30 days without commits (lifecycle.py:79-85)
+- **Active → Blocked**: 30 days without commits (lifecycle.py:79-85)  
 - **Completed → Archived**: 90 days (lifecycle.py:87-92)
 
-### Entry Points
+### Testing Infrastructure
+- **Custom markers**: Use `@pytest.mark.requires_neo4j` for database-dependent tests
+- **Mock fixtures**: `mock_env_vars`, `mock_neo4j_driver`, `task_lifecycle_mock` from conftest.py
+- **Test vault**: Tests automatically create `./test_vault` directory structure
+
+### Critical Gotchas
+- **Settings validation**: Pydantic fails fast on missing required env vars (settings.py:108-119)
+- **File encoding**: Always use `encoding="utf-8"` for file operations (capture_server.py:355)
+- **Platform sanitization**: Platform names sanitized via regex `r'[<>:"|?*\x00-\x1f]'` before folder creation (capture_server.py:327)
+- **Session context**: Neo4j operations MUST use `with driver.session() as session:` pattern or will leak connections
+
+## Entry Points
 - **CLI**: `omega` command via `omega_kg.cli:cli`
-- **Capture server**: `capture-server` command via `omega_kg.capture_server:main` (runs on port 8765)
+- **Capture server**: `capture-server` runs on port 8765 with lifespan management
 - **Lifecycle enforcement**: `python -m omega_kg.lifecycle --dry-run`
 
-## Code Style Guidelines
+## Neighboring Projects
+- **Omega_KG_stable**: Production version with enhanced linear_client and obsidian_sync modules
+- **omegavault.as**: Obsidian vault with memory-bank and workflow templates
+- All projects share dual-agent architecture and memory bank patterns
 
-- **Type hints**: Required for all functions (mypy configured with `disallow_untyped_defs = false` but `check_untyped_defs = true`)
-- **Docstrings**: Google-style docstrings with parameter descriptions
-- **Logging**: Use `logger = logging.getLogger(__name__)` pattern
-- **Error handling**: Specific exception types (ServiceUnavailable, AuthError, ConnectionError)
-- **Import order**: Standard library, third-party, local imports
-
-## Testing Requirements
-
-- **Test markers**: Use `@pytest.mark.unit`, `@pytest.mark.integration`, `@pytest.mark.requires_neo4j`
-- **Mock fixtures**: Use `mock_env_vars`, `mock_neo4j_driver`, `task_lifecycle_mock` from conftest.py
-- **Test vault**: Tests create `./test_vault` directory automatically
-- **Neo4j tests**: Mark with `requires_neo4j` and provide mock driver when possible
-
-## Critical Gotchas
-
-- **Settings validation**: Pydantic fails fast on missing required env vars (settings.py:108-119)
-- **File encoding**: Always use `encoding="utf-8"` for file operations
-- **Date handling**: Use `datetime.now().isoformat()` for consistent timestamps
-- **CORS configuration**: Chrome extension ID must match exactly in CORS origins (capture_server.py:68)
-- **Pre-commit hooks**: Custom hooks prevent root-level test scripts and bytecode files
-- **Environment setup**: Application requires .env file based on .env.example template for all configuration
+## New Contributors
+- **Serena**: Added onboarding doc `ONBOARD_SERENA.md`. Follow the steps there and open a PR titled "Onboarding: Serena" when ready.

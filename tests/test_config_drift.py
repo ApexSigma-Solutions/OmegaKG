@@ -6,8 +6,9 @@ match the .env.example file, preventing configuration drift.
 """
 
 import os
-import pytest
 from pathlib import Path
+
+import pytest
 
 # Set required environment variables before importing Settings
 # to prevent validation errors during module import
@@ -52,10 +53,18 @@ def get_settings_fields() -> dict[str, str]:
     Returns:
         Dict mapping field_name to validation_alias (or field_name if no alias)
     """
+    from pydantic import AliasChoices
+    
     field_mappings = {}
     for field_name, field_info in Settings.model_fields.items():
         # Get validation_alias if it exists, otherwise use field_name
         alias = field_info.validation_alias or field_name.upper()
+        
+        # Handle AliasChoices objects (which are not hashable)
+        if isinstance(alias, AliasChoices):
+            # For AliasChoices, use the first choice as the representative alias
+            alias = alias.choices[0] if alias.choices else field_name.upper()
+        
         field_mappings[field_name] = alias
 
     return field_mappings
@@ -94,6 +103,7 @@ def get_exempted_keys() -> set[str]:
     }
 
 
+@pytest.mark.unit
 def test_settings_have_env_example_entries():
     """
     Verify all Settings fields have corresponding .env.example entries.
@@ -114,6 +124,7 @@ def test_settings_have_env_example_entries():
         )
 
 
+@pytest.mark.unit
 def test_env_example_keys_exist_in_settings():
     """
     Verify all non-exempted .env.example keys exist in Settings.
@@ -139,6 +150,7 @@ def test_env_example_keys_exist_in_settings():
         )
 
 
+@pytest.mark.unit
 def test_bitwarden_id_keys_are_exempted():
     """
     Verify all *_ID keys in .env.example are properly exempted.
@@ -164,6 +176,7 @@ def test_bitwarden_id_keys_are_exempted():
         )
 
 
+@pytest.mark.unit
 def test_env_example_exists():
     """
     Sanity check: Verify .env.example file exists.
@@ -172,6 +185,7 @@ def test_env_example_exists():
     assert env_example_path.exists(), f".env.example not found at {env_example_path}"
 
 
+@pytest.mark.unit
 def test_settings_can_be_instantiated():
     """
     Verify Settings can be instantiated (catches Pydantic validation errors).
