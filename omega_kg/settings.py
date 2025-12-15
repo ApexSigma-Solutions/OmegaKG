@@ -1,23 +1,25 @@
+import logging
 import os
 import uuid
 from typing import Any, Dict, Optional, Tuple
 
 from bitwarden_sdk import BitwardenClient
 from bitwarden_sdk.schemas import ClientSettings, DeviceType
-from pydantic import Field
+from pydantic import AliasChoices, Field, model_validator
 from pydantic_settings import (
     BaseSettings,
     PydanticBaseSettingsSource,
     SettingsConfigDict,
 )
 
+logger = logging.getLogger(__name__)
 
 class BitwardenSettingsSource(PydanticBaseSettingsSource):
     """
     Hybrid Source: Inject secrets from Bitwarden if BWS_ACCESS_TOKEN is present.
     """
 
-    def get_field_value(self, field: Any, field_name: str) -> Tuple[Any, str, bool]:
+    def get_field_value(self, _field: Any, field_name: str) -> Tuple[Any, str, bool]:
         return None, field_name, False
 
     def __call__(self) -> Dict[str, Any]:
@@ -56,13 +58,20 @@ class BitwardenSettingsSource(PydanticBaseSettingsSource):
                     try:
                         response = client.secrets().get(uuid.UUID(secret_uuid))
                         fetched_secrets[config_key] = response.value
-                    except Exception as e:
-                        print(
-                            f"WARN: Failed to fetch {config_key} (ID: {secret_uuid}): {e}"
+                    except Exception:
+                        logger.warning(
+                            "Failed to fetch secret for key '%s' from Bitwarden",
+                            config_key,
                         )
-        except Exception as e:
-            print(f"CRITICAL: Bitwarden SDK Error: {e}")
+        except Exception:
+            logger.critical("Bitwarden SDK error", exc_info=True)
             return {}
+
+        if fetched_secrets:
+            logger.info(
+                "Bitwarden secrets loaded for keys: %s",
+                ", ".join(sorted(fetched_secrets.keys())),
+            )
 
         return fetched_secrets
 
@@ -85,7 +94,12 @@ class Settings(BaseSettings):
         "omega_dev_password", validation_alias="POSTGRES_PASSWORD"
     )
 
-    # --- Neo4j Infrastructure (Legacy) ---
+    # --- Redis Infrastructure (For Production Rate Limiting) ---
+    redis_url: Optional[str] = Field(
+        None,
+        validation_alias="REDIS_URL",
+        description="Redis connection URL (e.g., redis://localhost:6379/0). If not set, uses in-memory rate limiting.",
+    )
     neo4j_uri: str = Field("bolt://localhost:7687", validation_alias="NEO4J_URI")
     neo4j_user: str = Field("neo4j", validation_alias="NEO4J_USER")
     neo4j_password: str = Field(..., validation_alias="NEO4J_PASSWORD")
@@ -103,7 +117,10 @@ class Settings(BaseSettings):
     chrome_extension_id: Optional[str] = Field(
         None, validation_alias="CHROME_EXTENSION_ID"
     )
-    extension_api_key: Optional[str] = Field(None, validation_alias="EXTENSION_API_KEY_PRD")
+    extension_api_key: Optional[str] = Field(
+        None,
+        validation_alias=AliasChoices("EXTENSION_API_KEY_PRD", "EXTENSION_API_KEY"),
+    )
 
     # --- Email/SMTP (Legacy Restored) ---
     smtp_host: Optional[str] = Field(None, validation_alias="SMTP_HOST")
@@ -131,7 +148,9 @@ class Settings(BaseSettings):
     github_token: Optional[str] = Field(None, validation_alias="GITHUB_TOKEN")
 
     # --- AI Services ---
-    nanogpt_api_key: Optional[str] = Field(None, validation_alias="NANOGPT_OMEGAKG_API_KEY")
+    nanogpt_api_key: Optional[str] = Field(
+        None, validation_alias="NANOGPT_OMEGAKG_API_KEY"
+    )
     openrouter_api_key: Optional[str] = Field(
         None, validation_alias="OPENROUTER_API_KEY"
     )
@@ -165,6 +184,12 @@ class Settings(BaseSettings):
         None, validation_alias="OMEGA_PG_CONN"
     )
 
+    # --- Percolation Engine Configuration ---
+    percolation_similarity_threshold: float = Field(
+        0.8, ge=0.0, le=1.0, validation_alias="PERCOLATION_SIMILARITY_THRESHOLD",
+        description="Similarity threshold for creating relationships in the percolation engine (0.0-1.0)"
+    )
+
     # --- Paths ---
     obsidian_vault_path: str = Field("./vault", validation_alias="OBSIDIAN_VAULT_PATH")
 
@@ -174,6 +199,42 @@ class Settings(BaseSettings):
         case_sensitive=False,
         extra="ignore",
     )
+
+    @model_validator(mode="after")
+    def _enforce_zero_trust_in_stable(self) -> "Settings":
+        omega_env = os.getenv("OMEGA_ENV", "dev").strip().lower()
+        zero_trust_required = os.getenv("ZERO_TRUST_REQUIRED", "true").strip().lower() == "true"
+
+        if not zero_trust_required:
+            return self
+
+        # Allow test runs to use local dummy values without Bitwarden.
+        if self.app_env.strip().lower() == "test":
+            return self
+
+        if not os.getenv("BWS_ACCESS_TOKEN"):
+            raise ValueError(
+                "BWS_ACCESS_TOKEN is required to enforce zero_trust secret loading"
+            )
+
+        required_secret_id_envs = (
+            "LINEAR_WEBHOOK_SECRET_PRD_ID",
+            "POSTGRES_PASSWORD_PRD_ID",
+            "NEO4J_PASSWORD_PRD_ID",
+            "EXTENSION_API_KEY_PRD_ID",
+            "JWT_SECRET_KEY_ID",
+        )
+
+        # In stable, treat missing secret IDs as a hard failure.
+        if omega_env in {"stable", "prod", "production"}:
+            missing = [k for k in required_secret_id_envs if not os.getenv(k)]
+            if missing:
+                raise ValueError(
+                    "Missing required Bitwarden secret ID env vars for stable environment: "
+                    + ", ".join(missing)
+                )
+
+        return self
 
     @property
     def database_url(self) -> str:
@@ -193,14 +254,22 @@ class Settings(BaseSettings):
         init_settings: PydanticBaseSettingsSource,
         env_settings: PydanticBaseSettingsSource,
         dotenv_settings: PydanticBaseSettingsSource,
-        file_secret_settings: PydanticBaseSettingsSource,
+        *args: PydanticBaseSettingsSource,
+        **kwargs: PydanticBaseSettingsSource,
     ) -> Tuple[PydanticBaseSettingsSource, ...]:
         return (
             init_settings,
             BitwardenSettingsSource(settings_cls),
             env_settings,
             dotenv_settings,
+            *args,
+            *kwargs.values(),
         )
 
 
 settings = Settings()
+
+
+def get_settings() -> Settings:
+    """Get the global settings instance."""
+    return settings

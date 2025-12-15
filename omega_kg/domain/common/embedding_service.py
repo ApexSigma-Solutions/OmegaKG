@@ -264,18 +264,26 @@ async def generate_embedding(text: str) -> List[float]:
         >>> len(embedding)
         1024
     """
+    ollama_enabled = getattr(settings, "ollama_enabled", True)
+    nano_gpt_enabled = getattr(settings, "nano_gpt_enabled", True)
+    gemini_enabled = getattr(settings, "gemini_enabled", True)
+
+    if not ollama_enabled and not nano_gpt_enabled and not gemini_enabled:
+        raise RuntimeError("No embedding provider available")
+
     # Try Ollama first (local, fastest)
-    try:
-        result: List[float] = await _embed_ollama(text)
-        logger.debug(f"Generated {EMBEDDING_DIMENSIONS}-dim embedding via Ollama")
-        return result
-    except Exception as err:
-        logger.warning(
-            f"Ollama embedding failed ({err}); attempting Nano-GPT fallback"
-        )
+    if ollama_enabled:
+        try:
+            result: List[float] = await _embed_ollama(text)
+            logger.debug(f"Generated {EMBEDDING_DIMENSIONS}-dim embedding via Ollama")
+            return result
+        except Exception as err:
+            logger.warning(
+                f"Ollama embedding failed ({err}); attempting Nano-GPT fallback"
+            )
 
     # Try Nano-GPT (if key is configured)
-    if settings.nanogpt_api_key:
+    if nano_gpt_enabled and settings.nanogpt_api_key:
         try:
             result = await _embed_nanogpt(text)
             logger.debug(f"Generated {EMBEDDING_DIMENSIONS}-dim embedding via Nano-GPT")
@@ -286,7 +294,7 @@ async def generate_embedding(text: str) -> List[float]:
             )
 
     # Fallback to Gemini (if key is configured)
-    if settings.gemini_api_key:
+    if gemini_enabled and settings.gemini_api_key:
         try:
             result = await _embed_gemini(text)
             logger.debug(

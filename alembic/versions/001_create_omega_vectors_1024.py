@@ -1,7 +1,7 @@
 """Create omega_vectors_1024 table with pgvector support and status tracking
 
 Revision ID: 001_create_omega_vectors_1024
-Revises:
+Revises: 
 Create Date: 2025-12-02 23:00:00.000000
 
 Phase 7 (TN-LINEAR-07): Vector Enrichment

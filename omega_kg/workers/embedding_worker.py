@@ -207,15 +207,14 @@ class EmbeddingWorker:
     ) -> Optional[str]:
         """
         Fetch message content from Neo4j by node ID and label asynchronously.
-        
+
         Implements strategic content extraction patterns per node type:
         - ChatMessage: Simple content field
         - LinearIssue: Title + Description (compound context)
         - ChatSession: Summary field with fallback
         - Decision: Multi-field coalesce
-        
+
         Uses AsyncGraphDriver for non-blocking, pooled connections.
-        
         Args:
             message_id: Neo4j internal node ID (from id(n))
             node_label: Neo4j node type (ChatMessage, LinearIssue, Decision, ChatSession)

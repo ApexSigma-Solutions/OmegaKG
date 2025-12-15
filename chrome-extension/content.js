@@ -537,7 +537,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     try {
       // Trigger capture conversation and get result
       const captureSuccess = await capture.captureConversation();
-      
+
       if (captureSuccess) {
         // Send success response
         sendResponse({ success: true });
@@ -551,10 +551,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       }
     } catch (error) {
       console.error('[Omega_KG] Error handling TRIGGER_CAPTURE:', error);
-      sendResponse({
-        success: false,
-        error: error.message || 'Unknown error during capture'
-      });
+      sendResponse({ success: false, error: error.message || 'Unknown error during capture' });
     }
   })();
 
