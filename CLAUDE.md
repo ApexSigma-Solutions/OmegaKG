@@ -50,7 +50,7 @@ poetry run capture-server
 poetry run omega-kg serve
 
 # With specific host/port
-poetry run run omega-kg serve --host 0.0.0.0 --port 8765
+poetry run omega-kg serve --host 0.0.0.0 --port 8765
 
 # Lifecycle management (dry-run)
 poetry run python -m omega_kg.lifecycle --dry-run
