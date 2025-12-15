@@ -71,7 +71,7 @@ def start_ollama_service() -> bool:
                     ["ollama", "serve"],
                     stdout=subprocess.DEVNULL,
                     stderr=subprocess.DEVNULL,
-                    creationflags=subprocess.CREATE_NO_WINDOW if platform.system() == "Windows" else 0
+                    creationflags=subprocess.CREATE_NO_WINDOW
                 )
                 time.sleep(3)  # Give it time to start
             except FileNotFoundError:
