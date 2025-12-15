@@ -81,7 +81,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Security limits
-MAX_HTML_SIZE = 1500_000  # 1.5MB
+MAX_HTML_SIZE = 500_000  # 500KB - reduced from 1.5MB to prevent DoS via large payloads
 
 # --- App and Engine Initialization ---
 
@@ -372,22 +372,28 @@ def write_to_obsidian(platform: str, content: str, conversation_hash: str) -> Pa
     if not platform_folder:
         platform_folder = "unknown"
 
-    vault_path = Path(settings.obsidian_vault_path)
+    vault_path = Path(settings.obsidian_vault_path).resolve()
     if not vault_path.exists():
         logger.warning(
             f"Obsidian vault not found at: {vault_path} - creating directory for write operations."
         )
         vault_path.mkdir(parents=True, exist_ok=True)
 
-    # Resolve path to ensure we stay within vault directory (prevent path traversal)
+    # Construct and resolve the target path
     ai_conv_path = (vault_path / "AI_Conversations" / platform_folder).resolve()
 
-    # Verify the resolved path is still within the vault directory
-    vault_resolved = vault_path.resolve()
-    if not str(ai_conv_path).startswith(str(vault_resolved)):
+    # Robust path traversal prevention using Path.relative_to() (Python 3.9+)
+    try:
+        ai_conv_path.relative_to(vault_path)
+    except ValueError:
         raise ValueError(
             f"Path traversal detected: {platform_folder} would escape vault directory"
         )
+    
+    # Additional check: ensure the path is not a special device or symlink escape
+    if ai_conv_path.is_symlink():
+        logger.warning(f"Symlink detected at {ai_conv_path}, resolving to target")
+        ai_conv_path = ai_conv_path.resolve()
 
     ai_conv_path.mkdir(parents=True, exist_ok=True)
 

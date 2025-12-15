@@ -321,8 +321,7 @@ class PercolationEngine:
             List[Dict]: List of similar tasks with their similarity scores
         """
         if similarity_threshold is None:
-            # Use the configurable threshold from settings
-            settings = Settings()
+            # Use the configurable threshold from the global settings object
             similarity_threshold = settings.percolation_similarity_threshold
         
         similar_tasks = []
@@ -382,43 +381,31 @@ class PercolationEngine:
             int: Number of relationships created
         """
         if similarity_threshold is None:
-            # Use the configurable threshold from settings
-            settings = Settings()
+            # Use the configurable threshold from the global settings object
             similarity_threshold = settings.percolation_similarity_threshold
         
-        relationships_created = 0
-        
         with self.driver.session() as session:
-            # Find all task pairs with similar embeddings
+            # Find similar task pairs and create relationships in a single query
             result = session.run(
                 """
                 MATCH (t1:Task), (t2:Task)
-                WHERE t1.uid < t2.uid  // Avoid duplicate relationships
+                WHERE t1.uid < t2.uid  // Avoid duplicate relationships and self-links
                   AND t1.embedding IS NOT NULL
                   AND t2.embedding IS NOT NULL
                   AND vector.similarity(t1.embedding, t2.embedding) >= $threshold
-                RETURN t1.uid as uid1, t2.uid as uid2,
-                       vector.similarity(t1.embedding, t2.embedding) as similarity
+                WITH t1, t2, vector.similarity(t1.embedding, t2.embedding) AS similarity
+                MERGE (t1)-[r:RELATES_TO]->(t2)
+                ON CREATE SET r.similarity = similarity, r.created = datetime()
+                ON MATCH SET r.similarity = similarity, r.updated = datetime()
+                RETURN count(r) AS relationships_created
                 """,
                 threshold=similarity_threshold
             )
             
-            for record in result:
-                # Create the relationship with similarity score as property
-                session.run(
-                    """
-                    MATCH (t1:Task {uid: $uid1})
-                    MATCH (t2:Task {uid: $uid2})
-                    MERGE (t1)-[r:RELATES_TO]->(t2)
-                    SET r.similarity = $similarity,
-                        r.created = datetime()
-                    RETURN r
-                    """,
-                    uid1=record["uid1"],
-                    uid2=record["uid2"],
-                    similarity=record["similarity"]
-                )
-                relationships_created += 1
+            record = result.single()
+            relationships_created = record["relationships_created"] if record else 0
+        
+        return relationships_created
         
         return relationships_created
 

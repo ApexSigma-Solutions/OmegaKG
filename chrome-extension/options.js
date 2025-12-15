@@ -29,9 +29,65 @@ async function initializeForm() {
             STORAGE_KEYS.API_KEY,
             'omega_server_url',
         ]);
-             * Synchronous version to avoid race conditions with async storage reads
-             */
-            function markUnsaved() {
+
+        if (data[STORAGE_KEYS.API_KEY]) {
+            apiKeyInput.value = data[STORAGE_KEYS.API_KEY];
+            updateFieldStatus(apiKeyStatus, 'saved', 'API key saved ✓');
+            savedApiKey = data[STORAGE_KEYS.API_KEY];
+        }
+
+        // Get current server URL from storage or use default
+        const currentServerUrl = data['omega_server_url'] || 'http://localhost:8765';
+        serverUrlInput.value = currentServerUrl;
+        savedServerUrl = currentServerUrl;
+        if (data['omega_server_url']) {
+            updateFieldStatus(serverUrlStatus, 'saved', 'Server URL loaded ✓');
+        }
+
+        console.debug('[Omega_KG] Configuration loaded');
+    } catch (error) {
+        console.error('[Omega_KG] Failed to load configuration:', error);
+        showStatus('error', `Failed to load configuration: ${error.message}`);
+    }
+}
+
+/**
+ * Update field status indicator
+ * @param {HTMLElement} element - Status element
+ * @param {string} status - Status type ('saved', 'unsaved', 'error')
+ * @param {string} message - Status message
+ */
+function updateFieldStatus(element, status, message) {
+    element.className = `field-status ${status}`;
+    element.textContent = message;
+}
+
+/**
+ * Display status message to user
+ * @param {string} type - Message type ('success', 'error', 'info')
+ * @param {string} message - Message text
+ */
+function showStatus(type, message) {
+    statusMessage.className = `status-message ${type}`;
+    statusMessage.textContent = message;
+    console.debug(`[Omega_KG] Status (${type}): ${message}`);
+
+    // Auto-hide success messages after 3 seconds
+    if (type === 'success') {
+        setTimeout(() => {
+            statusMessage.className = 'status-message';
+        }, 3000);
+    }
+}
+
+/**
+ * Validate API key format
+ * @param {string} apiKey - API key to validate
+ * @returns {boolean} True if valid
+ */
+function validateApiKey(apiKey) {
+    return apiKey && apiKey.trim().length >= 10;
+}
                 // Get current input values
                 const currentApiKey = apiKeyInput.value.trim();
                 const currentServerUrl = serverUrlInput.value.trim();

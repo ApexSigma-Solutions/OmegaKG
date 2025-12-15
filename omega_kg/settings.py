@@ -94,7 +94,12 @@ class Settings(BaseSettings):
         "omega_dev_password", validation_alias="POSTGRES_PASSWORD"
     )
 
-    # --- Neo4j Infrastructure (Legacy) ---
+    # --- Redis Infrastructure (For Production Rate Limiting) ---
+    redis_url: Optional[str] = Field(
+        None,
+        validation_alias="REDIS_URL",
+        description="Redis connection URL (e.g., redis://localhost:6379/0). If not set, uses in-memory rate limiting.",
+    )
     neo4j_uri: str = Field("bolt://localhost:7687", validation_alias="NEO4J_URI")
     neo4j_user: str = Field("neo4j", validation_alias="NEO4J_USER")
     neo4j_password: str = Field(..., validation_alias="NEO4J_PASSWORD")
@@ -249,14 +254,16 @@ class Settings(BaseSettings):
         init_settings: PydanticBaseSettingsSource,
         env_settings: PydanticBaseSettingsSource,
         dotenv_settings: PydanticBaseSettingsSource,
-        file_secret_settings: PydanticBaseSettingsSource,  # <--- FIXED: Added this argument
+        *args: PydanticBaseSettingsSource,
+        **kwargs: PydanticBaseSettingsSource,
     ) -> Tuple[PydanticBaseSettingsSource, ...]:
         return (
             init_settings,
             BitwardenSettingsSource(settings_cls),
             env_settings,
             dotenv_settings,
-            file_secret_settings, # <--- FIXED: Included in return
+            *args,
+            *kwargs.values(),
         )
 
 

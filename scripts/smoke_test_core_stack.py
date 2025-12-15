@@ -260,8 +260,12 @@ class InfrastructureSmokeTester:
                         "error": str(e)
                     })
                 
-                # Wait 10 seconds between checks
-                time.sleep(10)
+                # Wait before the next check, ensuring not to exceed end_time
+                remaining_time = end_time - time.time()
+                sleep_duration = 10
+                if remaining_time < sleep_duration:
+                    break  # Not enough time for another full interval
+                time.sleep(sleep_duration)
             
             # Calculate statistics
             if check_count > 0:

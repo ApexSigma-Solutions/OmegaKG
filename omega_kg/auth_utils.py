@@ -1,4 +1,5 @@
 import hmac
+import logging
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Set, Dict, Any
 from fastapi import Depends, HTTPException, status, Security, Request
@@ -8,6 +9,9 @@ from jose import JWTError, jwt
 from pydantic import BaseModel
 
 from omega_kg.settings import settings
+from omega_kg.rate_limiter import get_rate_limiter
+
+logger = logging.getLogger(__name__)
 
 # SECURITY HARDENING: JWT Algorithm Validation (AUTH-001)
 # Only allow secure algorithms - reject 'none' and weak algorithms
@@ -19,10 +23,6 @@ SECRET_KEY = settings.jwt_secret_key
 ALGORITHM = settings.jwt_algorithm
 ACCESS_TOKEN_EXPIRE_MINUTES = settings.jwt_expiration_minutes
 EXTENSION_API_KEY = settings.extension_api_key
-
-# Rate limiting for API key validation
-API_KEY_ATTEMPTS_LIMIT = 5
-API_KEY_WINDOW_SECONDS = 300  # 5 minutes
 
 # Validate JWT algorithm at startup
 if ALGORITHM not in SECURE_JWT_ALGORITHMS:
@@ -49,12 +49,13 @@ class LoginRequest(BaseModel):
 
 
 # UTILS
-# Rate limiting storage (in production, use Redis or similar)
-_attempts_storage = {}
-
 def _check_rate_limit(client_ip: str) -> bool:
     """
     SECURITY HARDENING (AUTH-004): Check rate limiting for API key attempts.
+    
+    Uses production-ready distributed rate limiting:
+    - Primary: Redis (for multi-process/distributed deployments)
+    - Fallback: In-memory (for development/testing)
     
     Args:
         client_ip: Client IP address for rate limiting
@@ -62,29 +63,8 @@ def _check_rate_limit(client_ip: str) -> bool:
     Returns:
         bool: True if request should be allowed, False if rate limited
     """
-    import time
-    
-    current_time = time.time()
-    client_key = f"api_key_attempts_{client_ip}"
-    
-    # Get or initialize attempt tracking
-    if client_key not in _attempts_storage:
-        _attempts_storage[client_key] = {"count": 0, "first_attempt": current_time}
-    
-    client_data = _attempts_storage[client_key]
-    
-    # Reset if outside time window
-    if current_time - client_data["first_attempt"] > API_KEY_WINDOW_SECONDS:
-        _attempts_storage[client_key] = {"count": 0, "first_attempt": current_time}
-        client_data = _attempts_storage[client_key]
-    
-    # Check if rate limit exceeded
-    if client_data["count"] >= API_KEY_ATTEMPTS_LIMIT:
-        return False
-    
-    # Increment attempt counter
-    client_data["count"] += 1
-    return True
+    rate_limiter = get_rate_limiter()
+    return rate_limiter.check_limit(client_ip)
 
 def get_static_api_key(
     request: Request,
@@ -135,14 +115,11 @@ def get_static_api_key(
     try:
         if hmac.compare_digest(api_key_header, EXTENSION_API_KEY):
             # Successful authentication - reset rate limit
-            client_key = f"api_key_attempts_{client_ip}"
-            if client_key in _attempts_storage:
-                del _attempts_storage[client_key]
+            rate_limiter = get_rate_limiter()
+            rate_limiter.reset(client_ip)
             return api_key_header
     except Exception:
         # Log validation error without leaking API key details
-        import logging
-        logger = logging.getLogger(__name__)
         logger.warning("API key validation error for IP: %s", client_ip)
     
     # Failed authentication - don't reveal specific error details

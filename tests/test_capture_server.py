@@ -527,9 +527,9 @@ class TestCreateDecisionNodes:
         
         with patch('omega_kg.capture_server.settings') as mock_settings:
             mock_settings.decision_keywords = ["decide", "choice"]
-            mock_datetime.now.return_value.isoformat.return_value = "2023-12-01T10:00:00"
             
-            with patch('omega_kg.capture_server.datetime'):
+            with patch('omega_kg.capture_server.datetime') as mock_datetime:
+                mock_datetime.now.return_value.isoformat.return_value = "2023-12-01T10:00:00"
                 nodes_created = _create_decision_nodes(mock_session, "test_hash", data)
                 
                 # Should create 2 decision nodes

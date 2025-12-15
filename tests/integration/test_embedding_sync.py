@@ -239,8 +239,7 @@ async def test_generate_embedding_fallback_to_gemini():
 
             # Import fresh after patching
             import importlib
-
-            import omega_kg.domain.common.embedding_service as emb_module
+            from omega_kg.domain.common import embedding_service as emb_module
 
             importlib.reload(emb_module)
 
@@ -276,5 +275,5 @@ async def test_generate_embedding_no_provider_available():
 
         with pytest.raises(RuntimeError, match="No embedding provider available"):
             # Import fresh after patching to ensure provider flags are evaluated
-            import omega_kg.domain.common.embedding_service as emb_module
+            from omega_kg.domain.common import embedding_service as emb_module
             await emb_module.generate_embedding("Test without any provider")

@@ -17,6 +17,7 @@ Version: 1.0
 import json
 import subprocess
 import sys
+import os
 from pathlib import Path
 from typing import Dict, Any, List
 from datetime import datetime, timezone
@@ -67,17 +68,29 @@ class SplitStreamVerifier:
         print("🗄️  Verifying Postgres schema...")
         
         try:
-            # Try to connect using docker exec first
-            result = subprocess.run(
-                ["docker", "exec", "apexsigma.postgres.db", "psql", "-U", "postgres", "-d", "postgres", "-c", 
-                 "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'"],
-                capture_output=True,
-                text=True,
-                timeout=10
-            )
+            # Use environment variables instead of hardcoded credentials
+            db_user = os.getenv("POSTGRES_USER", "omega_user")
+            db_name = os.getenv("POSTGRES_DB", "omega_kg")
+            db_host = os.getenv("POSTGRES_SERVER", "127.0.0.1")
+            db_port = os.getenv("POSTGRES_PORT", "5433")
             
-            if result.returncode == 0:
-                tables = result.stdout
+            # Use psycopg2 driver instead of shell-out for better security
+            try:
+                conn = psycopg2.connect(
+                    host=db_host,
+                    port=db_port,
+                    user=db_user,
+                    database=db_name,
+                    sslmode="require"  # Enforce TLS
+                )
+                cursor = conn.cursor()
+                cursor.execute(
+                    "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'"
+                )
+                tables = [row[0] for row in cursor.fetchall()]
+                cursor.close()
+                conn.close()
+                
                 has_vectors_table = "omega_vectors_1024" in tables
                 
                 self.results["postgres_schema"] = {
@@ -91,21 +104,21 @@ class SplitStreamVerifier:
                     print("   ✅ omega_vectors_1024 table exists")
                 else:
                     print("   ❌ omega_vectors_1024 table not found")
-            else:
+            except psycopg2.Error as e:
                 self.results["postgres_schema"] = {
                     "status": "ERROR",
-                    "error": result.stderr,
+                    "error": "Database connection failed (see logs for details)",
                     "timestamp": datetime.now(timezone.utc).isoformat()
                 }
-                print(f"   ❌ Postgres query failed: {result.stderr}")
+                print(f"   ❌ Postgres query failed (error logged securely)")
                 
         except Exception as e:
             self.results["postgres_schema"] = {
                 "status": "ERROR",
-                "error": str(e),
+                "error": "Verification failed (see logs for details)",
                 "timestamp": datetime.now(timezone.utc).isoformat()
             }
-            print(f"   ❌ Postgres verification failed: {e}")
+            print(f"   ❌ Postgres verification failed")
 
     def _verify_neo4j_schema(self):
         """Verify Neo4j schema and postgres_id properties."""

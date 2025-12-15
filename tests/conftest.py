@@ -138,10 +138,10 @@ def postgres_container():
 def neo4j_container():
     """Spins up ephemeral Neo4j."""
     logger.info(f"🐳 Starting Neo4j: {NEO4J_IMAGE}")
-    # FIX: Let Testcontainers handle auth configuration automatically.
-    # Do not manually set NEO4J_AUTH unless specifically needed.
+    # Let Testcontainers handle auth configuration automatically.
     with Neo4jContainer(NEO4J_IMAGE) as neo4j:
-        neo4j.with_env("NEO4J_AUTH", "neo4j/neo4j_secure_password_123")
+        # The default is 'neo4j/password' which is fine for testing.
+        # The driver fixture will correctly read credentials from the container.
         yield neo4j
 
 @pytest.fixture(scope="session")
