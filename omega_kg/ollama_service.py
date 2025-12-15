@@ -5,10 +5,11 @@ Handles starting, stopping, and health checking the Ollama service.
 """
 
 import logging
+import platform
 import subprocess
 import time
-import platform
 from typing import Optional
+
 import requests
 
 from omega_kg.settings import settings

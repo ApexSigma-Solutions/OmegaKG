@@ -8,42 +8,37 @@ saves them to Obsidian vault, and percolates to Neo4j.
 
 import hashlib
 import logging
-import neo4j
+import uuid
+from contextlib import asynccontextmanager
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException, Security, Request
+import neo4j
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from fastapi import FastAPI, HTTPException, Request, Security
 from fastapi.middleware.cors import CORSMiddleware
 from neo4j import GraphDatabase
 from pydantic import BaseModel, Field
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
-
-# --- Import your settings and logic classes ---
-from omega_kg.settings import settings
-from omega_kg.percolation import PercolationEngine
-from omega_kg.linear_sync import LinearSync
-from omega_kg.auth_utils import (
-    get_static_api_key,
-    validate_access_token,
-    create_access_token,
-)
-from omega_kg.routers import linear_receiver
-from omega_kg.database.session import get_db
 from sqlalchemy import text
-import uuid
-from omega_kg.parsers import parse_html_content
 
+from omega_kg.auth_utils import (create_access_token, get_static_api_key,
+                                 validate_access_token)
+from omega_kg.config import log_config_summary
+from omega_kg.database.session import get_db
 # Eagerly import embedding_service to log initialization at startup
 # This import triggers the module-level logging for diagnostics
 from omega_kg.domain.common.embedding_service import generate_embedding
-
-# Vector storage and worker imports
-from omega_kg.vector_store import get_vector_store, VectorStore
-from omega_kg.workers.embedding_worker import start_worker, stop_worker
-from omega_kg.config import log_config_summary
+from omega_kg.linear_sync import LinearSync
 from omega_kg.ollama_service import ensure_ollama_running, get_ollama_status
+from omega_kg.parsers import parse_html_content
+from omega_kg.percolation import PercolationEngine
+from omega_kg.routers import linear_receiver
+# --- Import your settings and logic classes ---
+from omega_kg.settings import settings
+# Vector storage and worker imports
+from omega_kg.vector_store import VectorStore, get_vector_store
+from omega_kg.workers.embedding_worker import start_worker, stop_worker
 
 # Configure logging
 logging.basicConfig(
