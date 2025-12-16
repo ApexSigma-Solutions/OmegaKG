@@ -12,7 +12,9 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional
 
-from neo4j import GraphDatabase, Driver
+from neo4j import Driver, GraphDatabase
+
+from omega_kg.settings import settings
 
 
 class PercolationEngine:
@@ -305,6 +307,111 @@ class PercolationEngine:
                 )
 
         return stale_tasks
+
+    def find_similar_tasks(
+        self, task_uid: str, similarity_threshold: Optional[float] = None
+    ) -> List[Dict]:
+        """
+        Find tasks similar to the given task based on vector similarity.
+
+        Parameters:
+            task_uid (str): The UID of the task to find similarities for
+            similarity_threshold (float, optional): Minimum similarity score (0.0-1.0).
+                                                   If None, uses settings.percolation_similarity_threshold
+
+        Returns:
+            List[Dict]: List of similar tasks with their similarity scores
+        """
+        if similarity_threshold is None:
+            # Use the configurable threshold from the global settings object
+            similarity_threshold = settings.percolation_similarity_threshold
+
+        similar_tasks: List[Dict] = []
+
+        with self.driver.session() as session:
+            # Get the embedding for the source task
+            source_result = session.run(
+                """
+                MATCH (t:Task {uid: $task_uid})
+                RETURN t.embedding as embedding
+                """,
+                task_uid=task_uid,
+            )
+
+            source_record = source_result.single()
+            if not source_record or not source_record["embedding"]:
+                return similar_tasks
+
+            source_embedding = source_record["embedding"]
+
+            # Find similar tasks using vector similarity
+            result = session.run(
+                """
+                MATCH (t:Task)
+                WHERE t.uid <> $task_uid
+                  AND t.embedding IS NOT NULL
+                  AND vector.similarity(t.embedding, $source_embedding) >= $threshold
+                RETURN t.uid, t.title, t.status,
+                       vector.similarity(t.embedding, $source_embedding) as similarity
+                ORDER BY similarity DESC
+                LIMIT 10
+                """,
+                task_uid=task_uid,
+                source_embedding=source_embedding,
+                threshold=similarity_threshold,
+            )
+
+            for record in result:
+                similar_tasks.append(
+                    {
+                        "uid": record["t.uid"],
+                        "title": record["t.title"],
+                        "status": record["t.status"],
+                        "similarity": record["similarity"],
+                    }
+                )
+
+        return similar_tasks
+
+    def create_relationships_based_on_similarity(
+        self, similarity_threshold: Optional[float] = None
+    ) -> int:
+        """
+        Create RELATES_TO relationships between tasks based on vector similarity.
+
+        Parameters:
+            similarity_threshold (float, optional): Minimum similarity score (0.0-1.0).
+                                                   If None, uses settings.percolation_similarity_threshold
+
+        Returns:
+            int: Number of relationships created
+        """
+        if similarity_threshold is None:
+            # Use the configurable threshold from the global settings object
+            similarity_threshold = settings.percolation_similarity_threshold
+
+        with self.driver.session() as session:
+            # Find similar task pairs and create relationships in a single query
+            result = session.run(
+                """
+                MATCH (t1:Task), (t2:Task)
+                WHERE t1.uid < t2.uid  // Avoid duplicate relationships and self-links
+                  AND t1.embedding IS NOT NULL
+                  AND t2.embedding IS NOT NULL
+                  AND vector.similarity(t1.embedding, t2.embedding) >= $threshold
+                WITH t1, t2, vector.similarity(t1.embedding, t2.embedding) AS similarity
+                MERGE (t1)-[r:RELATES_TO]->(t2)
+                ON CREATE SET r.similarity = similarity, r.created = datetime()
+                ON MATCH SET r.similarity = similarity, r.updated = datetime()
+                RETURN count(r) AS relationships_created
+                """,
+                threshold=similarity_threshold,
+            )
+
+            record = result.single()
+            relationships_created = record["relationships_created"] if record else 0
+
+        return relationships_created
 
 
 def create_percolation_engine(uri: str, user: str, password: str) -> PercolationEngine:

@@ -4,7 +4,7 @@
 
 $TaskName = "QuipuHeartbeatMonitor"
 # Relative path to the python script from project root
-$ScriptRelPath = "omega_kg/quipu_ollama_heartbeat.py" 
+$ScriptRelPath = "omega_kg/quipu_ollama_heartbeat.py"
 
 # 1. Dynamic Path Resolution
 $ProjectRoot = Get-Location

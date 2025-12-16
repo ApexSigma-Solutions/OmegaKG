@@ -2,8 +2,9 @@
 Unit tests for percolation.py
 """
 
-from unittest.mock import Mock, patch
 from pathlib import Path
+from unittest.mock import Mock, patch
+
 from omega_kg.percolation import PercolationEngine, create_percolation_engine
 
 
@@ -34,7 +35,6 @@ class TestPercolationEngine:
 ---
 date: 2023-01-01
 ---
-
 # Task
 [[PROJ-001]]
 
@@ -53,7 +53,6 @@ This is a decision
 ---
 date: 2023-01-02
 ---
-
 # Another Task
 [[PROJ-002]]
 """
@@ -229,3 +228,69 @@ This is a test decision about the project.
         assert isinstance(result, PercolationEngine)
         assert result.driver == mock_driver
         mock_graph_db.driver.assert_called_once_with("uri", auth=("user", "pass"))
+
+
+# ===== VECTOR SIMILARITY THRESHOLD TESTS =====
+
+
+class TestVectorSimilarityThreshold:
+    """Test configurable similarity threshold for relationship creation."""
+
+    def setup_method(self):
+        """Set up test fixtures."""
+        self.mock_driver = Mock()
+        # Make session a context manager
+        mock_session = Mock()
+        mock_session.__enter__ = Mock(return_value=mock_session)
+        mock_session.__exit__ = Mock(return_value=None)
+        self.mock_driver.session.return_value = mock_session
+
+    @patch("omega_kg.percolation.settings")
+    def test_default_similarity_threshold(self, mock_settings):
+        """Test that default similarity threshold works correctly."""
+        # Mock settings with default threshold
+        mock_settings.percolation_similarity_threshold = 0.8
+
+        engine = PercolationEngine(self.mock_driver)
+
+        # Test that find_similar_tasks uses the default threshold
+        mock_result = Mock()
+        mock_result.single.return_value = None  # No embedding found
+        self.mock_driver.session.return_value.run.return_value = mock_result
+
+        similar_tasks = engine.find_similar_tasks("TASK-001")
+        assert similar_tasks == []  # Should return empty list when no embedding found
+
+    @patch("omega_kg.percolation.settings")
+    def test_custom_similarity_threshold(self, mock_settings):
+        """Test using custom similarity threshold."""
+        # Mock settings with custom threshold
+        mock_settings.percolation_similarity_threshold = 0.75
+
+        engine = PercolationEngine(self.mock_driver)
+
+        # Test that custom threshold is used
+        mock_result = Mock()
+        mock_result.single.return_value = None  # No embedding found
+        self.mock_driver.session.return_value.run.return_value = mock_result
+
+        similar_tasks = engine.find_similar_tasks("TASK-001", similarity_threshold=0.9)
+        assert similar_tasks == []  # Should return empty list when no embedding found
+
+    @patch("omega_kg.percolation.settings")
+    def test_threshold_boundary_validation(self, mock_settings):
+        """Test validation of similarity threshold boundaries."""
+        # Mock settings
+        mock_settings.percolation_similarity_threshold = 0.8
+
+        engine = PercolationEngine(self.mock_driver)
+
+        # Test with valid thresholds
+        mock_result = Mock()
+        mock_result.single.return_value = None
+        self.mock_driver.session.return_value.run.return_value = mock_result
+
+        # These should work without errors
+        engine.find_similar_tasks("TASK-001", similarity_threshold=0.0)
+        engine.find_similar_tasks("TASK-001", similarity_threshold=1.0)
+        engine.find_similar_tasks("TASK-001", similarity_threshold=0.5)

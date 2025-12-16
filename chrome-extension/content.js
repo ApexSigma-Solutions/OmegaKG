@@ -441,7 +441,7 @@ class ChatCapture {
         '[data-testid*="message" i], [data-test-id*="message" i]',
     );
     console.log(
-      `Found ${messageElements.length} elements with messagerelated attributes`,
+      `Found ${messageElements.length} elements with message-related attributes`,
     );
 
     // Group by selector patterns
@@ -537,7 +537,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     try {
       // Trigger capture conversation and get result
       const captureSuccess = await capture.captureConversation();
-      
+
       if (captureSuccess) {
         // Send success response
         sendResponse({ success: true });

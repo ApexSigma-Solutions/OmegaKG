@@ -45,12 +45,12 @@ _worker_stop_event: Optional[asyncio.Event] = None
 class EmbeddingWorker:
     """
     Background worker for processing pending embeddings.
-    
+
     Lifecycle:
     - start() -> begins polling loop in background
     - stop() -> signals loop to exit and waits for pending records
     - Integrates with FastAPI lifespan via ContextVar for graceful shutdown
-    
+
     Metrics:
     - processed_count: Total embeddings successfully generated
     - error_count: Total embeddings marked as failed
@@ -60,7 +60,7 @@ class EmbeddingWorker:
     def __init__(self, vector_store: VectorStore):
         """
         Initialize worker with vector store.
-        
+
         Args:
             vector_store: Initialized VectorStore instance
         """
@@ -73,10 +73,10 @@ class EmbeddingWorker:
     async def start(self) -> None:
         """
         Start the polling loop (runs indefinitely until stop() called).
-        
+
         Polls for pending embeddings and processes them in batches.
         Logs startup message and enters continuous loop.
-        
+
         Should be called from FastAPI lifespan (startup event).
         """
         self.running = True
@@ -97,10 +97,10 @@ class EmbeddingWorker:
     async def stop(self) -> None:
         """
         Signal worker to exit polling loop.
-        
+
         Allows in-flight batch to complete before shutdown.
         Logs final metrics (processed, errors).
-        
+
         Should be called from FastAPI lifespan (shutdown event).
         """
         self.running = False
@@ -112,17 +112,18 @@ class EmbeddingWorker:
     async def _process_batch(self) -> None:
         """
         Fetch pending batch, fetch source text, generate embeddings, update database.
-        
+
         Steps:
         1. Fetch up to batch_size pending records with FOR UPDATE SKIP LOCKED
         2. For each record, fetch source message text from Neo4j
         3. Generate embedding via Ollama/Gemini
         4. Update database with embedding (mark READY) or error (mark FAILED + retry)
-        
+
         Raises:
             ConnectionError: If vector store fetch fails (worker will retry in loop)
         """
         import time
+
         start_time = time.time()
 
         try:
@@ -145,7 +146,9 @@ class EmbeddingWorker:
 
                 try:
                     # Fetch message content from Neo4j
-                    message_text = await self._fetch_message_text(message_id, node_label)
+                    message_text = await self._fetch_message_text(
+                        message_id, node_label
+                    )
                     if not message_text:
                         logger.warning(
                             f"Message not found: message_id={message_id}, "
@@ -207,26 +210,28 @@ class EmbeddingWorker:
     ) -> Optional[str]:
         """
         Fetch message content from Neo4j by node ID and label asynchronously.
-        
+
         Implements strategic content extraction patterns per node type:
         - ChatMessage: Simple content field
         - LinearIssue: Title + Description (compound context)
         - ChatSession: Summary field with fallback
         - Decision: Multi-field coalesce
-        
+
         Uses AsyncGraphDriver for non-blocking, pooled connections.
-        
+
         Args:
             message_id: Neo4j internal node ID (from id(n))
             node_label: Neo4j node type (ChatMessage, LinearIssue, Decision, ChatSession)
-            
+
         Returns:
             str or None: Message content to embed, or None if not found
-            
+
         Raises:
             No exceptions raised; logs errors and returns None on failure
         """
-        logger.debug(f"Fetching message: message_id={message_id}, node_label={node_label}")
+        logger.debug(
+            f"Fetching message: message_id={message_id}, node_label={node_label}"
+        )
 
         try:
             from omega_kg.database.graph import graph_driver
@@ -234,23 +239,23 @@ class EmbeddingWorker:
             # Strategic query patterns per node type
             query_map = {
                 "ChatMessage": """
-                    MATCH (n:ChatMessage) 
-                    WHERE id(n) = $message_id 
+                    MATCH (n:ChatMessage)
+                    WHERE id(n) = $message_id
                     RETURN n.content AS text
                 """,
                 "LinearIssue": """
-                    MATCH (n:LinearIssue) 
-                    WHERE id(n) = $message_id 
+                    MATCH (n:LinearIssue)
+                    WHERE id(n) = $message_id
                     RETURN n.title + '\\n\\n' + coalesce(n.description, '') AS text
                 """,
                 "ChatSession": """
-                    MATCH (n:ChatSession) 
-                    WHERE id(n) = $message_id 
+                    MATCH (n:ChatSession)
+                    WHERE id(n) = $message_id
                     RETURN 'Session Summary: ' + coalesce(n.summary, 'No summary available') AS text
                 """,
                 "Decision": """
-                    MATCH (n:Decision) 
-                    WHERE id(n) = $message_id 
+                    MATCH (n:Decision)
+                    WHERE id(n) = $message_id
                     RETURN coalesce(n.content, n.text, n.description) AS text
                 """,
             }
@@ -259,8 +264,8 @@ class EmbeddingWorker:
             query = query_map.get(
                 node_label,
                 f"""
-                    MATCH (n:{node_label}) 
-                    WHERE id(n) = $message_id 
+                    MATCH (n:{node_label})
+                    WHERE id(n) = $message_id
                     RETURN coalesce(n.content, n.message, n.text, n.body) AS text
                 """,
             )
@@ -302,7 +307,7 @@ _worker: Optional[EmbeddingWorker] = None
 async def get_embedding_worker() -> EmbeddingWorker:
     """
     Get or initialize the singleton EmbeddingWorker instance.
-    
+
     Returns:
         EmbeddingWorker: Shared instance with initialized vector store
     """
@@ -318,7 +323,7 @@ async def get_embedding_worker() -> EmbeddingWorker:
 async def start_worker() -> None:
     """
     Start the embedding worker background task.
-    
+
     Called from FastAPI lifespan startup event.
     Creates background task that runs until stop_worker() called.
     """
@@ -334,7 +339,7 @@ async def start_worker() -> None:
 async def stop_worker() -> None:
     """
     Stop the embedding worker background task.
-    
+
     Called from FastAPI lifespan shutdown event.
     Signals worker to exit and waits for graceful completion.
     """

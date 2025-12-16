@@ -1,16 +1,19 @@
 # omega_kg/linear_sync.py
 
-import hmac
 import hashlib
+import hmac
 import json
 import logging
-from fastapi import Request, HTTPException
-from starlette.concurrency import run_in_threadpool
-from omega_kg.settings import settings
 from pathlib import Path
-from neo4j import GraphDatabase
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
+
 import neo4j
+from fastapi import HTTPException, Request
+from neo4j import GraphDatabase
+from starlette.concurrency import run_in_threadpool
+
+from omega_kg.config import LINEAR_STATUS_MAP
+from omega_kg.settings import settings
 from omega_kg.vault_utils import VaultUtils
 
 logger = logging.getLogger(__name__)
@@ -25,11 +28,16 @@ class LinearSync:
         """
         Initializes the LinearSync engine.
         """
-        self.vault_utils = VaultUtils()
         self.driver = GraphDatabase.driver(
             settings.neo4j_uri, auth=(settings.neo4j_user, settings.neo4j_password)
         )
         logger.info("LinearSync engine initialized.")
+
+    @property
+    def vault_utils(self) -> VaultUtils:
+        if not hasattr(self, "_vault_utils"):
+            self._vault_utils = VaultUtils()
+        return self._vault_utils
 
     async def verify_linear_signature(self, request: Request) -> bytes:
         """
@@ -201,18 +209,9 @@ class LinearSync:
         updates["linear_priority"] = issue.get("priority", 0)
         updates["linear_updated"] = issue.get("updatedAt")
 
-        # Map Linear status to Obsidian status
-        # TODO: Move this map to settings or shared constant
-        status_map = {
-            "Backlog": "draft",
-            "Todo": "ready",
-            "In Progress": "active",
-            "Done": "completed",
-            "Canceled": "archived",
-        }
-        # Only update status if we have a mapping, otherwise keep existing
-        if issue_state in status_map:
-            updates["status"] = status_map[issue_state]
+        # Map Linear status to Obsidian status using centralized constant
+        if issue_state in LINEAR_STATUS_MAP:
+            updates["status"] = LINEAR_STATUS_MAP[issue_state]
 
         if self.vault_utils.update_note_frontmatter(path, updates):
             logger.info(f"✓ Updated {Path(path).name} from Linear")
@@ -241,5 +240,7 @@ class LinearSync:
             """,
                 linear_id=linear_id,
             )
+
+        logger.info(f"✓ Archived task for Linear issue {linear_id}")
 
         logger.info(f"✓ Archived task for Linear issue {linear_id}")

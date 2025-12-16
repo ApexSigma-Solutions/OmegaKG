@@ -24,7 +24,6 @@ from enum import Enum
 
 from omega_kg.settings import settings
 
-
 # ============================================================================
 # ENVIRONMENT DETECTION
 # ============================================================================
@@ -128,6 +127,19 @@ DEFAULT_NODE_TYPE = "ChatMessage"
 
 
 # ============================================================================
+# LINEAR STATUS MAPPING
+# ============================================================================
+LINEAR_STATUS_MAP = {
+    "Backlog": "draft",
+    "Todo": "ready",
+    "In Progress": "active",
+    "Done": "completed",
+    "Canceled": "archived",
+}
+"""Maps Linear issue states to Obsidian task statuses."""
+
+
+# ============================================================================
 # OLLAMA CONFIGURATION (inherited from settings.py)
 # ============================================================================
 OLLAMA_BASE_URL = settings.ollama_base_url
@@ -140,7 +152,9 @@ OLLAMA_EMBEDDING_ENDPOINT = f"{OLLAMA_BASE_URL.rstrip('/')}/api/embeddings"
 # ============================================================================
 # LOGGING & MONITORING
 # ============================================================================
-ENABLE_VECTOR_DEBUG_LOGGING = os.getenv("ENABLE_VECTOR_DEBUG_LOGGING", "false").lower() == "true"
+ENABLE_VECTOR_DEBUG_LOGGING = (
+    os.getenv("ENABLE_VECTOR_DEBUG_LOGGING", "false").lower() == "true"
+)
 """Enable verbose debug logging for vector operations."""
 
 VECTOR_METRICS_ENABLED = os.getenv("VECTOR_METRICS_ENABLED", "true").lower() == "true"
@@ -163,7 +177,7 @@ VECTOR_SCHEMA_VERSION = "1.0.0"
 def log_config_summary() -> str:
     """
     Generate a summary of active configuration for logging at startup.
-    
+
     Returns:
         str: Multi-line configuration summary
     """
@@ -219,6 +233,8 @@ __all__ = [
     # Neo4j Node Types
     "SUPPORTED_NODE_TYPES",
     "DEFAULT_NODE_TYPE",
+    # Linear Integration
+    "LINEAR_STATUS_MAP",
     # Ollama
     "OLLAMA_BASE_URL",
     "OLLAMA_EMBEDDING_ENDPOINT",

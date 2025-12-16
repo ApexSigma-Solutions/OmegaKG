@@ -5,7 +5,7 @@
 **Incident Type**: Silent Failure - Embedding Service Initialization Failure  
 **Severity**: P0 - Critical Functionality Loss  
 **Status**: Active - Requires Immediate Resolution  
-**Affected Components**: Embedding Service, Ollama Integration, Vector Operations  
+**Affected Components**: Embedding Service, Ollama Integration, Vector Operations
 
 **Key Findings**:
 - Server restart succeeded (PID 17528) with three new capture files persisted (e41fb57b, d279cbd2, 9f06cd45)
@@ -156,7 +156,7 @@ INFO - Application startup complete
 
 ```cypher
 MATCH (n) 
-WHERE n.embedding IS NOT NULL 
+WHERE n.embedding IS NOT NULL
 RETURN labels(n) as Type, count(n) as Count
 ```
 
@@ -335,10 +335,17 @@ If hardened configuration fails:
    ```powershell
    # Terminate current server
    CTRL+C
+<<<<<<< HEAD
+
+   # Restore from backup .env if available
+   Copy-Item .env.backup .env -Force
+
+=======
    
    # Restore from backup .env if available
    Copy-Item .env.backup .env -Force
    
+>>>>>>> pr-88
    # Restart with explicit environment
    $env:EMBEDDING_PROVIDER="ollama"
    $env:OLLAMA_BASE_URL="http://localhost:11434"

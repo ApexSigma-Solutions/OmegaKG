@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 env:
-  PYTHON_VERSION: "3.12"
+  PYTHON_VERSION: "3.12.10"
   POETRY_VERSION: "2.2.0"
 
 jobs:
@@ -31,11 +31,6 @@ jobs:
 
       - name: Install dependencies
         run: poetry install --with dev
-
-      - name: Run Pre-commit Hooks (Ruff, Mypy, Bandit)
-        uses: pre-commit/action@v3.0.1
-        with:
-          extra_args: --all-files
 
       - name: Run Pre-commit Hooks (Ruff, Mypy, Bandit)
         uses: pre-commit/action@v3.0.1
@@ -146,6 +141,20 @@ jobs:
     needs: [unit-tests, security-scans]
     runs-on: ubuntu-latest
     services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: testuser
+          POSTGRES_PASSWORD: testpassword
+          POSTGRES_DB: testdb
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready --username=testuser --timeout=5"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
       neo4j:
         image: neo4j:5
         env:
@@ -200,6 +209,7 @@ jobs:
           LINEAR_WEBHOOK_SECRET: test-secret
           CHROME_EXTENSION_ID: test-id
           JWT_SECRET_KEY: test-jwt-secret
+          DATABASE_URL: postgresql+asyncpg://testuser:testpassword@localhost:5432/testdb
         run: |
           # Run all tests including integration
           poetry run pytest -m "integration" --cov=omega_kg --cov-append --cov-report=xml:coverage-integration.xml --junitxml=junit-integration.xml

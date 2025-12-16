@@ -35,44 +35,44 @@ CREATE EXTENSION IF NOT EXISTS vector;
 CREATE TABLE IF NOT EXISTS omega_vectors_1024 (
     -- Primary Key & Identity
     id BIGSERIAL PRIMARY KEY,
-    
+
     -- Foreign Key: Reference to source message/issue
     -- Constraint: ON DELETE CASCADE ensures cleanup when message is deleted
     message_id BIGINT NOT NULL,
-    
+
     -- Embedding Vector (1024 dimensions)
     -- Data Type: vector(1024) via pgvector extension
     -- NULL Value: Allowed while status = 'pending_embedding'
     -- Searchability: Indexed for cosine similarity via HNSW
     embedding vector(1024),
-    
+
     -- Status Lifecycle
     -- Values: 'pending_embedding' | 'ready' | 'failed'
     -- Default: 'pending_embedding' (worker transitions to 'ready' or 'failed')
     -- CHECK Constraint: Enforces valid values at database level
     status TEXT NOT NULL DEFAULT 'pending_embedding',
-    
+
     -- Retry Counter
     -- Purpose: Track failed attempts; prevents infinite retry loops
     -- Max: Configured via VECTOR_EMBEDDING_MAX_RETRIES in config.py (default: 3)
     -- Incremented by: Async worker on embedding generation failure
     retry_count INTEGER NOT NULL DEFAULT 0,
-    
+
     -- Timestamps
     -- created_at: Immutable; set at record creation
     -- updated_at: Modified on status transition or retry; enables TTL cleanup
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    
+
     -- Integrity Constraints
     -- CHECK: Enforces allowed status values
     CHECK (status IN ('pending_embedding', 'ready', 'failed')),
-    
+
     -- FOREIGN KEY: Ensures message_id references valid message/issue
     -- ON DELETE CASCADE: Automatically removes embedding when source message is deleted
     -- NOTE: Uncomment if omega_kg_messages table exists in same database
     -- FOREIGN KEY (message_id) REFERENCES omega_kg_messages(id) ON DELETE CASCADE
-    
+
     -- Table Comment
     CONSTRAINT pk_omega_vectors_1024 PRIMARY KEY (id)
 );

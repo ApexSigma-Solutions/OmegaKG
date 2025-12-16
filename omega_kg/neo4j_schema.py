@@ -150,6 +150,33 @@ class KnowledgeGraphSchema:
         except Exception as e:
             print(f"✗ Schema initialization failed: {e}")
 
+    def create_sample_relationships(self) -> None:
+        """
+        Create a small set of example nodes & relationships for demo / onboarding.
+
+        This is intentionally lightweight: if running in mock mode the method is
+        a no-op; if a live driver is available we create a minimal sample graph.
+        """
+        if self.mock_mode or not self.driver:
+            print("⚠ create_sample_relationships skipped (mock mode or no driver)")
+            return
+
+        try:
+            with self.driver.session() as session:
+                # Create example Task and ADR nodes with a relationship for demos
+                session.run(
+                    """
+                    MERGE (t:Task {id: 'SAMPLE-TASK-1'})
+                    SET t.title = 'Sample Task', t.status = 'active'
+                    MERGE (a:ADR {id: 'SAMPLE-ADR-1'})
+                    SET a.title = 'Sample ADR'
+                    MERGE (t)-[:RELATED_TO]->(a)
+                """
+                )
+            print("✓ Sample relationships created (demo data)")
+        except Exception as e:
+            print(f"✗ Failed to create sample relationships: {e}")
+
     def close(self) -> None:
         """
         Close the Neo4j driver if one is open.

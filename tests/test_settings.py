@@ -21,22 +21,24 @@ def test_settings_load_from_env(monkeypatch):
     assert settings.app_env == "production"
 
 
-def test_settings_defaults(monkeypatch):
-    """Test default behavior for Settings.
+def test_settings_defaults():
+    """Test that Settings has correct default values defined.
 
-    Since `NEO4J_PASSWORD` is required in production, a missing password should raise
-    an error. We then set NEO4J_PASSWORD to the legacy default and verify other defaults.
+    This verifies the model schema defaults, not runtime values which
+    can be overridden by environment variables.
     """
+    from pydantic_core import PydanticUndefined
+
     from omega_kg.settings import Settings
 
-    # Ensure NEO4J_PASSWORD is set to the legacy default for this test
-    monkeypatch.setenv("NEO4J_PASSWORD", "please-change-this-password")
-    settings = Settings()
+    # Check model defaults via model_fields
+    fields = Settings.model_fields
 
-    assert settings.app_env == "development"
-    assert settings.neo4j_uri == "bolt://localhost:7687"
-    assert settings.neo4j_user == "neo4j"
-    assert settings.neo4j_password == "please-change-this-password"
+    assert fields["app_env"].default == "development"
+    assert fields["neo4j_uri"].default == "bolt://localhost:7687"
+    assert fields["neo4j_user"].default == "neo4j"
+    # neo4j_password has no default (PydanticUndefined = required)
+    assert fields["neo4j_password"].default is PydanticUndefined
 
 
 def test_settings_singleton():

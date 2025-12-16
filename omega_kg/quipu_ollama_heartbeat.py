@@ -1,4 +1,8 @@
+import asyncio
 import logging
+
+# --- LOGGING SETUP ---
+import os
 import time
 from datetime import datetime, timezone
 
@@ -7,15 +11,14 @@ import requests
 from omega_kg.database.quipu import init_heartbeat_table, insert_heartbeat
 from omega_kg.settings import settings
 
-# --- LOGGING SETUP ---
-import os
-log_level = os.getenv('LOG_LEVEL', 'INFO')
+log_level = os.getenv("LOG_LEVEL", "INFO")
 logging.basicConfig(
     level=getattr(logging, log_level.upper(), logging.INFO),
-    format='%(asctime)s - [QUIPU] - %(levelname)s - %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
+    format="%(asctime)s - [QUIPU] - %(levelname)s - %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
 )
 logger = logging.getLogger("QuipuMonitor")
+
 
 def check_ollama_health():
     """
@@ -28,17 +31,17 @@ def check_ollama_health():
         # 1. Basic Liveness (GET /)
         resp = requests.get(f"{ollama_url}/", timeout=5)
         resp.raise_for_status()
-        
+
         # 2. Check for loaded models (GET /api/ps)
         model_name = "None"
         try:
             ps_resp = requests.get(f"{ollama_url}/api/ps", timeout=2)
             if ps_resp.status_code == 200:
-                models = ps_resp.json().get('models', [])
+                models = ps_resp.json().get("models", [])
                 if models:
-                    model_name = models[0].get('name', 'Unknown')
+                    model_name = models[0].get("name", "Unknown")
         except Exception:
-            pass # Non-critical failure for model check
+            pass  # Non-critical failure for model check
 
         latency = int((time.time() - start_time) * 1000)
         return "ONLINE", latency, model_name, {"url": ollama_url}
@@ -53,30 +56,33 @@ def check_ollama_health():
         logger.error(f"Ollama Check Failed: {e}")
         return "ERROR", 0, None, {"error": str(e)}
 
-def run_heartbeat_loop():
+
+async def run_heartbeat_loop():
     """Main Service Loop"""
     logger.info("Starting Quipu Heartbeat Monitor...")
-    
-    if not init_heartbeat_table():
+
+    if not await init_heartbeat_table():
         logger.critical("Could not initialize Database. Service aborting.")
         return
 
-    logger.info(f"Target: {settings.ollama_host_url} | Interval: {settings.heartbeat_interval_sec}s")
+    logger.info(
+        f"Target: {settings.ollama_host_url} | Interval: {settings.heartbeat_interval_sec}s"
+    )
 
     while True:
         try:
             timestamp = datetime.now(timezone.utc)
             status, latency, model, meta = check_ollama_health()
 
-            success = insert_heartbeat(
+            success = await insert_heartbeat(
                 service_name=settings.quipu_service_name,
                 timestamp=timestamp,
                 status=status,
                 latency_ms=latency,
                 model_loaded=model,
-                meta=meta
+                meta=meta,
             )
-            
+
             if success:
                 if status != "ONLINE":
                     logger.warning(f"Status: {status} | Latency: {latency}ms")
@@ -92,7 +98,8 @@ def run_heartbeat_loop():
             break
         except Exception as main_e:
             logger.error(f"Critical Loop Error: {main_e}")
-            time.sleep(5) # Prevent tight loop on crash
+            time.sleep(5)  # Prevent tight loop on crash
+
 
 if __name__ == "__main__":
-    run_heartbeat_loop()
+    asyncio.run(run_heartbeat_loop())

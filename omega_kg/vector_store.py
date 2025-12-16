@@ -21,9 +21,10 @@ Error Handling:
 """
 
 import logging
-from typing import List, Optional
+from typing import List, Optional, cast
 
 import asyncpg
+import numpy as np
 from pgvector.asyncpg import register_vector
 
 from omega_kg.config import (
@@ -47,20 +48,20 @@ _pool: Optional[asyncpg.Pool] = None
 class VectorStore:
     """
     Async PostgreSQL vector storage abstraction.
-    
+
     Manages all interactions with omega_vectors_1024 table:
     - Creating pending embedding records on capture
     - Fetching pending batches for worker processing
     - Updating completed embeddings
     - Marking failures with retry tracking
-    
+
     Thread-safe; connection pooling handled by asyncpg.
     """
 
     def __init__(self, pool: asyncpg.Pool):
         """
         Initialize VectorStore with asyncpg connection pool.
-        
+
         Args:
             pool: asyncpg.Pool instance with pgvector registered
         """
@@ -70,15 +71,15 @@ class VectorStore:
     async def initialize_pool() -> asyncpg.Pool:
         """
         Create and initialize asyncpg connection pool with pgvector support.
-        
+
         Returns:
             asyncpg.Pool: Configured pool with 5-20 connections
-            
+
         Raises:
             ConnectionError: If PostgreSQL is unreachable or credentials invalid
         """
         global _pool
-        
+
         try:
             pool = await asyncpg.create_pool(
                 user=POSTGRES_USER,
@@ -90,17 +91,17 @@ class VectorStore:
                 max_size=20,
                 command_timeout=60,
             )
-            
+
             # Register pgvector type for the pool
             async with pool.acquire() as conn:
                 await register_vector(conn)
-            
+
             logger.info(
                 f"PostgreSQL pool initialized: {POSTGRES_SERVER}:{POSTGRES_PORT}/{POSTGRES_DB}"
             )
             _pool = pool
             return pool
-            
+
         except asyncpg.PostgresError as e:
             logger.error(f"Failed to initialize PostgreSQL pool: {e}")
             raise ConnectionError(f"PostgreSQL connection failed: {e}")
@@ -109,20 +110,20 @@ class VectorStore:
         self,
         message_id: int,
         node_label: str = DEFAULT_NODE_TYPE,
-    ) -> int:
+    ) -> Optional[int]:
         """
         Insert a new pending embedding record or return existing vector_id if duplicate.
-        
+
         Implements write-behind pattern: Record created with status='pending_embedding',
         embedding column NULL. Worker processes asynchronously.
-        
+
         Args:
             message_id: Neo4j node ID (source of content to embed)
             node_label: Neo4j node type (ChatMessage, LinearIssue, Decision)
-            
+
         Returns:
             int: vector_id (database primary key) for later update
-            
+
         Raises:
             ConnectionError: If pool is unavailable
             ValueError: If node_label is not in SUPPORTED_NODE_TYPES
@@ -139,11 +140,14 @@ class VectorStore:
 
         try:
             async with self.pool.acquire() as conn:
-                result = await conn.fetchval(
-                    query,
-                    message_id,
-                    node_label,
-                    VectorStatus.PENDING_EMBEDDING,
+                result = cast(
+                    Optional[int],
+                    await conn.fetchval(
+                        query,
+                        message_id,
+                        node_label,
+                        VectorStatus.PENDING_EMBEDDING,
+                    ),
                 )
 
             if result:
@@ -159,8 +163,9 @@ class VectorStore:
                     WHERE message_id = $1 AND node_label = $2;
                 """
                 async with self.pool.acquire() as conn:
-                    existing_id = await conn.fetchval(
-                        fetch_query, message_id, node_label
+                    existing_id = cast(
+                        Optional[int],
+                        await conn.fetchval(fetch_query, message_id, node_label),
                     )
                 logger.debug(
                     f"Pending record already exists: message_id={message_id}, "
@@ -179,14 +184,14 @@ class VectorStore:
     ) -> None:
         """
         Update a pending record with computed embedding vector and mark READY.
-        
+
         Validates embedding dimension before update. Idempotent: Safe to call multiple
         times with same vector_id and embedding (last write wins).
-        
+
         Args:
             vector_id: Primary key from store_pending() result
             embedding: List of 1024 floats (BGE-M3 output)
-            
+
         Raises:
             ConnectionError: If pool is unavailable
             ValueError: If embedding dimension != VECTOR_EMBEDDING_DIMENSION
@@ -204,21 +209,23 @@ class VectorStore:
                 f"got {len(embedding)}"
             )
 
-        # Convert embedding list to pgvector string format: "[0.1,0.2,...]"
-        embedding_str = "[" + ",".join(f"{v:.6f}" for v in embedding) + "]"
+        # Convert embedding list to numpy array for pgvector
+        embedding_array = np.array(embedding, dtype=np.float32)
 
         query = f"""
             UPDATE {VECTOR_TABLE_NAME}
-            SET embedding = $1::vector({VECTOR_EMBEDDING_DIMENSION}), status = $2, updated_at = NOW()
+            SET embedding = $1, status = $2, updated_at = NOW()
             WHERE id = $3
             RETURNING id;
         """
 
         try:
             async with self.pool.acquire() as conn:
+                # Register pgvector type for this connection
+                await register_vector(conn)
                 result = await conn.fetchval(
                     query,
-                    embedding_str,  # Pass as string; PostgreSQL casts to vector type
+                    embedding_array,  # Pass as numpy array; pgvector handles it
                     VectorStatus.READY,
                     vector_id,
                 )
@@ -239,14 +246,14 @@ class VectorStore:
     ) -> None:
         """
         Mark a vector record as FAILED and optionally increment retry_count.
-        
+
         Called when embedding generation fails and max retries exceeded.
         Sets status='failed' for manual review.
-        
+
         Args:
             vector_id: Primary key from store_pending() result
             increment_retry: If True, increment retry_count before marking failed
-            
+
         Raises:
             ConnectionError: If pool is unavailable
         """
@@ -287,16 +294,16 @@ class VectorStore:
     async def fetch_pending_batch(self, batch_size: int = 10) -> List[dict]:
         """
         Fetch up to batch_size pending embedding records for worker processing.
-        
+
         Uses FOR UPDATE SKIP LOCKED to prevent multiple workers processing same records.
         Transitions fetched records to status='processing' (ephemeral state).
-        
+
         Returns:
             List of dicts: [
                 {'vector_id': int, 'message_id': int, 'node_label': str},
                 ...
             ]
-            
+
         Raises:
             ConnectionError: If pool is unavailable
         """
@@ -314,7 +321,9 @@ class VectorStore:
 
         try:
             async with self.pool.acquire() as conn:
-                rows = await conn.fetch(query, VectorStatus.PENDING_EMBEDDING, batch_size)
+                rows = await conn.fetch(
+                    query, VectorStatus.PENDING_EMBEDDING, batch_size
+                )
 
             logger.debug(f"Fetched {len(rows)} pending vectors for processing")
             return [dict(row) for row in rows]
@@ -326,13 +335,13 @@ class VectorStore:
     async def get_vector_status(self, vector_id: int) -> Optional[str]:
         """
         Get current status of a vector record.
-        
+
         Args:
             vector_id: Primary key
-            
+
         Returns:
             str or None: One of (pending_embedding, ready, failed) or None if not found
-            
+
         Raises:
             ConnectionError: If pool is unavailable
         """
@@ -345,7 +354,7 @@ class VectorStore:
 
         try:
             async with self.pool.acquire() as conn:
-                status = await conn.fetchval(query, vector_id)
+                status = cast(Optional[str], await conn.fetchval(query, vector_id))
             return status
 
         except asyncpg.PostgresError as e:
@@ -355,7 +364,7 @@ class VectorStore:
     async def get_stats(self) -> dict:
         """
         Get summary statistics for vector store health monitoring.
-        
+
         Returns:
             dict: {
                 'total_records': int,
@@ -364,7 +373,7 @@ class VectorStore:
                 'failed_count': int,
                 'avg_retry_count': float,
             }
-            
+
         Raises:
             ConnectionError: If pool is unavailable
         """
@@ -399,7 +408,7 @@ class VectorStore:
     async def close_pool() -> None:
         """
         Gracefully close connection pool.
-        
+
         Called during shutdown. Waits for active connections to complete.
         """
         global _pool
@@ -416,19 +425,19 @@ vector_store: Optional[VectorStore] = None
 async def get_vector_store() -> VectorStore:
     """
     Get or initialize the singleton VectorStore instance.
-    
+
     Returns:
         VectorStore: Shared instance with initialized connection pool
-        
+
     Raises:
         ConnectionError: If PostgreSQL is unreachable
     """
     global vector_store
-    
+
     if vector_store is None:
         pool = await VectorStore.initialize_pool()
         vector_store = VectorStore(pool)
-    
+
     return vector_store
 
 

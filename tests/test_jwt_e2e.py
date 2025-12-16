@@ -13,15 +13,21 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 from fastapi.testclient import TestClient
-
-from omega_kg.capture_server import app
-from omega_kg.auth_utils import create_access_token, validate_access_token
-from omega_kg.settings import settings
 from jose import jwt
+
+from omega_kg.auth_utils import create_access_token, validate_access_token
+from omega_kg.capture_server import app
+
+# Import settings lazily within functions to avoid import-time environment issues
 
 
 class TestJwtAuthenticationFlow:
     """Test the complete JWT authentication flow"""
+
+    @pytest.fixture(autouse=True)
+    def setup_test_env(self, mock_env_vars):
+        """Ensure test environment variables are loaded for all tests"""
+        pass
 
     @pytest.fixture
     def client(self):
@@ -74,8 +80,12 @@ class TestJwtAuthenticationFlow:
         assert payload_obj.username == "chrome_extension_user"
 
         # To check specific claims like 'exp', we decode manually
+        from omega_kg.settings import get_settings
+
         payload = jwt.decode(
-            token, settings.jwt_secret_key, algorithms=[settings.jwt_algorithm]
+            token,
+            get_settings().jwt_secret_key,
+            algorithms=[get_settings().jwt_algorithm],
         )
         assert "exp" in payload
         assert "sub" in payload
@@ -89,16 +99,24 @@ class TestJwtAuthenticationFlow:
         await validate_access_token(token)
 
         # Decode to check expiration time
+        from omega_kg.settings import get_settings
+
         payload = jwt.decode(
-            token, settings.jwt_secret_key, algorithms=[settings.jwt_algorithm]
+            token,
+            get_settings().jwt_secret_key,
+            algorithms=[get_settings().jwt_algorithm],
         )
         exp_timestamp = payload["exp"]
         exp_datetime = datetime.fromtimestamp(exp_timestamp, tz=timezone.utc)
         now = datetime.now(timezone.utc)
 
-        # Token should expire within configured minutes (default 1440 = 24 hours)
+        # Token should expire within configured minutes (uses settings value)
+        expected_minutes = get_settings().jwt_expiration_minutes
         time_diff = (exp_datetime - now).total_seconds() / 60
-        assert 1430 < time_diff < 1450  # Within 5 min of configured 1440
+        # Allow 5 minute tolerance around the configured value
+        assert (
+            expected_minutes - 10 < time_diff < expected_minutes + 10
+        ), f"Expected expiration around {expected_minutes} minutes, got {time_diff:.1f}"
 
     @pytest.mark.asyncio
     async def test_jwt_token_validation_success(self):
@@ -118,16 +136,17 @@ class TestJwtAuthenticationFlow:
         """Test JWT token validation with expired token"""
         # Create a token with past expiration
         past_time = (datetime.now(timezone.utc) - timedelta(hours=1)).timestamp()
-        from jose import jwt
 
         payload = {
             "sub": "chrome_extension_user",
             "exp": int(past_time),
         }
+        from omega_kg.settings import get_settings
+
         expired_token = jwt.encode(
             payload,
-            settings.jwt_secret_key,
-            algorithm=settings.jwt_algorithm,
+            get_settings().jwt_secret_key,
+            algorithm=get_settings().jwt_algorithm,
         )
 
         # Should raise error on expired token
@@ -151,9 +170,11 @@ class TestJwtAuthenticationFlow:
 
     def test_auth_token_endpoint_valid_api_key(self, client):
         """Test /auth/token endpoint with valid API key"""
+        from omega_kg.settings import get_settings
+
         response = client.post(
             "/auth/token",
-            headers={"X-API-Key": settings.extension_api_key},
+            headers={"X-API-Key": get_settings().extension_api_key},
         )
 
         assert response.status_code == 200
@@ -165,9 +186,11 @@ class TestJwtAuthenticationFlow:
     @pytest.mark.asyncio
     async def test_auth_token_returns_valid_jwt(self, client):
         """Test /auth/token returns a valid, usable JWT token"""
+        from omega_kg.settings import get_settings
+
         response = client.post(
             "/auth/token",
-            headers={"X-API-Key": settings.extension_api_key},
+            headers={"X-API-Key": get_settings().extension_api_key},
         )
 
         assert response.status_code == 200
@@ -227,9 +250,11 @@ class TestJwtAuthenticationFlow:
     def test_complete_e2e_flow(self, client, sample_capture_data):
         """Test complete flow: get token → use token for capture"""
         # Step 1: Exchange API key for JWT token
+        from omega_kg.settings import get_settings
+
         auth_response = client.post(
             "/auth/token",
-            headers={"X-API-Key": settings.extension_api_key},
+            headers={"X-API-Key": get_settings().extension_api_key},
         )
         assert auth_response.status_code == 200
         token = auth_response.json()["access_token"]
@@ -248,13 +273,17 @@ class TestJwtAuthenticationFlow:
 
     def test_cors_headers_for_bearer_tokens(self, client):
         """Test CORS headers allow requests from extension"""
+        from omega_kg.settings import get_settings
+
         response = client.options(
             "/capture",
             headers={
-                "Origin": f"chrome-extension://{settings.chrome_extension_id}",
+                "Origin": f"chrome-extension://{get_settings().chrome_extension_id}",
                 "Access-Control-Request-Headers": "authorization",
             },
         )
+        from omega_kg.settings import settings
+
         # CORS should allow the extension origin
         assert response.status_code == 200
         assert (
@@ -323,11 +352,11 @@ class TestJwtAuthenticationFlow:
         secret_pattern = r"N7F6JK|OMEGA_API_KEY\s*=\s*['\"]"
 
         python_files = []
-        for root, dirs, files in os.walk("omega_kg"):
+        python_files = []
+        for root, _dirs, files in os.walk("omega_kg"):
             for file in files:
                 if file.endswith(".py"):
                     python_files.append(os.path.join(root, file))
-
         for filepath in python_files:
             with open(filepath, "r", encoding="utf-8") as f:
                 content = f.read()
@@ -345,11 +374,11 @@ class TestJwtAuthenticationFlow:
         secret_pattern = r"N7F6JK|const\s+OMEGA_API_KEY\s*="
 
         extension_files = []
-        for root, dirs, files in os.walk("chrome-extension"):
+        extension_files = []
+        for root, _dirs, files in os.walk("chrome-extension"):
             for file in files:
                 if file.endswith((".js", ".json")):
                     extension_files.append(os.path.join(root, file))
-
         for filepath in extension_files:
             with open(filepath, "r", encoding="utf-8") as f:
                 content = f.read()
@@ -362,23 +391,34 @@ class TestJwtAuthenticationFlow:
 
     def test_jwt_settings_loaded(self):
         """Test JWT settings are properly loaded"""
-        assert hasattr(settings, "jwt_secret_key")
-        assert hasattr(settings, "jwt_algorithm")
-        assert hasattr(settings, "jwt_expiration_minutes")
+        from omega_kg.settings import get_settings
+
+        assert hasattr(get_settings(), "jwt_secret_key")
+        assert hasattr(get_settings(), "jwt_algorithm")
+        assert hasattr(get_settings(), "jwt_expiration_minutes")
 
     def test_jwt_algorithm_is_hs256(self):
         """Test JWT algorithm is HS256 by default"""
-        assert settings.jwt_algorithm == "HS256"
+        from omega_kg.settings import get_settings
+
+        assert get_settings().jwt_algorithm == "HS256"
 
     def test_jwt_expiration_is_positive(self):
         """Test JWT expiration is a positive number"""
-        assert settings.jwt_expiration_minutes > 0
-        # Default is 1440 minutes (24 hours)
-        assert settings.jwt_expiration_minutes >= 1440
+        from omega_kg.settings import get_settings
+
+        assert get_settings().jwt_expiration_minutes > 0
+        # Default is 60 minutes for test environment
+        assert get_settings().jwt_expiration_minutes >= 60
 
 
 class TestExtensionIntegration:
     """Test integration between extension and server"""
+
+    @pytest.fixture(autouse=True)
+    def setup_test_env(self, mock_env_vars):
+        """Ensure test environment variables are loaded for all tests"""
+        pass
 
     def test_bearer_token_format(self):
         """Test Bearer token format is correct"""
@@ -390,11 +430,15 @@ class TestExtensionIntegration:
     @pytest.mark.asyncio
     async def test_token_includes_expiry(self):
         """Test token payload includes expiry"""
+        from omega_kg.settings import get_settings
+
         token = create_access_token(data={"sub": "test_user"})
         await validate_access_token(token)
 
         payload = jwt.decode(
-            token, settings.jwt_secret_key, algorithms=[settings.jwt_algorithm]
+            token,
+            get_settings().jwt_secret_key,
+            algorithms=[get_settings().jwt_algorithm],
         )
         assert "exp" in payload
         assert payload["exp"] > datetime.now(timezone.utc).timestamp()
@@ -412,12 +456,20 @@ class TestExtensionIntegration:
             assert payload.username == "chrome_extension_user"
 
         # All should have different expiration times (or very close)
+        from omega_kg.settings import get_settings
+
         decoded_payloads = [
-            jwt.decode(t, settings.jwt_secret_key, algorithms=[settings.jwt_algorithm])
+            jwt.decode(
+                t,
+                get_settings().jwt_secret_key,
+                algorithms=[get_settings().jwt_algorithm],
+            )
             for t in tokens
         ]
         exp_times = [p["exp"] for p in decoded_payloads]
         # At minimum, they should all be valid timestamps in the future
+        from omega_kg.settings import get_settings
+
         for exp_time in exp_times:
             assert exp_time > datetime.now(timezone.utc).timestamp()
 

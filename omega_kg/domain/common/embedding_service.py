@@ -14,7 +14,12 @@ import logging
 from typing import List
 
 import httpx
-from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_not_exception_type
+from tenacity import (
+    retry,
+    retry_if_not_exception_type,
+    stop_after_attempt,
+    wait_exponential,
+)
 
 from omega_kg.settings import settings
 
@@ -216,23 +221,24 @@ async def _embed_gemini(text: str) -> List[float]:
 def _embed_mock(text: str) -> List[float]:
     """
     Generate a deterministic mock embedding (1024 dims) based on text hash.
-    
+
     Used when real embedding services are unavailable or for testing.
-    
+
     Args:
         text: Input text
-        
+
     Returns:
         1024-dimension float vector (deterministic based on input)
     """
     import hashlib
-    
+
     # Create a deterministic seed from the text
     hash_digest = hashlib.sha256(text.encode()).digest()
-    seed = int.from_bytes(hash_digest[:4], byteorder='big')
-    
+    seed = int.from_bytes(hash_digest[:4], byteorder="big")
+
     # Use seeded random to generate 1024 floats
     import random
+
     rng = random.Random(seed)
     return [rng.random() for _ in range(EMBEDDING_DIMENSIONS)]
 
@@ -264,18 +270,26 @@ async def generate_embedding(text: str) -> List[float]:
         >>> len(embedding)
         1024
     """
+    ollama_enabled = getattr(settings, "ollama_enabled", True)
+    nano_gpt_enabled = getattr(settings, "nano_gpt_enabled", True)
+    gemini_enabled = getattr(settings, "gemini_enabled", True)
+
+    if not ollama_enabled and not nano_gpt_enabled and not gemini_enabled:
+        raise RuntimeError("No embedding provider available")
+
     # Try Ollama first (local, fastest)
-    try:
-        result: List[float] = await _embed_ollama(text)
-        logger.debug(f"Generated {EMBEDDING_DIMENSIONS}-dim embedding via Ollama")
-        return result
-    except Exception as err:
-        logger.warning(
-            f"Ollama embedding failed ({err}); attempting Nano-GPT fallback"
-        )
+    if ollama_enabled:
+        try:
+            result: List[float] = await _embed_ollama(text)
+            logger.debug(f"Generated {EMBEDDING_DIMENSIONS}-dim embedding via Ollama")
+            return result
+        except Exception as err:
+            logger.warning(
+                f"Ollama embedding failed ({err}); attempting Nano-GPT fallback"
+            )
 
     # Try Nano-GPT (if key is configured)
-    if settings.nanogpt_api_key:
+    if nano_gpt_enabled and settings.nanogpt_api_key:
         try:
             result = await _embed_nanogpt(text)
             logger.debug(f"Generated {EMBEDDING_DIMENSIONS}-dim embedding via Nano-GPT")
@@ -286,7 +300,7 @@ async def generate_embedding(text: str) -> List[float]:
             )
 
     # Fallback to Gemini (if key is configured)
-    if settings.gemini_api_key:
+    if gemini_enabled and settings.gemini_api_key:
         try:
             result = await _embed_gemini(text)
             logger.debug(
@@ -294,14 +308,16 @@ async def generate_embedding(text: str) -> List[float]:
             )
             return result
         except Exception as err:
-            logger.warning(f"Gemini embedding also failed: {err}; using mock embeddings")
+            logger.warning(
+                f"Gemini embedding also failed: {err}; using mock embeddings"
+            )
 
     # Final fallback: use mock embeddings (deterministic, for development)
     try:
         result = _embed_mock(text)
         logger.warning(
-            f"Using mock embeddings (no real provider available). "
-            f"These are deterministic hash-based vectors suitable for development only."
+            "Using mock embeddings (no real provider available). "
+            "These are deterministic hash-based vectors suitable for development only."
         )
         return result
     except Exception as err:
