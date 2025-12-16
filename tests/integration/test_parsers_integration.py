@@ -1,13 +1,15 @@
 import pytest
 from fastapi.testclient import TestClient
 
-from fastapi.testclient import TestClient
 from omega_kg.auth_utils import create_access_token
+
 
 # Import settings lazily within functions to avoid import-time issues
 def get_app():
     from omega_kg.capture_server import app
+
     return app
+
 
 client = TestClient(get_app())
 

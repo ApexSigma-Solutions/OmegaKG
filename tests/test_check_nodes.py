@@ -17,6 +17,7 @@ os.environ.setdefault("JWT_SECRET_KEY", "test-jwt-secret")
 os.environ.setdefault("NEO4J_PASSWORD", "test-neo4j-password")
 os.environ.setdefault("OBSIDIAN_VAULT_PATH", "./test_vault")
 
+
 class MockRecord:
     """Mock Neo4j record class for testing."""
 
@@ -26,13 +27,14 @@ class MockRecord:
 
     def __getitem__(self, key: str) -> Any:
         """Get item by key, simulating Neo4j record behavior."""
-        if key == 'count':
+        if key == "count":
             return self._count
         return None
 
     def __repr__(self) -> str:
         """String representation for debugging."""
         return f"MockRecord(count={self._count})"
+
 
 class TestCheckNodes:
     """Test suite for check_nodes.py functionality."""
@@ -43,11 +45,15 @@ class TestCheckNodes:
         with patch("neo4j.GraphDatabase.driver") as mock_driver:
             # Mock the driver and session
             mock_session = Mock()
-            mock_driver.return_value.session.return_value.__enter__.return_value = mock_session
+            mock_driver.return_value.session.return_value.__enter__.return_value = (
+                mock_session
+            )
 
             # Mock session.run to return mock results with proper MockRecord
             mock_result = Mock()
-            mock_record = MockRecord(5)  # Initialize with count=5 to match test expectation
+            mock_record = MockRecord(
+                5
+            )  # Initialize with count=5 to match test expectation
             mock_result.single.return_value = mock_record
             mock_result.__iter__ = Mock(return_value=iter([mock_record]))
             mock_session.run.return_value = mock_result
@@ -84,13 +90,13 @@ class TestCheckNodes:
         """Test MockRecord class behavior with different keys."""
         # Test with count=0
         record_zero = MockRecord(0)
-        assert record_zero['count'] == 0
-        assert record_zero['other_key'] is None
+        assert record_zero["count"] == 0
+        assert record_zero["other_key"] is None
 
         # Test with count>0
         record_positive = MockRecord(5)
-        assert record_positive['count'] == 5
-        assert record_positive['other_key'] is None
+        assert record_positive["count"] == 5
+        assert record_positive["other_key"] is None
 
         # Test string representation
         assert str(record_zero) == "MockRecord(count=0)"

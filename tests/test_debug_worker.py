@@ -11,7 +11,7 @@ Tests the worker startup debugging functionality including:
 import pytest
 import asyncio
 import logging
-from unittest.mock import Mock, patch, AsyncMock, MagicMock, call
+from unittest.mock import patch, AsyncMock
 import sys
 from pathlib import Path
 
@@ -25,13 +25,16 @@ class TestWorkerStartupDebug:
     """Tests for worker startup debugging functionality"""
 
     @pytest.mark.asyncio
-    @patch('debug_worker.get_vector_store')
-    @patch('debug_worker.start_worker')
-    @patch('debug_worker.stop_worker')
-    @patch('debug_worker.VectorStore.close_pool')
+    @patch("debug_worker.get_vector_store")
+    @patch("debug_worker.start_worker")
+    @patch("debug_worker.stop_worker")
+    @patch("debug_worker.VectorStore.close_pool")
     async def test_successful_worker_startup_and_shutdown(
-        self, mock_close_pool, mock_stop_worker, 
-        mock_start_worker, mock_get_vector_store
+        self,
+        mock_close_pool,
+        mock_stop_worker,
+        mock_start_worker,
+        mock_get_vector_store,
     ):
         """Test successful worker startup and shutdown sequence"""
         # Setup mocks
@@ -51,7 +54,7 @@ class TestWorkerStartupDebug:
         mock_close_pool.assert_called_once()
 
     @pytest.mark.asyncio
-    @patch('debug_worker.get_vector_store')
+    @patch("debug_worker.get_vector_store")
     async def test_vector_store_initialization_failure(self, mock_get_vector_store):
         """Test handling of vector store initialization failure"""
         # Setup mock to raise exception
@@ -65,8 +68,8 @@ class TestWorkerStartupDebug:
         mock_get_vector_store.assert_called_once()
 
     @pytest.mark.asyncio
-    @patch('debug_worker.get_vector_store')
-    @patch('debug_worker.start_worker')
+    @patch("debug_worker.get_vector_store")
+    @patch("debug_worker.start_worker")
     async def test_worker_start_failure(self, mock_start_worker, mock_get_vector_store):
         """Test handling of worker start failure"""
         # Setup mocks
@@ -83,9 +86,9 @@ class TestWorkerStartupDebug:
         mock_start_worker.assert_called_once()
 
     @pytest.mark.asyncio
-    @patch('debug_worker.get_vector_store')
-    @patch('debug_worker.start_worker')
-    @patch('debug_worker.stop_worker')
+    @patch("debug_worker.get_vector_store")
+    @patch("debug_worker.start_worker")
+    @patch("debug_worker.stop_worker")
     async def test_worker_stop_failure(
         self, mock_stop_worker, mock_start_worker, mock_get_vector_store
     ):
@@ -101,13 +104,16 @@ class TestWorkerStartupDebug:
             await debug_worker.test_worker_startup()
 
     @pytest.mark.asyncio
-    @patch('debug_worker.get_vector_store')
-    @patch('debug_worker.start_worker')
-    @patch('debug_worker.stop_worker')
-    @patch('debug_worker.VectorStore.close_pool')
+    @patch("debug_worker.get_vector_store")
+    @patch("debug_worker.start_worker")
+    @patch("debug_worker.stop_worker")
+    @patch("debug_worker.VectorStore.close_pool")
     async def test_pool_close_failure(
-        self, mock_close_pool, mock_stop_worker,
-        mock_start_worker, mock_get_vector_store
+        self,
+        mock_close_pool,
+        mock_stop_worker,
+        mock_start_worker,
+        mock_get_vector_store,
     ):
         """Test handling of pool close failure"""
         # Setup mocks
@@ -132,13 +138,17 @@ class TestLoggingBehavior:
     """Tests for logging behavior during debug operations"""
 
     @pytest.mark.asyncio
-    @patch('debug_worker.get_vector_store')
-    @patch('debug_worker.start_worker')
-    @patch('debug_worker.stop_worker')
-    @patch('debug_worker.VectorStore.close_pool')
+    @patch("debug_worker.get_vector_store")
+    @patch("debug_worker.start_worker")
+    @patch("debug_worker.stop_worker")
+    @patch("debug_worker.VectorStore.close_pool")
     async def test_logging_messages_on_success(
-        self, mock_close_pool, mock_stop_worker,
-        mock_start_worker, mock_get_vector_store, caplog
+        self,
+        mock_close_pool,
+        mock_stop_worker,
+        mock_start_worker,
+        mock_get_vector_store,
+        caplog,
     ):
         """Test that appropriate log messages are generated on success"""
         # Setup mocks
@@ -160,7 +170,7 @@ class TestLoggingBehavior:
         assert "Vector store pool closed" in caplog.text
 
     @pytest.mark.asyncio
-    @patch('debug_worker.get_vector_store')
+    @patch("debug_worker.get_vector_store")
     async def test_logging_on_exception(self, mock_get_vector_store, caplog):
         """Test that exceptions are logged with traceback"""
         # Setup mock to raise exception
@@ -179,14 +189,18 @@ class TestAsyncBehavior:
     """Tests for async/await behavior"""
 
     @pytest.mark.asyncio
-    @patch('debug_worker.get_vector_store')
-    @patch('debug_worker.start_worker')
-    @patch('debug_worker.stop_worker')
-    @patch('debug_worker.VectorStore.close_pool')
-    @patch('asyncio.sleep')
+    @patch("debug_worker.get_vector_store")
+    @patch("debug_worker.start_worker")
+    @patch("debug_worker.stop_worker")
+    @patch("debug_worker.VectorStore.close_pool")
+    @patch("asyncio.sleep")
     async def test_async_sleep_timing(
-        self, mock_sleep, mock_close_pool, mock_stop_worker,
-        mock_start_worker, mock_get_vector_store
+        self,
+        mock_sleep,
+        mock_close_pool,
+        mock_stop_worker,
+        mock_start_worker,
+        mock_get_vector_store,
     ):
         """Test that async sleep is called with correct duration"""
         # Setup mocks
@@ -200,8 +214,8 @@ class TestAsyncBehavior:
         mock_sleep.assert_called_once_with(2)
 
     @pytest.mark.asyncio
-    @patch('debug_worker.get_vector_store')
-    @patch('debug_worker.start_worker')
+    @patch("debug_worker.get_vector_store")
+    @patch("debug_worker.start_worker")
     async def test_async_operations_are_awaited(
         self, mock_start_worker, mock_get_vector_store
     ):
@@ -223,13 +237,16 @@ class TestEdgeCases:
     """Tests for edge cases and boundary conditions"""
 
     @pytest.mark.asyncio
-    @patch('debug_worker.get_vector_store')
-    @patch('debug_worker.start_worker')
-    @patch('debug_worker.stop_worker')
-    @patch('debug_worker.VectorStore.close_pool')
+    @patch("debug_worker.get_vector_store")
+    @patch("debug_worker.start_worker")
+    @patch("debug_worker.stop_worker")
+    @patch("debug_worker.VectorStore.close_pool")
     async def test_none_return_values(
-        self, mock_close_pool, mock_stop_worker,
-        mock_start_worker, mock_get_vector_store
+        self,
+        mock_close_pool,
+        mock_stop_worker,
+        mock_start_worker,
+        mock_get_vector_store,
     ):
         """Test handling of None return values from mocked functions"""
         # Setup mocks to return None
@@ -243,7 +260,7 @@ class TestEdgeCases:
         await debug_worker.test_worker_startup()
 
     @pytest.mark.asyncio
-    @patch('debug_worker.get_vector_store')
+    @patch("debug_worker.get_vector_store")
     async def test_multiple_exception_types(self, mock_get_vector_store):
         """Test handling of different exception types"""
         exception_types = [
@@ -265,15 +282,15 @@ class TestImportDependencies:
     def test_required_imports_available(self):
         """Test that all required imports are available"""
         # This test ensures the module can be imported
-        assert hasattr(debug_worker, 'test_worker_startup')
+        assert hasattr(debug_worker, "test_worker_startup")
         assert callable(debug_worker.test_worker_startup)
 
-    @patch('debug_worker.get_vector_store')
+    @patch("debug_worker.get_vector_store")
     def test_lazy_imports_in_function(self, mock_get_vector_store):
         """Test that imports inside function don't cause issues"""
         # The function imports modules inside it, verify this works
         mock_get_vector_store.side_effect = ImportError("Module not found")
-        
+
         with pytest.raises(ImportError):
             asyncio.run(debug_worker.test_worker_startup())
 
@@ -282,34 +299,45 @@ class TestWorkerLifecycle:
     """Tests for complete worker lifecycle"""
 
     @pytest.mark.asyncio
-    @patch('debug_worker.get_vector_store')
-    @patch('debug_worker.start_worker')
-    @patch('debug_worker.stop_worker')
-    @patch('debug_worker.VectorStore.close_pool')
+    @patch("debug_worker.get_vector_store")
+    @patch("debug_worker.start_worker")
+    @patch("debug_worker.stop_worker")
+    @patch("debug_worker.VectorStore.close_pool")
     async def test_correct_call_order(
-        self, mock_close_pool, mock_stop_worker,
-        mock_start_worker, mock_get_vector_store
+        self,
+        mock_close_pool,
+        mock_stop_worker,
+        mock_start_worker,
+        mock_get_vector_store,
     ):
         """Test that operations are called in the correct order"""
         # Setup mocks
         mock_vector_store = AsyncMock()
         mock_get_vector_store.return_value = mock_vector_store
-        
+
         call_order = []
-        mock_get_vector_store.side_effect = lambda: (call_order.append('get_vector_store'), mock_vector_store)[1]
-        mock_start_worker.side_effect = lambda: call_order.append('start_worker')
-        mock_stop_worker.side_effect = lambda: call_order.append('stop_worker')
-        mock_close_pool.side_effect = lambda: call_order.append('close_pool')
+        mock_get_vector_store.side_effect = lambda: (
+            call_order.append("get_vector_store"),
+            mock_vector_store,
+        )[1]
+        mock_start_worker.side_effect = lambda: call_order.append("start_worker")
+        mock_stop_worker.side_effect = lambda: call_order.append("stop_worker")
+        mock_close_pool.side_effect = lambda: call_order.append("close_pool")
 
         await debug_worker.test_worker_startup()
 
         # Verify correct order
-        assert call_order == ['get_vector_store', 'start_worker', 'stop_worker', 'close_pool']
+        assert call_order == [
+            "get_vector_store",
+            "start_worker",
+            "stop_worker",
+            "close_pool",
+        ]
 
     @pytest.mark.asyncio
-    @patch('debug_worker.get_vector_store')
-    @patch('debug_worker.start_worker')
-    @patch('debug_worker.stop_worker')
+    @patch("debug_worker.get_vector_store")
+    @patch("debug_worker.start_worker")
+    @patch("debug_worker.stop_worker")
     async def test_cleanup_on_partial_failure(
         self, mock_stop_worker, mock_start_worker, mock_get_vector_store
     ):

@@ -91,7 +91,9 @@ async def test_update_issue(mock_settings: MagicMock, mock_httpx: AsyncMock) -> 
 
 
 @pytest.mark.asyncio
-async def test_sync_note_create(mock_parser_settings: MagicMock, mock_vault: MagicMock) -> None:
+async def test_sync_note_create(
+    mock_parser_settings: MagicMock, mock_vault: MagicMock
+) -> None:
     """Test creating a new Linear issue from a note."""
     # Mock LinearClient within SmartParser
     with patch("omega_kg.smart_parser.linear_client") as mock_client:
@@ -129,7 +131,9 @@ Description here.
             mock_vault.resolve_path.return_value.open.return_value = mock_file
 
             # Run Sync
-            result: dict[str, str] | None = await parser.sync_note_to_linear("Tasks/NewTask.md")
+            result: dict[str, str] | None = await parser.sync_note_to_linear(
+                "Tasks/NewTask.md"
+            )
 
             # Verify result is not None before accessing
             assert result is not None
@@ -151,7 +155,9 @@ Description here.
 
 
 @pytest.mark.asyncio
-async def test_sync_note_update(mock_parser_settings: MagicMock, mock_vault: MagicMock) -> None:
+async def test_sync_note_update(
+    mock_parser_settings: MagicMock, mock_vault: MagicMock
+) -> None:
     """Test updating an existing Linear issue from a note."""
     with patch("omega_kg.smart_parser.linear_client") as mock_client:
         mock_client.update_issue = AsyncMock(
@@ -174,7 +180,9 @@ async def test_sync_note_update(mock_parser_settings: MagicMock, mock_vault: Mag
             mock_vault.resolve_path.return_value.open.return_value = mock_file
 
             # Run Sync
-            result: dict[str, str] | None = await parser.sync_note_to_linear("Tasks/ExistingTask.md")
+            result: dict[str, str] | None = await parser.sync_note_to_linear(
+                "Tasks/ExistingTask.md"
+            )
 
             # Verify result is not None before accessing
             assert result is not None
@@ -188,7 +196,9 @@ async def test_sync_note_update(mock_parser_settings: MagicMock, mock_vault: Mag
 
 
 @pytest.mark.asyncio
-async def test_sync_note_with_none_result(mock_parser_settings: MagicMock, mock_vault: MagicMock) -> None:
+async def test_sync_note_with_none_result(
+    mock_parser_settings: MagicMock, mock_vault: MagicMock
+) -> None:
     """Test handling when sync returns None (e.g., file not found)."""
     with patch("omega_kg.smart_parser.linear_client") as mock_client:
         parser = SmartParser()
@@ -215,7 +225,7 @@ async def test_sync_note_with_missing_team_id(mock_vault: MagicMock) -> None:
         mock_settings.linear_user_map_json = "{}"
         mock_settings.linear_label_map_json = "{}"
         mock_settings.linear_status_map_json = "{}"
-        
+
         parser = SmartParser()
 
         # Mock file exists

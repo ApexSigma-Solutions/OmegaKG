@@ -8,21 +8,20 @@ match the .env.example file, preventing configuration drift.
 import logging
 import os
 from pathlib import Path
-from typing import Any, Dict, FrozenSet, List, Set, Tuple, Union
+from typing import Any, Dict, FrozenSet, List, Set, Tuple
 
 import pytest
 
 # Configure logging for better debugging
 logger = logging.getLogger(__name__)
 
-import pytest
 
 # Set required environment variables before importing Settings
 # to prevent validation errors during module import
 os.environ.setdefault("NEO4J_PASSWORD", "test-password")
 os.environ.setdefault("LINEAR_WEBHOOK_SECRET", "test-secret")
 
-from omega_kg.settings import Settings
+from omega_kg.settings import Settings  # noqa: E402
 
 
 class ConfigDriftError(Exception):
@@ -464,7 +463,7 @@ def test_configuration_consistency():
     """
     try:
         settings = Settings()
-        env_keys = _get_cached_env_keys()
+        _get_cached_env_keys()
 
         # Check that database URL components are consistent
         if hasattr(settings, "database_url"):

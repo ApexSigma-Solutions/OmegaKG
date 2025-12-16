@@ -259,13 +259,12 @@ async def test_generate_embedding_no_provider_available():
     """
     Test that appropriate error is raised when no provider is configured.
     """
-    import importlib
     import sys
-    
+
     # Remove module from cache to force fresh import with patched settings
-    if 'omega_kg.domain.common.embedding_service' in sys.modules:
-        del sys.modules['omega_kg.domain.common.embedding_service']
-    
+    if "omega_kg.domain.common.embedding_service" in sys.modules:
+        del sys.modules["omega_kg.domain.common.embedding_service"]
+
     with patch("omega_kg.settings.settings") as mock_settings:
         mock_settings.nanogpt_api_key = None
         mock_settings.gemini_api_key = None
@@ -276,4 +275,5 @@ async def test_generate_embedding_no_provider_available():
         with pytest.raises(RuntimeError, match="No embedding provider available"):
             # Import fresh after patching to ensure provider flags are evaluated
             from omega_kg.domain.common import embedding_service as emb_module
+
             await emb_module.generate_embedding("Test without any provider")

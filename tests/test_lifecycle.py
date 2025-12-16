@@ -105,24 +105,27 @@ class TestTaskLifecycle:
 
 # ===== NEO4J DATABASE OPERATIONS TESTS =====
 
+
 class TestNeo4jOperations:
     """Test Neo4j database integration and query execution."""
 
-    def test_neo4j_session_context_manager(self, task_lifecycle_with_driver: TaskLifecycle):
+    def test_neo4j_session_context_manager(
+        self, task_lifecycle_with_driver: TaskLifecycle
+    ):
         """Test proper Neo4j session context manager usage."""
         lifecycle = task_lifecycle_with_driver
-        
+
         # Test that session is used as context manager
         if lifecycle.driver:
             # Test that driver has session method
-            assert hasattr(lifecycle.driver, 'session')
+            assert hasattr(lifecycle.driver, "session")
             # In mock mode, we can't test actual session usage
             assert lifecycle.mock_mode is False
 
     def test_health_check_query(self, task_lifecycle_with_driver: TaskLifecycle):
         """Test Neo4j health check query execution."""
         lifecycle = task_lifecycle_with_driver
-        
+
         # Test that health check method exists and works
         if lifecycle.driver:
             # Test connection status
@@ -135,10 +138,10 @@ class TestNeo4jOperations:
         """Test handling of Neo4j connection errors."""
         mock_driver = MagicMock()
         mock_driver_factory.return_value = mock_driver
-        
+
         # Test ServiceUnavailable exception
         mock_driver.session.side_effect = ServiceUnavailable("Connection failed")
-        
+
         # Should switch to mock mode when connection fails
         lifecycle = TaskLifecycle(mock_mode=False)
         assert lifecycle.mock_mode is True
@@ -148,10 +151,10 @@ class TestNeo4jOperations:
         """Test handling of Neo4j authentication errors."""
         mock_driver = MagicMock()
         mock_driver_factory.return_value = mock_driver
-        
+
         # Test AuthError exception
         mock_driver.session.side_effect = AuthError("Invalid credentials")
-        
+
         # Should switch to mock mode
         lifecycle = TaskLifecycle(mock_mode=False)
         assert lifecycle.mock_mode is True
@@ -159,10 +162,13 @@ class TestNeo4jOperations:
 
 # ===== STATE TRANSITION TESTS =====
 
+
 class TestStateTransitions:
     """Test task state transition logic and rules."""
 
-    def test_draft_to_archived_transition(self, task_lifecycle_mock: TaskLifecycle, sample_task_data: Dict[str, Any]):
+    def test_draft_to_archived_transition(
+        self, task_lifecycle_mock: TaskLifecycle, sample_task_data: Dict[str, Any]
+    ):
         """Test draft task transitions to archived after threshold."""
         # Test that lifecycle rules are properly configured
         rule = TaskLifecycle.RULES[0]  # Draft -> Archived rule
@@ -171,7 +177,9 @@ class TestStateTransitions:
         assert rule.days_threshold == 14
         assert rule.action == "auto"
 
-    def test_pinned_task_exemption(self, task_lifecycle_mock: TaskLifecycle, sample_task_data: Dict[str, Any]):
+    def test_pinned_task_exemption(
+        self, task_lifecycle_mock: TaskLifecycle, sample_task_data: Dict[str, Any]
+    ):
         """Test that pinned tasks are exempt from automatic transitions."""
         # Test that the draft warning rule has proper pinned task exemption
         rule = TaskLifecycle.RULES[1]  # Draft warning rule
@@ -182,7 +190,9 @@ class TestStateTransitions:
         assert "NOT t.pinned = true" in rule.condition
         assert rule.action == "warn"
 
-    def test_active_to_blocked_transition(self, task_lifecycle_mock: TaskLifecycle, sample_task_data: Dict[str, Any]):
+    def test_active_to_blocked_transition(
+        self, task_lifecycle_mock: TaskLifecycle, sample_task_data: Dict[str, Any]
+    ):
         """Test active task transitions to blocked after threshold."""
         # Test that the active -> blocked rule is properly configured
         rule = TaskLifecycle.RULES[2]  # Active -> Blocked rule
@@ -191,7 +201,9 @@ class TestStateTransitions:
         assert rule.days_threshold == 30
         assert rule.action == "warn"
 
-    def test_completed_task_handling(self, task_lifecycle_mock: TaskLifecycle, sample_task_data: Dict[str, Any]):
+    def test_completed_task_handling(
+        self, task_lifecycle_mock: TaskLifecycle, sample_task_data: Dict[str, Any]
+    ):
         """Test that completed tasks are handled correctly."""
         # Test that the completed -> archived rule is properly configured
         rule = TaskLifecycle.RULES[3]  # Completed -> Archived rule
@@ -203,15 +215,21 @@ class TestStateTransitions:
 
 # ===== FRONTMATTER SYNCHRONIZATION TESTS =====
 
+
 class TestFrontmatterSync:
     """Test frontmatter synchronization between Neo4j and markdown files."""
 
-    def test_frontmatter_update(self, task_lifecycle_mock: TaskLifecycle, sample_task_data: Dict[str, Any], test_vault_path: Path):
+    def test_frontmatter_update(
+        self,
+        task_lifecycle_mock: TaskLifecycle,
+        sample_task_data: Dict[str, Any],
+        test_vault_path: Path,
+    ):
         """Test updating task frontmatter in markdown files."""
         # Create a test task file
         task_file = test_vault_path / "Tasks" / f"{sample_task_data['uid']}.md"
         task_file.parent.mkdir(exist_ok=True)
-        
+
         # Write initial frontmatter
         initial_frontmatter = """---
 uid: task-001
@@ -226,39 +244,48 @@ pinned: false
 This is a test task.
 """
         task_file.write_text(initial_frontmatter, encoding="utf-8")
-        
+
         # Test that the file was created successfully
         assert task_file.exists()
         content = task_file.read_text(encoding="utf-8")
         assert "status: draft" in content
         assert "uid: task-001" in content
 
-    def test_frontmatter_sync_with_neo4j(self, task_lifecycle_with_driver: TaskLifecycle, sample_task_data: Dict[str, Any], test_vault_path: Path):
+    def test_frontmatter_sync_with_neo4j(
+        self,
+        task_lifecycle_with_driver: TaskLifecycle,
+        sample_task_data: Dict[str, Any],
+        test_vault_path: Path,
+    ):
         """Test synchronization between Neo4j properties and frontmatter."""
         # Create task file
         task_file = test_vault_path / "Tasks" / f"{sample_task_data['uid']}.md"
         task_file.parent.mkdir(exist_ok=True)
-        
+
         # Test that file creation works
-        task_file.write_text(f"# {sample_task_data['title']}\n\nTest content.", encoding="utf-8")
-        
+        task_file.write_text(
+            f"# {sample_task_data['title']}\n\nTest content.", encoding="utf-8"
+        )
+
         # Verify file exists and contains expected content
         assert task_file.exists()
         content = task_file.read_text(encoding="utf-8")
         assert sample_task_data["title"] in content
 
-    def test_missing_frontmatter_handling(self, task_lifecycle_mock: TaskLifecycle, test_vault_path: Path):
+    def test_missing_frontmatter_handling(
+        self, task_lifecycle_mock: TaskLifecycle, test_vault_path: Path
+    ):
         """Test handling of files without proper frontmatter."""
         # Create a file without frontmatter
         task_file = test_vault_path / "Tasks" / "malformed_task.md"
         task_file.parent.mkdir(exist_ok=True)
-        
+
         malformed_content = """# Malformed Task
 
 This task has no frontmatter.
 """
         task_file.write_text(malformed_content, encoding="utf-8")
-        
+
         # Verify the file was created successfully
         assert task_file.exists()
         content = task_file.read_text(encoding="utf-8")
@@ -266,6 +293,7 @@ This task has no frontmatter.
 
 
 # ===== EMAIL NOTIFICATION TESTS =====
+
 
 class TestEmailNotifications:
     """Test email notification functionality."""
@@ -276,7 +304,7 @@ class TestEmailNotifications:
         lifecycle = TaskLifecycle(mock_mode=True)
         assert lifecycle.mock_mode is True
         assert lifecycle.driver is None
-        
+
         # Test that we can generate a report
         results = lifecycle.enforce_lifecycle(dry_run=True)
         assert isinstance(results, dict)
@@ -287,7 +315,7 @@ class TestEmailNotifications:
         # Test that lifecycle works without SMTP config
         lifecycle = TaskLifecycle(mock_mode=True)
         assert lifecycle.mock_mode is True
-        
+
         # Test that we can generate a report even without SMTP
         results = lifecycle.enforce_lifecycle(dry_run=True)
         assert isinstance(results, dict)
@@ -295,44 +323,53 @@ class TestEmailNotifications:
 
 # ===== TIME-BASED RULE ENFORCEMENT TESTS =====
 
+
 class TestTimeBasedRules:
     """Test time-based rule enforcement and date calculations."""
 
-    def test_days_since_calculation(self, task_lifecycle_mock: TaskLifecycle, sample_task_data: Dict[str, Any]):
+    def test_days_since_calculation(
+        self, task_lifecycle_mock: TaskLifecycle, sample_task_data: Dict[str, Any]
+    ):
         """Test calculation of days since task creation."""
         # Test that we can calculate days between dates
         from datetime import datetime, timedelta
-        
+
         # Create a date 5 days ago
         five_days_ago = datetime.now() - timedelta(days=5)
         now = datetime.now()
-        
+
         # Calculate difference manually
         delta = now - five_days_ago
         expected_days = delta.days
-        
+
         # Should be approximately 5 days
         assert 4 <= expected_days <= 6
 
-    def test_threshold_comparison(self, task_lifecycle_mock: TaskLifecycle, sample_task_data: Dict[str, Any]):
+    def test_threshold_comparison(
+        self, task_lifecycle_mock: TaskLifecycle, sample_task_data: Dict[str, Any]
+    ):
         """Test threshold comparison logic."""
         # Test basic threshold comparison logic
         test_cases = [
-            (5, 10, False),   # Not ready for transition
-            (10, 10, True),   # Exactly at threshold
-            (15, 10, True),   # Past threshold
+            (5, 10, False),  # Not ready for transition
+            (10, 10, True),  # Exactly at threshold
+            (15, 10, True),  # Past threshold
         ]
-        
+
         for days_since, threshold, expected in test_cases:
             result = days_since >= threshold
-            assert result == expected, f"Failed for days_since={days_since}, threshold={threshold}"
+            assert (
+                result == expected
+            ), f"Failed for days_since={days_since}, threshold={threshold}"
 
-    def test_batch_processing(self, task_lifecycle_mock: TaskLifecycle, sample_task_data: Dict[str, Any]):
+    def test_batch_processing(
+        self, task_lifecycle_mock: TaskLifecycle, sample_task_data: Dict[str, Any]
+    ):
         """Test batch processing of multiple tasks."""
         # Test that lifecycle can process multiple tasks
         # Since we're in mock mode, we should get mock results
         result = task_lifecycle_mock.enforce_lifecycle(dry_run=True)
-        
+
         # Should return mock results
         assert isinstance(result, dict)
         assert "archived" in result
@@ -344,19 +381,23 @@ class TestTimeBasedRules:
 
 # ===== ERROR HANDLING AND EDGE CASES =====
 
+
 class TestErrorHandling:
     """Test error handling and edge cases."""
 
-    def test_malformed_date_handling(self, task_lifecycle_mock: TaskLifecycle, sample_task_data: Dict[str, Any]):
+    def test_malformed_date_handling(
+        self, task_lifecycle_mock: TaskLifecycle, sample_task_data: Dict[str, Any]
+    ):
         """Test handling of malformed date strings."""
         # Test with invalid date string
         invalid_date = "invalid-date-string"
-        
+
         # Should handle gracefully - test that we can detect invalid dates
         try:
             # Try to parse the invalid date
             from datetime import datetime
-            datetime.fromisoformat(invalid_date.replace('Z', '+00:00'))
+
+            datetime.fromisoformat(invalid_date.replace("Z", "+00:00"))
             assert False, "Should have raised ValueError"
         except ValueError:
             # Expected for invalid dates
@@ -366,16 +407,18 @@ class TestErrorHandling:
         """Test graceful handling when Neo4j is unavailable."""
         # Test initialization without Neo4j
         lifecycle = TaskLifecycle(mock_mode=False)
-        
+
         # Should fall back to mock mode
         assert lifecycle.mock_mode is True
 
-    def test_file_system_errors(self, task_lifecycle_mock: TaskLifecycle, sample_task_data: Dict[str, Any]):
+    def test_file_system_errors(
+        self, task_lifecycle_mock: TaskLifecycle, sample_task_data: Dict[str, Any]
+    ):
         """Test handling of file system errors."""
         # Test that we can handle file system errors gracefully
         # Test with a non-existent path that should raise an error
         nonexistent_path = Path("/definitely/does/not/exist/task.md")
-        
+
         # Should handle the fact that the path doesn't exist
         assert not nonexistent_path.exists()
 
@@ -384,7 +427,7 @@ class TestErrorHandling:
         # Test that empty results are handled gracefully
         # In mock mode, we should get predefined mock results
         result = task_lifecycle_mock.enforce_lifecycle(dry_run=True)
-        
+
         # Should return mock results even with no real tasks
         assert isinstance(result, dict)
         assert len(result["archived"]) >= 0
@@ -413,7 +456,9 @@ class TestTaskLifecycleEnforcement:
     """Test TaskLifecycle enforcement methods"""
 
     @patch("omega_kg.lifecycle.GraphDatabase.driver")
-    def test_enforce_lifecycle_dry_run(self, mock_driver_class: Any, mock_neo4j_driver: Any):
+    def test_enforce_lifecycle_dry_run(
+        self, mock_driver_class: Any, mock_neo4j_driver: Any
+    ):
         """Test enforce_lifecycle with dry_run=True"""
         mock_driver_class.return_value = mock_neo4j_driver
 
@@ -433,7 +478,9 @@ class TestTaskLifecycleEnforcement:
             assert "failed" in results
 
     @patch("omega_kg.lifecycle.GraphDatabase.driver")
-    def test_enforce_lifecycle_returns_dict(self, mock_driver_class: Any, mock_neo4j_driver: Any):
+    def test_enforce_lifecycle_returns_dict(
+        self, mock_driver_class: Any, mock_neo4j_driver: Any
+    ):
         """Test that enforce_lifecycle returns expected dictionary structure"""
         mock_driver_class.return_value = mock_neo4j_driver
 

@@ -90,9 +90,7 @@ async def process_pending_events(
     # Query unprocessed events
     query = (
         select(RawLinearEvent)
-        .where(
-            RawLinearEvent.processed == False  # noqa: E712
-        )
+        .where(RawLinearEvent.processed == False)  # noqa: E712
         .order_by(RawLinearEvent.received_at)
     )
 

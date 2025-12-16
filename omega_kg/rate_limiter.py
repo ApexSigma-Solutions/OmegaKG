@@ -5,12 +5,13 @@ Supports both Redis-backed and in-memory fallback modes.
 Provides scalable, persistent rate limiting across multiple server processes.
 """
 
-import time
 import logging
+import time
 from abc import ABC, abstractmethod
-from typing import Optional, Dict, Any
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from typing import Any, Dict, Optional
+
+from omega_kg.settings import settings
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +19,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class RateLimitConfig:
     """Configuration for rate limiting."""
+
     max_attempts: int = 5
     window_seconds: int = 300  # 5 minutes
     cleanup_interval_seconds: int = 3600  # 1 hour
@@ -30,10 +32,10 @@ class RateLimiter(ABC):
     def check_limit(self, client_id: str) -> bool:
         """
         Check if a request should be allowed.
-        
+
         Args:
             client_id: Unique identifier for the client (e.g., IP address)
-            
+
         Returns:
             bool: True if request is allowed, False if rate limited
         """
@@ -53,7 +55,7 @@ class RateLimiter(ABC):
 class InMemoryRateLimiter(RateLimiter):
     """
     Simple in-memory rate limiter for development/testing.
-    
+
     WARNING: Not suitable for production with multiple processes.
     Use RedisRateLimiter for production deployments.
     """
@@ -67,7 +69,7 @@ class InMemoryRateLimiter(RateLimiter):
     def check_limit(self, client_id: str) -> bool:
         """Check rate limit using in-memory storage."""
         current_time = time.time()
-        
+
         # Periodic cleanup to prevent unbounded memory growth
         if current_time - self._last_cleanup > self.config.cleanup_interval_seconds:
             self.cleanup()
@@ -75,18 +77,18 @@ class InMemoryRateLimiter(RateLimiter):
 
         if client_id not in self._storage:
             self._storage[client_id] = {
-                "count": 0,
+                "count": 1,
                 "first_attempt": current_time,
                 "last_attempt": current_time,
             }
             return True
 
         client_data = self._storage[client_id]
-        
+
         # Reset if outside time window
         if current_time - client_data["first_attempt"] > self.config.window_seconds:
             self._storage[client_id] = {
-                "count": 0,
+                "count": 1,
                 "first_attempt": current_time,
                 "last_attempt": current_time,
             }
@@ -130,7 +132,7 @@ class InMemoryRateLimiter(RateLimiter):
 class RedisRateLimiter(RateLimiter):
     """
     Production-ready rate limiter using Redis.
-    
+
     Features:
     - Distributed across multiple processes and servers
     - Persistent storage survives server restarts
@@ -141,7 +143,7 @@ class RedisRateLimiter(RateLimiter):
     def __init__(self, config: RateLimitConfig, redis_client: Optional[Any] = None):
         """
         Initialize Redis rate limiter.
-        
+
         Args:
             config: Rate limiting configuration
             redis_client: Redis client instance (will create if not provided)
@@ -149,7 +151,7 @@ class RedisRateLimiter(RateLimiter):
         self.config = config
         self.redis = redis_client
         self._key_prefix = "rate_limit:api_key:"
-        
+
         if self.redis is None:
             self._initialize_redis()
 
@@ -157,15 +159,14 @@ class RedisRateLimiter(RateLimiter):
         """Initialize Redis connection."""
         try:
             import redis
-            from omega_kg.settings import settings
-            
+
             redis_url = getattr(settings, "redis_url", "redis://localhost:6379/0")
             self.redis = redis.from_url(redis_url, decode_responses=True)
-            
+
             # Test connection
             self.redis.ping()
             logger.info("Redis connection established for rate limiting")
-            
+
         except ImportError:
             logger.error("redis package not installed. Install with: pip install redis")
             self.redis = None
@@ -182,26 +183,24 @@ class RedisRateLimiter(RateLimiter):
         try:
             key = f"{self._key_prefix}{client_id}"
             current_time = int(time.time())
-            
+
             # Atomic operation: check and increment with expiration
             pipe = self.redis.pipeline()
             pipe.get(key)
             pipe.incr(key)
             pipe.expire(key, self.config.window_seconds)
-            
+
             results = pipe.execute()
-            
+
             # Get current count
             current_count = int(results[1])
-            
+
             # Set initial timestamp on first request in window
             if current_count == 1:
                 self.redis.set(
-                    f"{key}:started",
-                    current_time,
-                    ex=self.config.window_seconds
+                    f"{key}:started", current_time, ex=self.config.window_seconds
                 )
-            
+
             # Check if over limit
             if current_count > self.config.max_attempts:
                 logger.warning(
@@ -244,7 +243,7 @@ class RedisRateLimiter(RateLimiter):
 class HybridRateLimiter(RateLimiter):
     """
     Hybrid rate limiter that falls back from Redis to in-memory.
-    
+
     Tries Redis first for distributed deployments,
     falls back to in-memory for development/testing.
     """
@@ -259,8 +258,7 @@ class HybridRateLimiter(RateLimiter):
         # Try to initialize Redis
         try:
             import redis
-            from omega_kg.settings import settings
-            
+
             redis_url = getattr(settings, "redis_url", None)
             if redis_url:
                 redis_client = redis.from_url(redis_url, decode_responses=True)
@@ -282,7 +280,9 @@ class HybridRateLimiter(RateLimiter):
             try:
                 return self._redis_limiter.check_limit(client_id)
             except Exception as e:
-                logger.error("Redis rate limiting failed, falling back to memory: %s", str(e))
+                logger.error(
+                    "Redis rate limiting failed, falling back to memory: %s", str(e)
+                )
                 self._use_redis = False
 
         # Fall back to in-memory
@@ -318,9 +318,11 @@ _rate_limiter: Optional[HybridRateLimiter] = None
 def get_rate_limiter() -> RateLimiter:
     """Get the global rate limiter instance."""
     global _rate_limiter
-    
+
     if _rate_limiter is None:
         config = RateLimitConfig(max_attempts=5, window_seconds=300)
         _rate_limiter = HybridRateLimiter(config)
+
+    return _rate_limiter
 
     return _rate_limiter

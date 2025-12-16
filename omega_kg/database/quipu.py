@@ -8,6 +8,7 @@ from datetime import datetime
 from typing import Any, Dict, Optional
 
 import asyncpg
+import psycopg2
 
 from omega_kg.settings import settings
 
@@ -74,7 +75,12 @@ async def insert_heartbeat(
     try:
         await conn.execute(
             INSERT_HEARTBEAT_SQL,
-            service_name, timestamp, status, latency_ms, model_loaded, meta,
+            service_name,
+            timestamp,
+            status,
+            latency_ms,
+            model_loaded,
+            meta,
         )
         return True
     except Exception as e:

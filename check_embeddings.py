@@ -31,13 +31,15 @@ async def check_embeddings():
     print("=" * 70)
 
     # Get latest records
-    rows = await conn.fetch("""
+    rows = await conn.fetch(
+        """
         SELECT id, message_id, node_label, status, retry_count,
                created_at, updated_at
         FROM omega_vectors_1024
         ORDER BY id DESC
         LIMIT 5
-    """)
+    """
+    )
 
     if not rows:
         print("\n✗ No records found in omega_vectors_1024 table")
@@ -54,11 +56,13 @@ async def check_embeddings():
             print("  " + "-" * 66)
 
     # Get count by status
-    stats = await conn.fetch("""
+    stats = await conn.fetch(
+        """
         SELECT status, COUNT(*) as count
         FROM omega_vectors_1024
         GROUP BY status
-    """)
+    """
+    )
 
     if stats:
         print("\nStatus Summary:")

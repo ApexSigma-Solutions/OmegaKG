@@ -5,6 +5,7 @@ import requests  # type: ignore[import-untyped]
 
 from omega_kg.quipu_ollama_heartbeat import check_ollama_health, run_heartbeat_loop
 
+
 @pytest.fixture
 def mock_settings():
     with patch("omega_kg.quipu_ollama_heartbeat.settings") as mock:
@@ -12,6 +13,7 @@ def mock_settings():
         mock.heartbeat_interval_sec = 1
         mock.quipu_service_name = "test_display"
         yield mock
+
 
 @pytest.mark.unit
 def test_check_ollama_health_online(mock_settings):  # noqa: F811
@@ -36,6 +38,7 @@ def test_check_ollama_health_online(mock_settings):  # noqa: F811
         assert meta["url"] == "http://localhost:11434"
         assert isinstance(latency, int)
 
+
 @pytest.mark.unit
 def test_check_ollama_health_offline(mock_settings):  # noqa: F811
     _ = mock_settings  # Use fixture to ensure settings are mocked
@@ -44,6 +47,7 @@ def test_check_ollama_health_offline(mock_settings):  # noqa: F811
         assert status == "OFFLINE"
         assert "Connection Refused" in meta["error"]
 
+
 @pytest.mark.asyncio
 @pytest.mark.unit
 async def test_run_heartbeat_loop_break(mock_settings):  # noqa: F811
@@ -51,14 +55,18 @@ async def test_run_heartbeat_loop_break(mock_settings):  # noqa: F811
     _ = mock_settings  # Use fixture to ensure settings are mocked
     with (
         patch(
-            "omega_kg.quipu_ollama_heartbeat.init_heartbeat_table", new_callable=AsyncMock, return_value=True
+            "omega_kg.quipu_ollama_heartbeat.init_heartbeat_table",
+            new_callable=AsyncMock,
+            return_value=True,
         ),
         patch(
             "omega_kg.quipu_ollama_heartbeat.check_ollama_health",
             return_value=("ONLINE", 10, "test", {}),
         ),
         patch(
-            "omega_kg.quipu_ollama_heartbeat.insert_heartbeat", new_callable=AsyncMock, return_value=True
+            "omega_kg.quipu_ollama_heartbeat.insert_heartbeat",
+            new_callable=AsyncMock,
+            return_value=True,
         ) as mock_insert,
         patch(
             "omega_kg.quipu_ollama_heartbeat.time.sleep", side_effect=KeyboardInterrupt
