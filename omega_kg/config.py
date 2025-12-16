@@ -24,7 +24,6 @@ from enum import Enum
 
 from omega_kg.settings import settings
 
-
 # ============================================================================
 # ENVIRONMENT DETECTION
 # ============================================================================
@@ -128,6 +127,19 @@ DEFAULT_NODE_TYPE = "ChatMessage"
 
 
 # ============================================================================
+# LINEAR STATUS MAPPING
+# ============================================================================
+LINEAR_STATUS_MAP = {
+    "Backlog": "draft",
+    "Todo": "ready",
+    "In Progress": "active",
+    "Done": "completed",
+    "Canceled": "archived",
+}
+"""Maps Linear issue states to Obsidian task statuses."""
+
+
+# ============================================================================
 # OLLAMA CONFIGURATION (inherited from settings.py)
 # ============================================================================
 OLLAMA_BASE_URL = settings.ollama_base_url
@@ -221,6 +233,8 @@ __all__ = [
     # Neo4j Node Types
     "SUPPORTED_NODE_TYPES",
     "DEFAULT_NODE_TYPE",
+    # Linear Integration
+    "LINEAR_STATUS_MAP",
     # Ollama
     "OLLAMA_BASE_URL",
     "OLLAMA_EMBEDDING_ENDPOINT",
