@@ -33,7 +33,11 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    """Remove composite index."""
+    """
+    Remove the composite index on (processed, received_at) from the raw_linear_events table.
+    
+    This drops the index named `ix_raw_linear_events_processed_received_at`.
+    """
     op.drop_index(
         "ix_raw_linear_events_processed_received_at", table_name="raw_linear_events"
     )

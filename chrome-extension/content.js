@@ -441,7 +441,7 @@ class ChatCapture {
         '[data-testid*="message" i], [data-test-id*="message" i]',
     );
     console.log(
-      `Found ${messageElements.length} elements with messagerelated attributes`,
+      `Found ${messageElements.length} elements with message-related attributes`,
     );
 
     // Group by selector patterns
@@ -551,7 +551,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       }
     } catch (error) {
       console.error('[Omega_KG] Error handling TRIGGER_CAPTURE:', error);
-      sendResponse({ success: false, error: error.message || 'Unknown error during capture' });
+      sendResponse({
+        success: false,
+        error: error.message || 'Unknown error during capture'
+      });
     }
   })();
 

@@ -1,7 +1,7 @@
 """Create omega_vectors_1024 table with pgvector support and status tracking
 
 Revision ID: 001_create_omega_vectors_1024
-Revises: 
+Revises:
 Create Date: 2025-12-02 23:00:00.000000
 
 Phase 7 (TN-LINEAR-07): Vector Enrichment
@@ -33,8 +33,9 @@ depends_on = None
 
 def upgrade() -> None:
     """
-    Create omega_vectors_1024 table with pgvector support.
-    Includes columns for embedding storage, status tracking, and retry handling.
+    Create the omega_vectors_1024 table with pgvector embedding storage, status and retry tracking, and supporting indexes.
+    
+    Also ensures the pgvector extension exists; table includes a 1024-dimension Vector column (nullable while pending), status and retry_count columns with constraints/defaults, created_at/updated_at timestamps, and multiple indexes (including partial indexes) to support worker polling, TTL cleanup, and retry analysis.
     """
     # Ensure pgvector extension exists
     op.execute("CREATE EXTENSION IF NOT EXISTS vector")
@@ -142,8 +143,9 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     """
-    Drop omega_vectors_1024 table and all associated indexes.
-    WARNING: This destroys all embedding data. Use only for rollback.
+    Remove the omega_vectors_1024 table and all indexes created for it.
+    
+    This permanently deletes all embedding records and related metadata; it does not remove the pgvector extension (drop it manually with `DROP EXTENSION IF EXISTS vector CASCADE` if full cleanup is required).
     """
     # Indexes are automatically dropped when table is dropped
     op.drop_table("omega_vectors_1024")
