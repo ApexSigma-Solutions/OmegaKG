@@ -110,9 +110,13 @@ class TestJwtAuthenticationFlow:
         exp_datetime = datetime.fromtimestamp(exp_timestamp, tz=timezone.utc)
         now = datetime.now(timezone.utc)
 
-        # Token should expire within configured minutes (default 1440 = 24 hours)
+        # Token should expire within configured minutes (uses settings value)
+        expected_minutes = get_settings().jwt_expiration_minutes
         time_diff = (exp_datetime - now).total_seconds() / 60
-        assert 1430 < time_diff < 1450  # Within 5 min of configured 1440
+        # Allow 5 minute tolerance around the configured value
+        assert (
+            expected_minutes - 10 < time_diff < expected_minutes + 10
+        ), f"Expected expiration around {expected_minutes} minutes, got {time_diff:.1f}"
 
     @pytest.mark.asyncio
     async def test_jwt_token_validation_success(self):

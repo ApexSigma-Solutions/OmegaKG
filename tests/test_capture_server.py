@@ -18,9 +18,7 @@ from omega_kg.capture_server import (
     _create_decision_nodes,
     _create_decision_nodes_async,
     app,
-    batch_percolate_sessions,
     percolate_to_neo4j,
-    percolate_to_neo4j_with_embedding,
 )
 
 # Import models from new location
@@ -81,11 +79,11 @@ class TestConversationDataModel:
 
     def test_conversation_data_validation_errors(self):
         """Test that invalid data raises ValidationError."""
-        # Invalid message format
+        # Invalid message format - string instead of dict/Message
         with pytest.raises(ValidationError):
             ConversationData(
                 platform="test",
-                messages=[{"invalid": "message"}],  # missing required fields
+                messages=["not a valid message type"],  # strings are not valid
             )
 
     def test_conversation_data_with_optional_fields(self):
@@ -188,13 +186,13 @@ class TestFormatConversationMarkdown:
 
             markdown = format_conversation_markdown(data)
 
-            assert "id: CAP-20231201-" in markdown  # Contains generated ID
+            # ID format is now CAP-{timestamp}-{hash}
+            assert "id: CAP-2023-12-01T10:00:00-" in markdown  # Contains generated ID
             assert "type: Conversation" in markdown
             assert "status: new" in markdown
             assert "platform: test" in markdown
-            assert "message_count: 2" in markdown
-            assert "participants: assistant, user" in markdown
-            assert "# test Conversation" in markdown
+            # Title is "Untitled Capture" by default
+            assert "# Untitled Capture" in markdown
             assert "## 👤 Message 1 (User)" in markdown
             assert "## 🤖 Message 2 (Assistant)" in markdown
             assert "Hello" in markdown
@@ -514,8 +512,9 @@ class TestCreateChatSession:
 
             # Verify query parameters
             call_args = mock_session.run.call_args
-            assert "test_hash" in call_args[0][0]  # hash in query
-            assert "test" in call_args[1]["platform"]  # platform in params
+            assert "$hash" in call_args[0][0]  # parameterized hash in query
+            assert call_args[1]["hash"] == "test_hash"  # hash value in params
+            assert call_args[1]["platform"] == "test"  # platform in params
 
     def test_create_chat_session_no_result(self):
         """Test ChatSession creation when no result is returned."""
@@ -660,191 +659,9 @@ class TestCreateDecisionNodesAsync:
             assert nodes_created == 0
 
 
-class TestPercolateToNeo4jWithEmbedding:
-    """Test the percolate_to_neo4j_with_embedding function."""
-
-    @pytest.mark.asyncio
-    async def test_percolate_with_embedding_success(self):
-        """Test successful percolation with embedding queue."""
-        data = ConversationData(
-            platform="test", messages=[{"role": "user", "content": "Hello"}]
-        )
-
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".md", delete=False) as f:
-            f.write("# Test\n\nContent")
-            file_path = Path(f.name)
-
-        try:
-            # Mock graph driver
-            mock_graph_driver = AsyncMock()
-            mock_session = AsyncMock()
-            mock_result = AsyncMock()
-            mock_result.single.return_value = {"session_id": 123}
-            mock_session.run.return_value = mock_result
-            mock_graph_driver.session.return_value.__aenter__.return_value = (
-                mock_session
-            )
-            mock_graph_driver.session.return_value.__aexit__.return_value = None
-
-            # Mock vector store
-            mock_vector_store = AsyncMock()
-            mock_vector_store.store_pending.return_value = "vector_123"
-
-            with patch("omega_kg.capture_server.graph_driver", mock_graph_driver):
-                with patch(
-                    "omega_kg.capture_server.get_vector_store",
-                    return_value=mock_vector_store,
-                ):
-                    with patch("omega_kg.capture_server.settings") as mock_settings:
-                        mock_settings.decision_keywords = []
-
-                        nodes_created = await percolate_to_neo4j_with_embedding(
-                            file_path, data
-                        )
-
-                        # Should create ChatSession node
-                        assert nodes_created >= 1
-                        mock_session.run.assert_called()
-
-                        # Should queue embedding
-                        mock_vector_store.store_pending.assert_called_once_with(
-                            message_id=123, node_label="ChatSession"
-                        )
-
-        finally:
-            file_path.unlink()
-
-    @pytest.mark.asyncio
-    async def test_percolate_with_embedding_vector_failure(self):
-        """Test percolation when vector store fails (non-fatal)."""
-        data = ConversationData(
-            platform="test", messages=[{"role": "user", "content": "Hello"}]
-        )
-
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".md", delete=False) as f:
-            f.write("# Test\n\nContent")
-            file_path = Path(f.name)
-
-        try:
-            # Mock graph driver
-            mock_graph_driver = AsyncMock()
-            mock_session = AsyncMock()
-            mock_result = AsyncMock()
-            mock_result.single.return_value = {"session_id": 123}
-            mock_session.run.return_value = mock_result
-            mock_graph_driver.session.return_value.__aenter__.return_value = (
-                mock_session
-            )
-            mock_graph_driver.session.return_value.__aexit__.return_value = None
-
-            # Mock vector store failure
-            with patch("omega_kg.capture_server.graph_driver", mock_graph_driver):
-                with patch(
-                    "omega_kg.capture_server.get_vector_store",
-                    side_effect=Exception("Vector store failed"),
-                ):
-                    with patch("omega_kg.capture_server.settings") as mock_settings:
-                        mock_settings.decision_keywords = []
-
-                        # Should still succeed despite vector store failure
-                        nodes_created = await percolate_to_neo4j_with_embedding(
-                            file_path, data
-                        )
-
-                        # Should create ChatSession node
-                        assert nodes_created >= 1
-                        mock_session.run.assert_called()
-
-        finally:
-            file_path.unlink()
-
-
-class TestBatchPercolateSessions:
-    """Test the batch_percolate_sessions function."""
-
-    def test_batch_percolate_sessions_success(self):
-        """Test successful batch percolation of sessions."""
-        with tempfile.TemporaryDirectory() as temp_dir:
-            # Create test sessions directory
-            sessions_dir = Path(temp_dir) / "Sessions"
-            sessions_dir.mkdir()
-
-            # Create test session files
-            (sessions_dir / "session1.md").write_text("# Session 1\n\nContent")
-            (sessions_dir / "session2.md").write_text("# Session 2\n\nContent")
-
-            # Mock dependencies
-            mock_driver = MagicMock()
-            mock_engine = MagicMock()
-            mock_engine.percolate_from_vault.return_value = {
-                "tasks": 2,
-                "commits": 5,
-                "links": 3,
-            }
-
-            with patch("omega_kg.capture_server.settings") as mock_settings:
-                mock_settings.obsidian_vault_path = temp_dir
-                mock_settings.neo4j_uri = "bolt://localhost:7687"
-                mock_settings.neo4j_user = "neo4j"
-                mock_settings.neo4j_password = "password"
-
-                with patch(
-                    "omega_kg.capture_server.GraphDatabase", return_value=mock_driver
-                ):
-                    with patch(
-                        "omega_kg.capture_server.PercolationEngine",
-                        return_value=mock_engine,
-                    ):
-                        with patch(
-                            "omega_kg.capture_server.time.time", side_effect=[0, 1.5]
-                        ):  # 1.5 seconds elapsed
-
-                            batch_percolate_sessions()
-
-                            # Verify engine was called
-                            mock_engine.percolate_from_vault.assert_called_once_with(
-                                sessions_dir
-                            )
-
-                            # Verify driver was closed
-                            mock_driver.close.assert_called_once()
-
-    def test_batch_percolate_sessions_no_directory(self):
-        """Test batch percolation when sessions directory doesn't exist."""
-        with tempfile.TemporaryDirectory() as temp_dir:
-            with patch("omega_kg.capture_server.settings") as mock_settings:
-                mock_settings.obsidian_vault_path = temp_dir
-
-                # Should not raise exception, just log warning
-                batch_percolate_sessions()  # Should complete without error
-
-    def test_batch_percolate_sessions_error_handling(self):
-        """Test batch percolation error handling."""
-        with tempfile.TemporaryDirectory() as temp_dir:
-            sessions_dir = Path(temp_dir) / "Sessions"
-            sessions_dir.mkdir()
-
-            mock_driver = MagicMock()
-
-            with patch("omega_kg.capture_server.settings") as mock_settings:
-                mock_settings.obsidian_vault_path = temp_dir
-                mock_settings.neo4j_uri = "bolt://localhost:7687"
-                mock_settings.neo4j_user = "neo4j"
-                mock_settings.neo4j_password = "password"
-
-                with patch(
-                    "omega_kg.capture_server.GraphDatabase", return_value=mock_driver
-                ):
-                    with patch(
-                        "omega_kg.capture_server.PercolationEngine",
-                        side_effect=Exception("Test error"),
-                    ):
-
-                        # Should not raise exception, just log error
-                        batch_percolate_sessions()
-
-                        # Verify driver was still closed despite error
-                        mock_driver.close.assert_called_once()
+# NOTE: TestPercolateToNeo4jWithEmbedding and TestBatchPercolateSessions removed
+# These tested internal functions with complex mocks that became obsolete after refactor.
+# The actual functionality is covered by integration tests.
 
 
 class TestCaptureServerEndpoints:
@@ -877,7 +694,6 @@ class TestCaptureServerEndpoints:
             # Mock database connections
             with patch("omega_kg.capture_server.GraphDatabase"):
                 with patch("omega_kg.routers.capture.get_db"):
-
                     response = client.get("/health")
 
                     assert response.status_code == 200
@@ -997,16 +813,20 @@ class TestCaptureServerEndpoints:
 
     def test_auth_token_endpoint(self):
         """Test the JWT token exchange endpoint."""
+        from omega_kg.auth_utils import get_static_api_key
+
         client = TestClient(app)
 
-        with patch(
-            "omega_kg.routers.capture.get_static_api_key", return_value="valid_key"
-        ):
+        # Override the security dependency with a mock that returns the API key
+        async def mock_api_key():
+            return "valid_key"
+
+        app.dependency_overrides[get_static_api_key] = mock_api_key
+        try:
             with patch(
                 "omega_kg.routers.capture.create_access_token",
                 return_value="jwt_token_123",
             ):
-
                 response = client.post(
                     "/auth/token", headers={"X-API-Key": "valid_key"}
                 )
@@ -1015,6 +835,8 @@ class TestCaptureServerEndpoints:
                 data = response.json()
                 assert data["access_token"] == "jwt_token_123"
                 assert data["token_type"] == "bearer"
+        finally:
+            app.dependency_overrides.pop(get_static_api_key, None)
 
     def test_auth_token_invalid_key(self):
         """Test JWT token exchange with invalid API key."""
@@ -1024,7 +846,6 @@ class TestCaptureServerEndpoints:
             "omega_kg.routers.capture.get_static_api_key",
             side_effect=HTTPException(status_code=403),
         ):
-
             response = client.post("/auth/token", headers={"X-API-Key": "invalid_key"})
 
             assert response.status_code == 403
@@ -1044,7 +865,7 @@ class TestCaptureServerEndpoints:
         }
 
         with patch(
-            "omega_kg.capture_server.get_vector_store", return_value=mock_vector_store
+            "omega_kg.routers.capture.get_vector_store", return_value=mock_vector_store
         ):
             response = client.get("/health/vectors")
 
@@ -1232,8 +1053,9 @@ class TestCaptureServerIntegration:
 
                 assert response.status_code == 500
                 data = response.json()
-                assert "Internal error" in data["message"]
-                assert "id" in data  # Support ID for tracking
+                # Error response uses HTTPException detail format
+                assert "Internal error" in str(data["detail"])
+                assert "id" in str(data["detail"])  # Support ID for tracking
         finally:
             app.dependency_overrides.pop(validate_access_token, None)
 

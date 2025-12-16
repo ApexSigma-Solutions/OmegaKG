@@ -85,6 +85,11 @@ def test_import_conversation_flow(mock_driver, mock_settings, tmp_path):
 
     importer = AIConversationImporter()
 
+    # Ensure the conversation directory exists (should be created by __init__)
+    assert (
+        importer.conversation_dir.exists()
+    ), "conversation_dir should exist after init"
+
     messages = [
         {"role": "user", "content": "Hello", "created_at": "2023-01-01T12:00:00"},
         {
@@ -102,9 +107,11 @@ def test_import_conversation_flow(mock_driver, mock_settings, tmp_path):
         created_at="2023-01-01T12:00:00",
     )
 
-    # Verify file created
-    expected_file = tmp_path / "AI Conversations" / "test_platform_Test_Chat_12345.md"
-    assert expected_file.exists()
+    # Verify file created - use the actual path from importer
+    # Note: _sanitize_title preserves spaces, so filename has space
+    expected_file = importer.conversation_dir / "test_platform_Test Chat_12345.md"
+
+    assert expected_file.exists(), f"Expected file at {expected_file}"
     content = expected_file.read_text(encoding="utf-8")
     assert "# Test Chat" in content
     assert 'ai-platform: "test_platform"' in content

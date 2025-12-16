@@ -161,22 +161,22 @@ jobs:
           NEO4J_AUTH: neo4j/test123
         ports:
           - 7687:7687
-    
+
     steps:
     - uses: actions/checkout@v3
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
         python-version: '3.12'
-    
+
     - name: Install dependencies
       run: |
         pip install -e .
         pip install pytest pytest-cov pytest-xdist
-    
+
     - name: Run unit tests
       run: pytest -m "unit" --cov=omega_kg
-    
+
     - name: Run integration tests
       run: pytest -m "integration" --neo4j-uri="bolt://localhost:7687"
       env:

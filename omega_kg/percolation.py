@@ -326,7 +326,7 @@ class PercolationEngine:
             # Use the configurable threshold from the global settings object
             similarity_threshold = settings.percolation_similarity_threshold
 
-        similar_tasks = []
+        similar_tasks: List[Dict] = []
 
         with self.driver.session() as session:
             # Get the embedding for the source task
@@ -413,8 +413,6 @@ class PercolationEngine:
 
         return relationships_created
 
-        return relationships_created
-
 
 def create_percolation_engine(uri: str, user: str, password: str) -> PercolationEngine:
     """
@@ -429,5 +427,4 @@ def create_percolation_engine(uri: str, user: str, password: str) -> Percolation
         PercolationEngine: Engine instance initialized with a Neo4j driver.
     """
     driver = GraphDatabase.driver(uri, auth=(user, password))
-    return PercolationEngine(driver)
     return PercolationEngine(driver)

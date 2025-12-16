@@ -18,12 +18,16 @@ Modular components:
 - omega_kg.routers.capture: Endpoint handlers
 """
 
+import asyncio
 import logging
+import subprocess
+import sys
 from contextlib import asynccontextmanager
 from datetime import datetime
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import Optional
 
+import httpx
 import neo4j
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -43,36 +47,32 @@ from omega_kg.workers.embedding_worker import start_worker, stop_worker
 
 # Async scheduling with graceful fallback
 _scheduler_available = True
-AsyncIOScheduler = None
 
-if TYPE_CHECKING:
+try:
     from apscheduler.schedulers.asyncio import AsyncIOScheduler
-else:
-    try:
-        from apscheduler.schedulers.asyncio import AsyncIOScheduler
-    except ImportError as e:
-        _scheduler_available = False
+except ImportError as e:
+    _scheduler_available = False
 
-        # Define a dummy class to prevent runtime errors when APScheduler is not available
-        class AsyncIOScheduler:  # type: ignore
-            def __init__(self):
-                pass
+    # Define a dummy class to prevent runtime errors when APScheduler is not available
+    class AsyncIOScheduler:  # type: ignore[no-redef]
+        def __init__(self) -> None:
+            pass
 
-            def add_job(self, *args, **kwargs):
-                pass
+        def add_job(self, *args: object, **kwargs: object) -> None:
+            pass
 
-            def start(self):
-                pass
+        def start(self) -> None:
+            pass
 
-            def shutdown(self, *args, **kwargs):
-                pass
+        def shutdown(self, *args: object, **kwargs: object) -> None:
+            pass
 
-        import warnings
+    import warnings
 
-        warnings.warn(
-            f"APScheduler not available: {e}. Background tasks will be disabled.",
-            ImportWarning,
-        )
+    warnings.warn(
+        f"APScheduler not available: {e}. Background tasks will be disabled.",
+        ImportWarning,
+    )
 
 
 # Configure logging
@@ -342,16 +342,142 @@ def batch_percolate_sessions():
             driver.close()
 
 
+# --- Ollama Service Management ---
+_ollama_process: Optional[subprocess.Popen] = None
+_heartbeat_task: Optional[asyncio.Task] = None
+
+OLLAMA_EXE_PATHS = [
+    Path(sys.prefix) / "Scripts" / "ollama.exe",  # Virtual env
+    Path.home() / "AppData" / "Local" / "Programs" / "Ollama" / "ollama.exe",
+    Path("C:/Program Files/Ollama/ollama.exe"),
+]
+
+
+async def _check_ollama_ready(timeout: int = 30) -> bool:
+    """Check if Ollama is ready to accept requests."""
+    ollama_url = settings.ollama_base_url
+    async with httpx.AsyncClient() as client:
+        for _ in range(timeout):
+            try:
+                resp = await client.get(f"{ollama_url}/api/tags", timeout=2)
+                if resp.status_code == 200:
+                    logger.info(f"✓ Ollama ready at {ollama_url}")
+                    return True
+            except Exception:
+                pass
+            await asyncio.sleep(1)
+    return False
+
+
+async def _start_ollama() -> bool:
+    """Start Ollama service if not already running."""
+    global _ollama_process
+
+    # First check if already running
+    if await _check_ollama_ready(timeout=2):
+        logger.info("Ollama already running")
+        return True
+
+    # Find Ollama executable
+    ollama_path = None
+    for path in OLLAMA_EXE_PATHS:
+        if path.exists():
+            ollama_path = path
+            break
+
+    if not ollama_path:
+        logger.warning("Ollama executable not found - embeddings will be disabled")
+        return False
+
+    # Start Ollama as subprocess
+    try:
+        logger.info(f"Starting Ollama from {ollama_path}...")
+        _ollama_process = subprocess.Popen(
+            [str(ollama_path), "serve"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0,
+        )
+
+        # Wait for Ollama to be ready
+        if await _check_ollama_ready(timeout=30):
+            logger.info("✓ Ollama started successfully")
+            return True
+        else:
+            logger.error("Ollama started but not responding")
+            return False
+
+    except Exception as e:
+        logger.error(f"Failed to start Ollama: {e}")
+        return False
+
+
+async def _stop_ollama():
+    """Stop Ollama service if we started it."""
+    global _ollama_process
+    if _ollama_process is not None:
+        try:
+            _ollama_process.terminate()
+            _ollama_process.wait(timeout=5)
+            logger.info("✓ Ollama stopped")
+        except Exception as e:
+            logger.error(f"Error stopping Ollama: {e}")
+        _ollama_process = None
+
+
+async def _run_heartbeat_loop():
+    """Run Quipu heartbeat monitoring as background task."""
+    from omega_kg.database.quipu import init_heartbeat_table, insert_heartbeat
+    from omega_kg.quipu_ollama_heartbeat import check_ollama_health
+
+    if not await init_heartbeat_table():
+        logger.warning("Quipu heartbeat table init failed - monitoring disabled")
+        return
+
+    logger.info(
+        f"✓ Quipu heartbeat started (interval: {settings.heartbeat_interval_sec}s)"
+    )
+
+    while True:
+        try:
+            from datetime import timezone
+
+            timestamp = datetime.now(timezone.utc)
+            status, latency, model, meta = check_ollama_health()
+
+            await insert_heartbeat(
+                service_name=settings.quipu_service_name,
+                timestamp=timestamp,
+                status=status,
+                latency_ms=latency,
+                model_loaded=model,
+                meta=meta,
+            )
+
+            await asyncio.sleep(settings.heartbeat_interval_sec)
+        except asyncio.CancelledError:
+            break
+        except Exception as e:
+            logger.error(f"Heartbeat error: {e}")
+            await asyncio.sleep(5)
+
+
 # --- Lifespan Handler ---
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Lifespan event handler to initialize vector store, start worker, and schedule batch percolation."""
+    """Lifespan event handler to initialize Ollama, vector store, start worker, and schedule batch percolation."""
+    global _heartbeat_task
     logger.info("Starting Omega_KG Capture Server...")
 
     # Initialize scheduler variable to ensure it's available in shutdown
     scheduler = None
 
-    # Initialize vector store
+    # 1. Start Ollama service (required for embeddings)
+    ollama_started = await _start_ollama()
+    if not ollama_started:
+        logger.warning("Ollama not available - embeddings will fail")
+
+    # 2. Initialize vector store
     try:
         await get_vector_store()
         logger.info("✓ Vector store initialized")
@@ -359,7 +485,7 @@ async def lifespan(app: FastAPI):
         logger.error(f"Failed to initialize vector store: {e}")
         raise
 
-    # Start embedding worker
+    # 3. Start embedding worker
     try:
         await start_worker()
         logger.info("✓ Embedding worker started (polling every 10s)")
@@ -367,14 +493,20 @@ async def lifespan(app: FastAPI):
         logger.error(f"Failed to start embedding worker: {e}")
         raise
 
-    # Start scheduler for batch percolation
+    # 4. Start Quipu heartbeat as background task
+    try:
+        _heartbeat_task = asyncio.create_task(_run_heartbeat_loop())
+    except Exception as e:
+        logger.warning(f"Failed to start heartbeat: {e}")
+
+    # 5. Start scheduler for batch percolation
     try:
         if not _scheduler_available:
             logger.warning(
                 "Scheduler not available - APScheduler import failed. Background tasks disabled."
             )
         else:
-            scheduler = AsyncIOScheduler()  # type: ignore
+            scheduler = AsyncIOScheduler()
             scheduler.add_job(
                 batch_percolate_sessions,
                 "interval",
@@ -394,6 +526,15 @@ async def lifespan(app: FastAPI):
 
     # Shutdown sequence
     logger.info("Shutting down Omega_KG Capture Server...")
+
+    # Stop heartbeat task
+    if _heartbeat_task is not None:
+        try:
+            _heartbeat_task.cancel()
+            await asyncio.sleep(0.1)  # Allow cancellation to propagate
+            logger.info("✓ Heartbeat task stopped")
+        except Exception as e:
+            logger.error(f"Error stopping heartbeat: {e}")
 
     # Stop embedding worker gracefully
     try:
@@ -418,6 +559,9 @@ async def lifespan(app: FastAPI):
         logger.info("✓ Vector store pool closed")
     except Exception as e:
         logger.error(f"Error closing vector store: {e}")
+
+    # Stop Ollama if we started it
+    await _stop_ollama()
 
 
 # --- App Initialization ---

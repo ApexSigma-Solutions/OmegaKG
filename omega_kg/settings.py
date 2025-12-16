@@ -127,12 +127,15 @@ class Settings(BaseSettings):
     smtp_port: int = Field(587, validation_alias="SMTP_PORT")
     smtp_user: Optional[str] = Field(None, validation_alias="SMTP_USER")
     smtp_password: Optional[str] = Field(None, validation_alias="SMTP_PASSWORD")
+    email_to: Optional[str] = Field(None, validation_alias="EMAIL_TO")
 
     # --- Logic & Keywords (Legacy Restored) ---
     decision_keywords: str = Field(
         "decided to,chose to,agreed to", validation_alias="DECISION_KEYWORDS"
     )
     linear_status_map_json: str = Field("{}", validation_alias="LINEAR_STATUS_MAP_JSON")
+    linear_user_map_json: str = Field("{}", validation_alias="LINEAR_USER_MAP_JSON")
+    linear_label_map_json: str = Field("{}", validation_alias="LINEAR_LABEL_MAP_JSON")
 
     # --- Secrets & Keys ---
     linear_webhook_secret: str = Field(..., validation_alias="LINEAR_WEBHOOK_SECRET")
@@ -189,6 +192,9 @@ class Settings(BaseSettings):
 
     # --- Paths ---
     obsidian_vault_path: str = Field("./vault", validation_alias="OBSIDIAN_VAULT_PATH")
+    ai_conversations_path: Optional[str] = Field(
+        None, validation_alias="AI_CONVERSATIONS_PATH"
+    )
 
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -266,7 +272,7 @@ class Settings(BaseSettings):
         )
 
 
-settings = Settings()
+settings = Settings()  # type: ignore[call-arg]
 
 
 def get_settings() -> Settings:

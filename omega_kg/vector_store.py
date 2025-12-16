@@ -24,6 +24,7 @@ import logging
 from typing import List, Optional, cast
 
 import asyncpg
+import numpy as np
 from pgvector.asyncpg import register_vector
 
 from omega_kg.config import (
@@ -208,21 +209,23 @@ class VectorStore:
                 f"got {len(embedding)}"
             )
 
-        # Convert embedding list to pgvector string format: "[0.1,0.2,...]"
-        embedding_str = "[" + ",".join(f"{v:.6f}" for v in embedding) + "]"
+        # Convert embedding list to numpy array for pgvector
+        embedding_array = np.array(embedding, dtype=np.float32)
 
         query = f"""
             UPDATE {VECTOR_TABLE_NAME}
-            SET embedding = $1::vector({VECTOR_EMBEDDING_DIMENSION}), status = $2, updated_at = NOW()
+            SET embedding = $1, status = $2, updated_at = NOW()
             WHERE id = $3
             RETURNING id;
         """
 
         try:
             async with self.pool.acquire() as conn:
+                # Register pgvector type for this connection
+                await register_vector(conn)
                 result = await conn.fetchval(
                     query,
-                    embedding_str,  # Pass as string; PostgreSQL casts to vector type
+                    embedding_array,  # Pass as numpy array; pgvector handles it
                     VectorStatus.READY,
                     vector_id,
                 )

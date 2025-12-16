@@ -7,7 +7,7 @@ Phase 7: TN-LINEAR-07 - Enriches issues with vector embeddings for semantic sear
 
 import logging
 from pathlib import Path
-from typing import Any, Optional, List
+from typing import Any, List, Optional
 
 from pydantic import ValidationError
 from sqlalchemy import select, update
@@ -121,7 +121,7 @@ async def process_pending_events(
                 continue
 
             # Map to Obsidian markdown
-            file_path, markdown_content = mapper.map_issue_to_markdown(payload.data)
+            file_path, markdown_content = mapper.map_issue_to_markdown(payload.data)  # type: ignore[arg-type]
 
             # Ensure directory exists
             file_path.parent.mkdir(parents=True, exist_ok=True)
@@ -247,7 +247,7 @@ async def process_single_event(
             return False
 
         # Map to Obsidian markdown
-        file_path, markdown_content = mapper.map_issue_to_markdown(payload.data)
+        file_path, markdown_content = mapper.map_issue_to_markdown(payload.data)  # type: ignore[arg-type]
 
         # Ensure directory exists
         file_path.parent.mkdir(parents=True, exist_ok=True)

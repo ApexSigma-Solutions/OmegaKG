@@ -239,6 +239,7 @@ async def test_generate_embedding_fallback_to_gemini():
 
             # Import fresh after patching
             import importlib
+
             from omega_kg.domain.common import embedding_service as emb_module
 
             importlib.reload(emb_module)
@@ -259,21 +260,24 @@ async def test_generate_embedding_no_provider_available():
     """
     Test that appropriate error is raised when no provider is configured.
     """
-    import sys
-
-    # Remove module from cache to force fresh import with patched settings
-    if "omega_kg.domain.common.embedding_service" in sys.modules:
-        del sys.modules["omega_kg.domain.common.embedding_service"]
-
-    with patch("omega_kg.settings.settings") as mock_settings:
-        mock_settings.nanogpt_api_key = None
-        mock_settings.gemini_api_key = None
+    # Patch settings at the correct module location where it's imported
+    with patch("omega_kg.domain.common.embedding_service.settings") as mock_settings:
+        # Configure mock to disable all providers
         mock_settings.ollama_enabled = False
         mock_settings.nano_gpt_enabled = False
         mock_settings.gemini_enabled = False
+        mock_settings.nanogpt_api_key = None
+        mock_settings.gemini_api_key = None
+        mock_settings.ollama_base_url = "http://localhost:11434"
+        mock_settings.embedding_provider = "mock"
 
-        with pytest.raises(RuntimeError, match="No embedding provider available"):
-            # Import fresh after patching to ensure provider flags are evaluated
-            from omega_kg.domain.common import embedding_service as emb_module
+        # Also patch the mock fallback to fail, simulating complete unavailability
+        with patch(
+            "omega_kg.domain.common.embedding_service._embed_mock",
+            side_effect=RuntimeError("Mock embedding also unavailable"),
+        ):
+            from omega_kg.domain.common.embedding_service import generate_embedding
 
-            await emb_module.generate_embedding("Test without any provider")
+            with pytest.raises(RuntimeError, match="No embedding provider available"):
+                await generate_embedding("Test without any provider")
+                await generate_embedding("Test without any provider")

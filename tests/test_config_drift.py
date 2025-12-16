@@ -65,7 +65,8 @@ def parse_env_example() -> Set[str]:
                 if "=" in line:
                     try:
                         key = line.split("=", 1)[0].strip()
-                        if key and key.isupper() and "_" in key:
+                        # Accept all uppercase keys (with or without underscore)
+                        if key and key.isupper():
                             keys.add(key)
                         elif key:
                             logger.warning(
@@ -181,6 +182,17 @@ def get_exempted_keys() -> FrozenSet[str]:
         "NGROK_API_KEY_ID",
         "NANOGPT_DEV_API_KEY_ID",
         "EXTENSION_API_KEY_ID",
+        # Docker infrastructure vars (used by docker-compose, not Settings)
+        "POSTGRES_SERVER_DOCKER",
+        "POSTGRES_PORT_DOCKER",
+        "POSTGRES_SERVER_DOCKER_DEV",
+        "POSTGRES_PORT_DOCKER_DEV",
+        "NEO4J_URI_DOCKER",
+        "NEO4J_URI_DOCKER_DEV",
+        # Security configuration flags
+        "ZERO_TRUST_REQUIRED",
+        # Special format fields (don't require underscore)
+        "VERSION",
     }
 
     return frozenset(exempted)

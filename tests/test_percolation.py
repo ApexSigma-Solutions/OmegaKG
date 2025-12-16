@@ -2,8 +2,9 @@
 Unit tests for percolation.py
 """
 
-from unittest.mock import Mock, patch
 from pathlib import Path
+from unittest.mock import Mock, patch
+
 from omega_kg.percolation import PercolationEngine, create_percolation_engine
 
 
@@ -244,13 +245,11 @@ class TestVectorSimilarityThreshold:
         mock_session.__exit__ = Mock(return_value=None)
         self.mock_driver.session.return_value = mock_session
 
-    @patch("omega_kg.percolation.Settings")
-    def test_default_similarity_threshold(self, mock_settings_class):
+    @patch("omega_kg.percolation.settings")
+    def test_default_similarity_threshold(self, mock_settings):
         """Test that default similarity threshold works correctly."""
         # Mock settings with default threshold
-        mock_settings = Mock()
         mock_settings.percolation_similarity_threshold = 0.8
-        mock_settings_class.return_value = mock_settings
 
         engine = PercolationEngine(self.mock_driver)
 
@@ -262,13 +261,11 @@ class TestVectorSimilarityThreshold:
         similar_tasks = engine.find_similar_tasks("TASK-001")
         assert similar_tasks == []  # Should return empty list when no embedding found
 
-    @patch("omega_kg.percolation.Settings")
-    def test_custom_similarity_threshold(self, mock_settings_class):
+    @patch("omega_kg.percolation.settings")
+    def test_custom_similarity_threshold(self, mock_settings):
         """Test using custom similarity threshold."""
         # Mock settings with custom threshold
-        mock_settings = Mock()
         mock_settings.percolation_similarity_threshold = 0.75
-        mock_settings_class.return_value = mock_settings
 
         engine = PercolationEngine(self.mock_driver)
 
@@ -280,13 +277,11 @@ class TestVectorSimilarityThreshold:
         similar_tasks = engine.find_similar_tasks("TASK-001", similarity_threshold=0.9)
         assert similar_tasks == []  # Should return empty list when no embedding found
 
-    @patch("omega_kg.percolation.Settings")
-    def test_threshold_boundary_validation(self, mock_settings_class):
+    @patch("omega_kg.percolation.settings")
+    def test_threshold_boundary_validation(self, mock_settings):
         """Test validation of similarity threshold boundaries."""
         # Mock settings
-        mock_settings = Mock()
         mock_settings.percolation_similarity_threshold = 0.8
-        mock_settings_class.return_value = mock_settings
 
         engine = PercolationEngine(self.mock_driver)
 
