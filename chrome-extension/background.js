@@ -11,9 +11,8 @@ const STORAGE_KEYS = {
 const DEFAULT_SERVER_URL = 'http://localhost:8765';
 
 /**
- * Get the current server URL from storage
- * @async
- * @returns {Promise<string>} Server URL
+ * Retrieve the configured server URL from Chrome local storage, falling back to the default if not set.
+ * @returns {Promise<string>} The stored server URL, or DEFAULT_SERVER_URL if none is configured or an error occurs.
  */
 async function getServerUrl() {
     try {
@@ -26,10 +25,9 @@ async function getServerUrl() {
 }
 
 /**
- * Get full URL for an endpoint
- * @async
- * @param {string} endpoint - Endpoint name (AUTH_TOKEN, CAPTURE, HEALTH, LINEAR_WEBHOOK)
- * @returns {Promise<string>} Full URL
+ * Constructs the full URL for a named API endpoint.
+ * @param {string} endpoint - One of: `AUTH_TOKEN`, `CAPTURE`, `HEALTH`, `LINEAR_WEBHOOK`.
+ * @returns {string} The full URL string for the given endpoint.
  */
 async function getEndpointUrl(endpoint) {
     const endpoints = {
@@ -52,9 +50,10 @@ let cachedJwtToken = null;
 let cachedJwtExpiry = 0;
 
 /**
- * Retrieve and cache JWT token from storage, refreshing if necessary
- * @async
- * @returns {Promise<string|null>} JWT token or null if not configured/available
+ * Return a valid JWT token, preferring the in-memory cache, then stored token, and refreshing when necessary.
+ *
+ * Updates the in-memory cache (and persists token/expiry when refreshed) as a side effect.
+ * @returns {string|null} `string` JWT token if available, `null` otherwise.
  */
 async function getValidJwtToken() {
   try {
@@ -91,9 +90,10 @@ async function getValidJwtToken() {
 }
 
 /**
- * Refresh JWT token using bootstrap API key
- * @async
- * @returns {Promise<string|null>} New JWT token or null if refresh fails
+ * Refreshes the JWT token using the stored bootstrap API key.
+ *
+ * On success caches the token and its expiry in memory and persists both to chrome.storage.local.
+ * @returns {string|null} The new JWT token if refreshed successfully, `null` otherwise.
  */
 async function refreshJwtToken() {
   try {
@@ -188,12 +188,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 /**
- * Saves conversation data to the localhost capture server.
- * Uses JWT Bearer token authentication (exchanges bootstrap key for JWT via /auth/token)
- * @async
- * @param {Object} data - The conversation data to save
- * @returns {Promise<Object>} Promise that resolves to the JSON-decoded response from the server
- * @throws {Error} If the server request fails or returns an error status
+ * Save conversation data to the configured localhost capture endpoint.
+ *
+ * Sends the provided conversation payload to the server using a JWT Bearer token
+ * (the token is fetched or refreshed from the configured bootstrap API key as needed).
+ * @param {Object} data - Conversation payload to send; typically includes fields such as `platform`, `messages`, and `url`.
+ * @returns {Object} The parsed JSON response from the capture server.
+ * @throws {Error} If no JWT is available, the network request fails, or the server responds with a non-OK status.
  */
 async function saveToLocalhost(data) {
   console.log(

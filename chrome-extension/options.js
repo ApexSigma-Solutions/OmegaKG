@@ -20,7 +20,12 @@ const apiKeyStatus = document.getElementById('apiKeyStatus');
 const serverUrlStatus = document.getElementById('serverUrlStatus');
 
 /**
- * Initialize the options page by loading saved values
+ * Load stored API key and server URL into the options form and update field statuses.
+ *
+ * If an API key exists in storage, populates `apiKeyInput`, marks the API key field as saved,
+ * and updates the internal `savedApiKey`. Sets `serverUrlInput` to the stored server URL or
+ * a default (`http://localhost:8765`), updates `savedServerUrl`, and marks the server URL
+ * field as loaded when present. On failure logs the error and shows an error status.
  */
 async function initializeForm() {
     try {
@@ -52,10 +57,10 @@ async function initializeForm() {
 }
 
 /**
- * Update field status indicator
- * @param {HTMLElement} element - Status element
- * @param {string} status - Status type ('saved', 'unsaved', 'error')
- * @param {string} message - Status message
+ * Updates a field status indicator element's appearance and text.
+ * @param {HTMLElement} element - The status indicator element to update.
+ * @param {'saved'|'unsaved'|'error'} status - Status type that sets the element's CSS class.
+ * @param {string} message - Text to display inside the status element.
  */
 function updateFieldStatus(element, status, message) {
     element.className = `field-status ${status}`;
@@ -63,9 +68,12 @@ function updateFieldStatus(element, status, message) {
 }
 
 /**
- * Display status message to user
- * @param {string} type - Message type ('success', 'error', 'info')
- * @param {string} message - Message text
+ * Show a user-facing status message of the given type.
+ *
+ * The `type` determines the visual style and behavior: 'success' auto-hides after 3 seconds,
+ * 'error' and 'info' remain visible until replaced. Logs the message for debugging.
+ * @param {('success'|'error'|'info')} type - Visual/message category.
+ * @param {string} message - Text to display to the user.
  */
 function showStatus(type, message) {
     statusMessage.className = `status-message ${type}`;
@@ -81,18 +89,18 @@ function showStatus(type, message) {
 }
 
 /**
- * Validate API key format
- * @param {string} apiKey - API key to validate
- * @returns {boolean} True if valid
+ * Determines whether an API key meets the minimum length requirement.
+ * @param {string} apiKey - The API key to check (will be trimmed before measuring).
+ * @returns {boolean} `true` if `apiKey` trimmed has length of at least 10, `false` otherwise.
  */
 function validateApiKey(apiKey) {
     return apiKey && apiKey.trim().length >= 10;
 }
 
 /**
- * Validate server URL format
- * @param {string} url - URL to validate
- * @returns {boolean} True if valid
+ * Determine whether a string is a valid absolute URL.
+ * @param {string} url - The string to validate as a URL.
+ * @returns {boolean} `true` if the string can be parsed as a URL, `false` otherwise.
  */
 function validateServerUrl(url) {
     try {
@@ -104,10 +112,12 @@ function validateServerUrl(url) {
 }
 
 /**
- * Test connection to server
- * @param {string} apiKey - Bootstrap API key
- * @param {string} serverUrl - Server base URL
- * @returns {Promise<boolean>} True if connection successful
+ * Verify the API key by requesting an access token from the server.
+ *
+ * @param {string} apiKey - API key sent in the `X-API-Key` header.
+ * @param {string} serverUrl - Server base URL; the function POSTs to the `/auth/token` endpoint on this host.
+ * @returns {Promise<boolean>} `true` if the server returned an access token.
+ * @throws {Error} If the network request fails or the server responds with a non-OK status or without an `access_token`; the error message includes the HTTP status and response body when available.
  */
 async function testServerConnection(apiKey, serverUrl) {
     try {
@@ -141,9 +151,11 @@ async function testServerConnection(apiKey, serverUrl) {
 }
 
 /**
- * Store JWT token in chrome.storage.local
- * @param {string} token - JWT token
- * @param {number} expiresIn - Token expiration in seconds
+ * Save a JWT and its computed expiry timestamp to chrome.storage.local.
+ *
+ * The expiry timestamp is calculated as the current time plus `expiresIn` seconds.
+ * @param {string} token - The JWT to store.
+ * @param {number} expiresIn - Lifetime of the token in seconds used to compute the expiry timestamp.
  */
 async function storeJwtToken(token, expiresIn) {
     const expiryTime = Date.now() + (expiresIn * 1000);
@@ -155,7 +167,10 @@ async function storeJwtToken(token, expiresIn) {
 }
 
 /**
- * Save configuration
+ * Validate inputs, verify the server connection, and persist the API key and server URL to chrome.storage.local.
+ *
+ * On success updates field status indicators, updates in-memory saved values, notifies the background script of the new configuration, and shows a success message.
+ * On failure marks the API key field as errored and shows an error message.
  */
 async function saveConfiguration() {
     const apiKey = apiKeyInput.value.trim();
@@ -217,7 +232,11 @@ async function saveConfiguration() {
 }
 
 /**
- * Clear all configuration
+ * Prompt for confirmation and remove saved extension configuration, then reset the options UI.
+ *
+ * If the user confirms, removes stored API key, server URL, JWT token, and expiry from chrome.storage,
+ * clears the API key and server URL inputs (resetting server URL to the default), resets per-field status
+ * indicators and cached saved values, and displays a status message. On error, logs and displays an error message.
  */
 async function clearConfiguration() {
     if (!confirm('Are you sure you want to clear all configuration?')) {
@@ -254,9 +273,11 @@ let savedApiKey = '';
 let savedServerUrl = 'http://localhost:8765';
 
 /**
- * Mark form as having unsaved changes
- * Uses strict equality comparison to detect changes, including when saved values are cleared
- * Synchronous version to avoid race conditions with async storage reads
+ * Update per-field status indicators to reflect whether form inputs differ from the saved configuration.
+ *
+ * Compares the current API key and server URL inputs to the stored saved values and sets each field's
+ * status to 'unsaved' when different or 'saved' when identical. This includes detecting when a saved
+ * value has been cleared in the input.
  */
 function markUnsaved() {
     // Get current input values
