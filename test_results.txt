@@ -1,0 +1,471 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-9.0.2, pluggy-1.6.0 -- C:\Program Files\Python312\python.exe
+cachedir: .pytest_cache
+rootdir: D:\projects\Omega_KG_stable\tests
+configfile: pytest.ini
+plugins: anyio-4.12.0, asyncio-1.3.0, cov-7.0.0, dotenv-0.5.2
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 245 items / 2 skipped
+
+tests\infra\test_containers_sanity.py::test_postgres_container_is_alive PASSED [  0%]
+tests\infra\test_containers_sanity.py::test_neo4j_container_is_alive PASSED [  0%]
+tests\infra\test_containers_sanity.py::test_environment_injection PASSED [  1%]
+tests\integration\test_embedding_sync.py::test_upsert_issue_with_embedding SKIPPED {message: The client is
+unauthorized due to authentication failure.} {gql_status: 50N42}
+{gql_status_description: error: general processing exception -
+unexpected error. Unexpected error has occurred. See debug log for
+details.})                                                               [  1%]
+tests\integration\test_embedding_sync.py::test_upsert_issue_without_embedding SKIPPEDnRateLimit} {message: The client
+has provided incorrect authentication details too many times in a row.}
+{gql_status: 50N42} {gql_status_description: error: general processing
+exception - unexpected error. Unexpected error has occurred. See debug
+log for details.})                                                       [  2%]
+tests\integration\test_embedding_sync.py::test_embedding_dimension_validation SKIPPEDnRateLimit} {message: The client
+has provided incorrect authentication details too many times in a row.}
+{gql_status: 50N42} {gql_status_description: error: general processing
+exception - unexpected error. Unexpected error has occurred. See debug
+log for details.})                                                       [  2%]
+tests\integration\test_embedding_sync.py::test_generate_embedding_nanogpt_success PASSED [  2%]
+tests\integration\test_embedding_sync.py::test_generate_embedding_fallback_to_gemini PASSED [  3%]
+tests\integration\test_embedding_sync.py::test_generate_embedding_no_provider_available PASSED [  3%]
+tests\integration\test_graph_sync.py::test_graph_connectivity SKIPPEDionRateLimit} {message: The client
+has provided incorrect authentication details too many times in a row.}
+{gql_status: 50N42} {gql_status_description: error: general processing
+exception - unexpected error. Unexpected error has occurred. See debug
+log for details.})                                                       [  4%]
+tests\integration\test_graph_sync.py::test_upsert_issue_topology SKIPPEDnRateLimit} {message: The client
+has provided incorrect authentication details too many times in a row.}
+{gql_status: 50N42} {gql_status_description: error: general processing
+exception - unexpected error. Unexpected error has occurred. See debug
+log for details.})                                                       [  4%]
+tests\integration\test_parsers_integration.py::test_html_parsing_endpoint PASSED [  4%]
+tests\integration\test_refinery.py::test_process_issue_to_markdown ERROR [  5%]
+tests\integration\test_refinery.py::test_duplicate_issue_updates_existing ERROR [  5%]
+tests\integration\test_refinery.py::test_invalid_event_logs_error ERROR  [  6%]
+tests\integration\test_refinery.py::test_process_single_event_retry ERROR [  6%]
+tests\integration\test_refinery.py::test_skip_events_without_data ERROR  [  6%]
+tests\test_ai_import.py::test_importer_initialization PASSED             [  7%]
+tests\test_ai_import.py::test_extract_tags PASSED                        [  7%]
+tests\test_ai_import.py::test_sanitize_title PASSED                      [  8%]
+tests\test_ai_import.py::test_find_claude_conversations PASSED           [  8%]
+tests\test_ai_import.py::test_import_conversation_flow PASSED            [  8%]
+tests\test_capture.py::test_html_parsing PASSED                          [  9%]
+tests\test_capture_endpoint.py::test_html_parsing PASSED                 [  9%]
+tests\test_capture_server.py::TestConversationDataModel::test_minimal_valid_conversation_data PASSED [ 10%]
+tests\test_capture_server.py::TestConversationDataModel::test_conversation_data_with_message_objects PASSED [ 10%]
+tests\test_capture_server.py::TestConversationDataModel::test_conversation_data_validation_errors PASSED [ 11%]
+tests\test_capture_server.py::TestConversationDataModel::test_conversation_data_with_optional_fields PASSED [ 11%]
+tests\test_capture_server.py::TestGenerateConversationHash::test_hash_consistency PASSED [ 11%]
+tests\test_capture_server.py::TestGenerateConversationHash::test_hash_uniqueness PASSED [ 12%]
+tests\test_capture_server.py::TestGenerateConversationHash::test_hash_with_message_objects PASSED [ 12%]
+tests\test_capture_server.py::TestGenerateConversationHash::test_hash_empty_messages PASSED [ 13%]
+tests\test_capture_server.py::TestGenerateConversationHash::test_hash_long_content_truncation PASSED [ 13%]
+tests\test_capture_server.py::TestFormatConversationMarkdown::test_basic_markdown_formatting PASSED [ 13%]
+tests\test_capture_server.py::TestFormatConversationMarkdown::test_markdown_with_message_objects PASSED [ 14%]
+tests\test_capture_server.py::TestFormatConversationMarkdown::test_markdown_with_metadata PASSED [ 14%]
+tests\test_capture_server.py::TestFormatConversationMarkdown::test_markdown_empty_messages PASSED [ 15%]
+tests\test_capture_server.py::TestWriteToObsidian::test_write_to_obsidian_success PASSED [ 15%]
+tests\test_capture_server.py::TestWriteToObsidian::test_write_to_obsidian_creates_directories PASSED [ 15%]
+tests\test_capture_server.py::TestWriteToObsidian::test_write_to_obsidian_invalid_platform PASSED [ 16%]
+tests\test_capture_server.py::TestWriteToObsidian::test_write_to_obsidian_platform_sanitization PASSED [ 16%]
+tests\test_capture_server.py::TestWriteToObsidian::test_write_to_obsidian_filename_format PASSED [ 17%]
+tests\test_capture_server.py::TestPercolateToNeo4j::test_percolate_to_neo4j_success PASSED [ 17%]
+tests\test_capture_server.py::TestPercolateToNeo4j::test_percolate_to_neo4j_with_own_driver PASSED [ 17%]
+tests\test_capture_server.py::TestPercolateToNeo4j::test_percolate_to_neo4j_decision_extraction PASSED [ 18%]
+tests\test_capture_server.py::TestCreateChatSession::test_create_chat_session_success PASSED [ 18%]
+tests\test_capture_server.py::TestCreateChatSession::test_create_chat_session_no_result PASSED [ 19%]
+tests\test_capture_server.py::TestCreateDecisionNodes::test_create_decision_nodes_with_keywords PASSED [ 19%]
+tests\test_capture_server.py::TestCreateDecisionNodes::test_create_decision_nodes_no_keywords PASSED [ 20%]
+tests\test_capture_server.py::TestCreateDecisionNodes::test_create_decision_nodes_empty_messages PASSED [ 20%]
+tests\test_capture_server.py::TestCreateDecisionNodesAsync::test_create_decision_nodes_async_with_keywords PASSED [ 20%]
+tests\test_capture_server.py::TestCreateDecisionNodesAsync::test_create_decision_nodes_async_no_keywords PASSED [ 21%]
+tests\test_capture_server.py::TestCaptureServerEndpoints::test_root_endpoint PASSED [ 21%]
+tests\test_capture_server.py::TestCaptureServerEndpoints::test_health_endpoint PASSED [ 22%]
+tests\test_capture_server.py::TestCaptureServerEndpoints::test_capture_options_endpoint PASSED [ 22%]
+tests\test_capture_server.py::TestCaptureServerEndpoints::test_capture_endpoint_success PASSED [ 22%]
+tests\test_capture_server.py::TestCaptureServerEndpoints::test_capture_endpoint_too_large PASSED [ 23%]
+tests\test_capture_server.py::TestCaptureServerEndpoints::test_capture_endpoint_no_messages PASSED [ 23%]
+tests\test_capture_server.py::TestCaptureServerEndpoints::test_auth_token_endpoint PASSED [ 24%]
+tests\test_capture_server.py::TestCaptureServerEndpoints::test_auth_token_invalid_key PASSED [ 24%]
+tests\test_capture_server.py::TestCaptureServerEndpoints::test_health_vectors_endpoint PASSED [ 24%]
+tests\test_capture_server.py::TestCaptureServerEndpoints::test_health_vectors_endpoint_unhealthy PASSED [ 25%]
+tests\test_capture_server.py::TestCaptureServerEndpoints::test_linear_webhook_endpoint PASSED [ 25%]
+tests\test_capture_server.py::TestCaptureServerIntegration::test_end_to_end_capture_flow PASSED [ 26%]
+tests\test_capture_server.py::TestCaptureServerIntegration::test_html_parsing_integration PASSED [ 26%]
+tests\test_capture_server.py::TestCaptureServerIntegration::test_error_handling_integration PASSED [ 26%]
+tests\test_capture_server.py::TestCaptureServerSecurity::test_authentication_required PASSED [ 27%]
+tests\test_capture_server.py::TestCaptureServerSecurity::test_cors_headers PASSED [ 27%]
+tests\test_capture_server.py::TestCaptureServerSecurity::test_input_validation PASSED [ 28%]
+tests\test_capture_server.py::TestCaptureServerSecurity::test_content_size_limits PASSED [ 28%]
+tests\test_capture_server.py::TestCaptureServerPerformance::test_concurrent_requests PASSED [ 28%]
+tests\test_capture_server.py::TestCaptureServerPerformance::test_large_message_handling PASSED [ 29%]
+tests\test_capture_server.py::TestCaptureServerPerformance::test_memory_usage_stability FAILED [ 29%]
+tests\test_check_nodes.py::TestCheckNodes::test_check_nodes_with_tasks FAILED [ 30%]
+tests\test_check_nodes.py::TestCheckNodes::test_check_nodes_script_execution PASSED [ 30%]
+tests\test_cli.py::TestCLI::test_init_command PASSED                     [ 31%]
+tests\test_cli.py::TestCLI::test_lifecycle_command_dry_run PASSED        [ 31%]
+tests\test_cli.py::TestCLI::test_lifecycle_command_with_email PASSED     [ 31%]
+tests\test_cli.py::TestCLI::test_stats_command_connected PASSED          [ 32%]
+tests\test_cli.py::TestCLI::test_stats_command_mock_mode PASSED          [ 32%]
+tests\test_cli.py::TestCLI::test_stale_command PASSED                    [ 33%]
+tests\test_cli.py::TestCLI::test_stale_command_no_stale_tasks PASSED     [ 33%]
+tests\test_cli.py::TestCLI::test_sync_command PASSED                     [ 33%]
+tests\test_cli.py::TestCLI::test_sync_command_mock_mode PASSED           [ 34%]
+tests\test_cli.py::TestCLI::test_status_command FAILED                   [ 34%]
+tests\test_cli.py::TestCLI::test_status_command_mock_mode PASSED         [ 35%]
+tests\test_cli.py::TestCLI::test_report_command PASSED                   [ 35%]
+tests\test_cli.py::TestCLI::test_report_command_with_email PASSED        [ 35%]
+tests\test_config.py::test_config_drift PASSED                           [ 36%]
+tests\test_config_drift.py::test_settings_have_env_example_entries PASSED [ 36%]
+tests\test_config_drift.py::test_env_example_keys_exist_in_settings PASSED [ 37%]
+tests\test_config_drift.py::test_bitwarden_id_keys_are_exempted PASSED   [ 37%]
+tests\test_config_drift.py::test_env_example_exists PASSED               [ 37%]
+tests\test_config_drift.py::test_settings_can_be_instantiated PASSED     [ 38%]
+tests\test_config_drift.py::test_configuration_consistency PASSED        [ 38%]
+tests\test_heartbeat_fixed.py::test_check_ollama_health_online PASSED    [ 39%]
+tests\test_heartbeat_fixed.py::test_check_ollama_health_offline PASSED   [ 39%]
+tests\test_heartbeat_fixed.py::test_run_heartbeat_loop_break PASSED      [ 40%]
+tests\test_html_parsing.py::test_html_parsing PASSED                     [ 40%]
+tests\test_jwt_e2e.py::TestJwtAuthenticationFlow::test_jwt_token_creation PASSED [ 40%]
+tests\test_jwt_e2e.py::TestJwtAuthenticationFlow::test_jwt_token_has_expiration PASSED [ 41%]
+tests\test_jwt_e2e.py::TestJwtAuthenticationFlow::test_jwt_token_expiration_timing PASSED [ 41%]
+tests\test_jwt_e2e.py::TestJwtAuthenticationFlow::test_jwt_token_validation_success PASSED [ 42%]
+tests\test_jwt_e2e.py::TestJwtAuthenticationFlow::test_jwt_token_validation_invalid_token PASSED [ 42%]
+tests\test_jwt_e2e.py::TestJwtAuthenticationFlow::test_jwt_token_validation_expired_token PASSED [ 42%]
+tests\test_jwt_e2e.py::TestJwtAuthenticationFlow::test_auth_token_endpoint_requires_api_key FAILED [ 43%]
+tests\test_jwt_e2e.py::TestJwtAuthenticationFlow::test_auth_token_endpoint_invalid_api_key PASSED [ 43%]
+tests\test_jwt_e2e.py::TestJwtAuthenticationFlow::test_auth_token_endpoint_valid_api_key PASSED [ 44%]
+tests\test_jwt_e2e.py::TestJwtAuthenticationFlow::test_auth_token_returns_valid_jwt PASSED [ 44%]
+tests\test_jwt_e2e.py::TestJwtAuthenticationFlow::test_capture_endpoint_requires_authorization PASSED [ 44%]
+tests\test_jwt_e2e.py::TestJwtAuthenticationFlow::test_capture_endpoint_rejects_invalid_token PASSED [ 45%]
+tests\test_jwt_e2e.py::TestJwtAuthenticationFlow::test_capture_endpoint_accepts_valid_jwt PASSED [ 45%]
+tests\test_jwt_e2e.py::TestJwtAuthenticationFlow::test_capture_endpoint_rejects_old_auth_header PASSED [ 46%]
+tests\test_jwt_e2e.py::TestJwtAuthenticationFlow::test_complete_e2e_flow PASSED [ 46%]
+tests\test_jwt_e2e.py::TestJwtAuthenticationFlow::test_cors_headers_for_bearer_tokens PASSED [ 46%]
+tests\test_jwt_e2e.py::TestJwtAuthenticationFlow::test_health_check_available PASSED [ 47%]
+tests\test_jwt_e2e.py::TestJwtAuthenticationFlow::test_malformed_bearer_token_header PASSED [ 47%]
+tests\test_jwt_e2e.py::TestJwtAuthenticationFlow::test_wrong_bearer_scheme PASSED [ 48%]
+tests\test_jwt_e2e.py::TestJwtAuthenticationFlow::test_token_refresh_creates_new_token PASSED [ 48%]
+tests\test_jwt_e2e.py::TestJwtAuthenticationFlow::test_no_hardcoded_secrets_in_files PASSED [ 48%]
+tests\test_jwt_e2e.py::TestJwtAuthenticationFlow::test_no_hardcoded_secrets_in_extension PASSED [ 49%]
+tests\test_jwt_e2e.py::TestJwtAuthenticationFlow::test_jwt_settings_loaded PASSED [ 49%]
+tests\test_jwt_e2e.py::TestJwtAuthenticationFlow::test_jwt_algorithm_is_hs256 PASSED [ 50%]
+tests\test_jwt_e2e.py::TestJwtAuthenticationFlow::test_jwt_expiration_is_positive PASSED [ 50%]
+tests\test_jwt_e2e.py::TestExtensionIntegration::test_bearer_token_format PASSED [ 51%]
+tests\test_jwt_e2e.py::TestExtensionIntegration::test_token_includes_expiry PASSED [ 51%]
+tests\test_jwt_e2e.py::TestExtensionIntegration::test_multiple_tokens_are_independent PASSED [ 51%]
+tests\test_lifecycle.py::TestTaskStatus::test_task_status_values PASSED  [ 52%]
+tests\test_lifecycle.py::TestTaskStatus::test_task_status_enum_length PASSED [ 52%]
+tests\test_lifecycle.py::TestLifecycleRule::test_lifecycle_rule_creation ERROR [ 53%]
+tests\test_lifecycle.py::TestLifecycleRule::test_lifecycle_rule_default_action PASSED [ 53%]
+tests\test_lifecycle.py::TestTaskLifecycle::test_task_lifecycle_initialization PASSED [ 53%]
+tests\test_lifecycle.py::TestTaskLifecycle::test_lifecycle_rules_defined PASSED [ 54%]
+tests\test_lifecycle.py::TestTaskLifecycle::test_first_rule_draft_archival PASSED [ 54%]
+tests\test_lifecycle.py::TestTaskLifecycle::test_second_rule_draft_warning PASSED [ 55%]
+tests\test_lifecycle.py::TestTaskLifecycle::test_third_rule_active_stale PASSED [ 55%]
+tests\test_lifecycle.py::TestTaskLifecycle::test_fourth_rule_completed_archival PASSED [ 55%]
+tests\test_lifecycle.py::TestTaskLifecycleEnforcement::test_enforce_lifecycle_dry_run PASSED [ 56%]
+tests\test_lifecycle.py::TestTaskLifecycleEnforcement::test_enforce_lifecycle_returns_dict PASSED [ 56%]
+tests\test_lifecycle.py::TestTaskLifecycleMockMode::test_task_lifecycle_mock_mode_init PASSED [ 57%]
+tests\test_lifecycle.py::TestTaskLifecycleMockMode::test_task_lifecycle_mock_mode_enforce PASSED [ 57%]
+tests\test_lifecycle.py::TestTaskLifecycleMockMode::test_task_lifecycle_connection_status_mock PASSED [ 57%]
+tests\test_lifecycle.py::TestTaskLifecycleMockMode::test_task_lifecycle_connection_status_real PASSED [ 58%]
+tests\test_linear_sync.py::test_update_issue PASSED                      [ 58%]
+tests\test_linear_sync.py::test_sync_note_create PASSED                  [ 59%]
+tests\test_linear_sync.py::test_sync_note_update PASSED                  [ 59%]
+tests\test_linear_sync.py::test_sync_note_with_none_result PASSED        [ 60%]
+tests\test_linear_sync.py::test_sync_note_with_missing_team_id PASSED    [ 60%]
+tests\test_neo4j.py::test_connection PASSED                              [ 60%]
+tests\test_neo4j_schema_migration.py::test_initialize_schema_runs_expected_queries PASSED [ 61%]
+tests\test_neo4j_schema_recovery.py::TestKnowledgeGraphSchema::test_schema_initialization_mock_mode PASSED [ 61%]
+tests\test_neo4j_schema_recovery.py::TestKnowledgeGraphSchema::test_schema_initialize_mock_mode PASSED [ 62%]
+tests\test_neo4j_schema_recovery.py::TestKnowledgeGraphSchema::test_schema_connection_status_mock PASSED [ 62%]
+tests\test_neo4j_schema_recovery.py::TestKnowledgeGraphSchema::test_schema_close_mock_mode PASSED [ 62%]
+tests\test_neo4j_schema_recovery.py::TestKnowledgeGraphSchema::test_schema_initialization_with_driver PASSED [ 63%]
+tests\test_neo4j_schema_recovery.py::TestKnowledgeGraphSchema::test_schema_connection_status_with_driver PASSED [ 63%]
+tests\test_obsidian_sync_recovery.py::TestObsidianSyncMockMode::test_obsidian_sync_mock_mode_init PASSED [ 64%]
+tests\test_obsidian_sync_recovery.py::TestObsidianSyncMockMode::test_obsidian_sync_connection_unavailable_fallback PASSED [ 64%]
+tests\test_obsidian_sync_recovery.py::TestObsidianSyncMockMode::test_obsidian_sync_auth_error_fallback PASSED [ 64%]
+tests\test_obsidian_sync_recovery.py::TestObsidianSyncConnectionStatus::test_connection_status_mock_mode PASSED [ 65%]
+tests\test_obsidian_sync_recovery.py::TestObsidianSyncConnectionStatus::test_connection_status_connected PASSED [ 65%]
+tests\test_obsidian_sync_recovery.py::TestObsidianSyncOperations::test_sync_all_tasks_mock_mode PASSED [ 66%]
+tests\test_obsidian_sync_recovery.py::TestObsidianSyncOperations::test_sync_task_note_mock_mode PASSED [ 66%]
+tests\test_obsidian_sync_recovery.py::TestObsidianSyncOperations::test_get_stale_tasks_mock_mode PASSED [ 66%]
+tests\test_obsidian_sync_recovery.py::TestObsidianSyncOperations::test_get_stale_tasks_no_driver PASSED [ 67%]
+tests\test_obsidian_sync_recovery.py::TestObsidianSyncOperations::test_get_stale_tasks_connection_lost PASSED [ 67%]
+tests\test_obsidian_sync_recovery.py::TestObsidianSyncConnectionCheck::test_check_connection_health PASSED [ 68%]
+tests\test_obsidian_sync_recovery.py::TestObsidianSyncConnectionCheck::test_check_connection_no_driver PASSED [ 68%]
+tests\test_obsidian_sync_recovery.py::TestObsidianSyncConnectionCheck::test_check_connection_query_fails PASSED [ 68%]
+tests\test_obsidian_sync_recovery.py::TestObsidianSyncCleanup::test_close_with_driver PASSED [ 69%]
+tests\test_obsidian_sync_recovery.py::TestObsidianSyncCleanup::test_close_without_driver PASSED [ 69%]
+tests\test_percolation.py::TestPercolationEngine::test_initialization PASSED [ 70%]
+tests\test_percolation.py::TestPercolationEngine::test_percolate_from_vault PASSED [ 70%]
+tests\test_percolation.py::TestPercolationEngine::test_extract_frontmatter_valid PASSED [ 71%]
+tests\test_percolation.py::TestPercolationEngine::test_extract_frontmatter_no_frontmatter PASSED [ 71%]
+tests\test_percolation.py::TestPercolationEngine::test_extract_frontmatter_malformed PASSED [ 71%]
+tests\test_percolation.py::TestPercolationEngine::test_percolate_task PASSED [ 72%]
+tests\test_percolation.py::TestPercolationEngine::test_percolate_commits PASSED [ 72%]
+tests\test_percolation.py::TestPercolationEngine::test_percolate_session PASSED [ 73%]
+tests\test_percolation.py::TestPercolationEngine::test_generate_decision_id PASSED [ 73%]
+tests\test_percolation.py::TestPercolationEngine::test_detect_stale_tasks PASSED [ 73%]
+tests\test_percolation.py::TestPercolationEngine::test_create_percolation_engine PASSED [ 74%]
+tests\test_percolation.py::TestVectorSimilarityThreshold::test_default_similarity_threshold PASSED [ 74%]
+tests\test_percolation.py::TestVectorSimilarityThreshold::test_custom_similarity_threshold PASSED [ 75%]
+tests\test_percolation.py::TestVectorSimilarityThreshold::test_threshold_boundary_validation PASSED [ 75%]
+tests\test_poc.py::TestProofOfConcept::test_neo4j_connection PASSED      [ 75%]
+tests\test_poc.py::TestProofOfConcept::test_session_management PASSED    [ 76%]
+tests\test_poc.py::TestProofOfConcept::test_cypher_query_execution PASSED [ 76%]
+tests\test_poc.py::TestProofOfConcept::test_data_ingestion PASSED        [ 77%]
+tests\test_query.py::test_task_count_query_structure PASSED              [ 77%]
+tests\test_query.py::test_single_task_query_structure PASSED             [ 77%]
+tests\test_rate_limiter.py::TestInMemoryRateLimiter::test_allows_requests_within_limit PASSED [ 78%]
+tests\test_rate_limiter.py::TestInMemoryRateLimiter::test_blocks_requests_exceeding_limit PASSED [ 78%]
+tests\test_rate_limiter.py::TestInMemoryRateLimiter::test_resets_after_time_window PASSED [ 79%]
+tests\test_rate_limiter.py::TestInMemoryRateLimiter::test_reset_clears_for_client PASSED [ 79%]
+tests\test_rate_limiter.py::TestInMemoryRateLimiter::test_per_client_isolation PASSED [ 80%]
+tests\test_rate_limiter.py::TestInMemoryRateLimiter::test_cleanup_removes_expired_entries PASSED [ 80%]
+tests\test_rate_limiter.py::TestInMemoryRateLimiter::test_cleanup_preserves_recent_entries PASSED [ 80%]
+tests\test_rate_limiter.py::TestRedisRateLimiter::test_init_without_redis_client PASSED [ 81%]
+tests\test_rate_limiter.py::TestRedisRateLimiter::test_init_with_redis_connection_error PASSED [ 81%]
+tests\test_rate_limiter.py::TestRedisRateLimiter::test_check_limit_without_redis PASSED [ 82%]
+tests\test_rate_limiter.py::TestRedisRateLimiter::test_check_limit_with_redis_error PASSED [ 82%]
+tests\test_rate_limiter.py::TestRedisRateLimiter::test_reset_without_redis PASSED [ 82%]
+tests\test_rate_limiter.py::TestRedisRateLimiter::test_cleanup_with_redis PASSED [ 83%]
+tests\test_rate_limiter.py::TestHybridRateLimiter::test_prefers_redis_when_available PASSED [ 83%]
+tests\test_rate_limiter.py::TestHybridRateLimiter::test_falls_back_to_memory_on_redis_failure PASSED [ 84%]
+tests\test_rate_limiter.py::TestHybridRateLimiter::test_hybrid_check_limit_delegation PASSED [ 84%]
+tests\test_rate_limiter.py::TestHybridRateLimiter::test_hybrid_reset_delegation PASSED [ 84%]
+tests\test_rate_limiter.py::TestHybridRateLimiter::test_hybrid_cleanup_delegation PASSED [ 85%]
+tests\test_rate_limiter.py::TestRateLimiterIntegration::test_get_rate_limiter_singleton PASSED [ 85%]
+tests\test_rate_limiter.py::TestRateLimiterIntegration::test_realistic_attack_scenario PASSED [ 86%]
+tests\test_rate_limiter.py::TestRateLimiterIntegration::test_rate_limit_recovery_after_success PASSED [ 86%]
+tests\test_rate_limiter.py::TestRateLimiterIntegration::test_memory_efficiency PASSED [ 86%]
+tests\test_rate_limiter.py::TestRateLimiterConfig::test_default_config PASSED [ 87%]
+tests\test_rate_limiter.py::TestRateLimiterConfig::test_custom_config PASSED [ 87%]
+tests\test_security_fixes.py::TestJWTSecurity::test_secure_algorithms_defined PASSED [ 88%]
+tests\test_security_fixes.py::TestJWTSecurity::test_insecure_algorithms_blocked PASSED [ 88%]
+tests\test_security_fixes.py::TestJWTSecurity::test_jwt_algorithm_validation_on_startup PASSED [ 88%]
+tests\test_security_fixes.py::TestJWTSecurity::test_create_access_token_with_valid_data PASSED [ 89%]
+tests\test_security_fixes.py::TestJWTSecurity::test_create_access_token_rejects_invalid_data PASSED [ 89%]
+tests\test_security_fixes.py::TestJWTSecurity::test_validate_access_token_with_valid_token PASSED [ 90%]
+tests\test_security_fixes.py::TestJWTSecurity::test_validate_access_token_rejects_invalid_token PASSED [ 90%]
+tests\test_security_fixes.py::TestAPIKeySecurity::test_rate_limit_allows_valid_requests PASSED [ 91%]
+tests\test_security_fixes.py::TestAPIKeySecurity::test_rate_limit_blocks_excessive_requests PASSED [ 91%]
+tests\test_security_fixes.py::TestAPIKeySecurity::test_rate_limit_resets_after_window PASSED [ 91%]
+tests\test_security_fixes.py::TestAPIKeySecurity::test_rate_limit_per_client PASSED [ 92%]
+tests\test_security_fixes.py::TestInputValidation::test_platform_parameter_sanitization PASSED [ 92%]
+tests\test_security_fixes.py::TestInputValidation::test_content_length_validation PASSED [ 93%]
+tests\test_security_fixes.py::TestInputValidation::test_html_sanitization PASSED [ 93%]
+tests\test_security_fixes.py::TestErrorHandling::test_error_messages_dont_leak_sensitive_info PASSED [ 93%]
+tests\test_security_fixes.py::TestErrorHandling::test_support_id_generation PASSED [ 94%]
+tests\test_security_fixes.py::TestErrorHandling::test_logging_separates_internal_external PASSED [ 94%]
+tests\test_security_fixes.py::TestPathTraversalProtection::test_directory_traversal_prevention PASSED [ 95%]
+tests\test_security_fixes.py::TestPathTraversalProtection::test_path_canonicalization PASSED [ 95%]
+tests\test_security_fixes.py::TestPathTraversalProtection::test_safe_path_validation PASSED [ 95%]
+tests\test_security_fixes.py::TestBusinessLogicSecurity::test_workflow_state_validation PASSED [ 96%]
+tests\test_security_fixes.py::TestBusinessLogicSecurity::test_privilege_escalation_prevention PASSED [ 96%]
+tests\test_security_fixes.py::TestBusinessLogicSecurity::test_price_manipulation_prevention PASSED [ 97%]
+tests\test_settings.py::test_settings_load_from_env PASSED               [ 97%]
+tests\test_settings.py::test_settings_defaults PASSED                    [ 97%]
+tests\test_settings.py::test_settings_singleton PASSED                   [ 98%]
+tests\test_settings.py::test_settings_creates_valid_driver_config PASSED [ 98%]
+tests\test_uids.py::test_uid_extraction_from_markdown PASSED             [ 99%]
+tests\test_uids.py::test_uid_extraction_missing_uid PASSED               [ 99%]
+tests\test_validate_env_example.py::test_validate_env_example_matches_settings PASSED [100%]
+
+=================================== ERRORS ====================================
+______________ ERROR at setup of test_process_issue_to_markdown _______________
+C:\Users\steyn\AppData\Roaming\Python\Python312\site-packages\pytest_asyncio\plugin.py:458: in setup
+    return super().setup()
+           ^^^^^^^^^^^^^^^
+C:\Users\steyn\AppData\Roaming\Python\Python312\site-packages\pytest_asyncio\plugin.py:728: in pytest_fixture_setup
+    return (yield)
+            ^^^^^
+E   pytest.PytestRemovedIn9Warning: 'test_process_issue_to_markdown' requested an async fixture 'test_db_session', with no plugin or hook that handled it. This is usually an error, as pytest does not natively support it. This will turn into an error in pytest 9.
+E   See: https://docs.pytest.org/en/stable/deprecations.html#sync-test-depending-on-async-fixture
+___________ ERROR at setup of test_duplicate_issue_updates_existing ___________
+C:\Users\steyn\AppData\Roaming\Python\Python312\site-packages\pytest_asyncio\plugin.py:458: in setup
+    return super().setup()
+           ^^^^^^^^^^^^^^^
+C:\Users\steyn\AppData\Roaming\Python\Python312\site-packages\pytest_asyncio\plugin.py:728: in pytest_fixture_setup
+    return (yield)
+            ^^^^^
+E   pytest.PytestRemovedIn9Warning: 'test_duplicate_issue_updates_existing' requested an async fixture 'test_db_session', with no plugin or hook that handled it. This is usually an error, as pytest does not natively support it. This will turn into an error in pytest 9.
+E   See: https://docs.pytest.org/en/stable/deprecations.html#sync-test-depending-on-async-fixture
+_______________ ERROR at setup of test_invalid_event_logs_error _______________
+C:\Users\steyn\AppData\Roaming\Python\Python312\site-packages\pytest_asyncio\plugin.py:458: in setup
+    return super().setup()
+           ^^^^^^^^^^^^^^^
+C:\Users\steyn\AppData\Roaming\Python\Python312\site-packages\pytest_asyncio\plugin.py:728: in pytest_fixture_setup
+    return (yield)
+            ^^^^^
+E   pytest.PytestRemovedIn9Warning: 'test_invalid_event_logs_error' requested an async fixture 'test_db_session', with no plugin or hook that handled it. This is usually an error, as pytest does not natively support it. This will turn into an error in pytest 9.
+E   See: https://docs.pytest.org/en/stable/deprecations.html#sync-test-depending-on-async-fixture
+______________ ERROR at setup of test_process_single_event_retry ______________
+C:\Users\steyn\AppData\Roaming\Python\Python312\site-packages\pytest_asyncio\plugin.py:458: in setup
+    return super().setup()
+           ^^^^^^^^^^^^^^^
+C:\Users\steyn\AppData\Roaming\Python\Python312\site-packages\pytest_asyncio\plugin.py:728: in pytest_fixture_setup
+    return (yield)
+            ^^^^^
+E   pytest.PytestRemovedIn9Warning: 'test_process_single_event_retry' requested an async fixture 'test_db_session', with no plugin or hook that handled it. This is usually an error, as pytest does not natively support it. This will turn into an error in pytest 9.
+E   See: https://docs.pytest.org/en/stable/deprecations.html#sync-test-depending-on-async-fixture
+_______________ ERROR at setup of test_skip_events_without_data _______________
+C:\Users\steyn\AppData\Roaming\Python\Python312\site-packages\pytest_asyncio\plugin.py:458: in setup
+    return super().setup()
+           ^^^^^^^^^^^^^^^
+C:\Users\steyn\AppData\Roaming\Python\Python312\site-packages\pytest_asyncio\plugin.py:728: in pytest_fixture_setup
+    return (yield)
+            ^^^^^
+E   pytest.PytestRemovedIn9Warning: 'test_skip_events_without_data' requested an async fixture 'test_db_session', with no plugin or hook that handled it. This is usually an error, as pytest does not natively support it. This will turn into an error in pytest 9.
+E   See: https://docs.pytest.org/en/stable/deprecations.html#sync-test-depending-on-async-fixture
+______ ERROR at setup of TestLifecycleRule.test_lifecycle_rule_creation _______
+file D:\projects\Omega_KG_stable\tests\test_lifecycle.py, line 29
+      def test_lifecycle_rule_creation(self, sample_lifecycle_rule_data):
+E       fixture 'sample_lifecycle_rule_data' not found
+>       available fixtures: _class_scoped_runner, _function_scoped_runner, _module_scoped_runner, _package_scoped_runner, _session_scoped_runner, anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, cov, db_engine, db_session, doctest_namespace, event_loop_policy, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, graph_driver, graph_session, mock_bitwarden_client, mock_env_vars, mock_file_system, mock_neo4j_driver, monkeypatch, neo4j_container, no_cover, performance_monitor, postgres_container, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, sample_frontmatter_data, sample_task_data, sample_vector_data, setup_test_env, subtests, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, unused_tcp_port, unused_tcp_port_factory, unused_udp_port, unused_udp_port_factory
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+D:\projects\Omega_KG_stable\tests\test_lifecycle.py:29
+================================== FAILURES ===================================
+__________ TestCaptureServerPerformance.test_memory_usage_stability ___________
+tests\test_capture_server.py:1281: in test_memory_usage_stability
+    import psutil
+E   ModuleNotFoundError: No module named 'psutil'
+_________________ TestCheckNodes.test_check_nodes_with_tasks __________________
+C:\Program Files\Python312\Lib\unittest\mock.py:1393: in patched
+    with self.decoration_helper(patched,
+C:\Program Files\Python312\Lib\contextlib.py:137: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+C:\Program Files\Python312\Lib\unittest\mock.py:1375: in decoration_helper
+    arg = exit_stack.enter_context(patching)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Program Files\Python312\Lib\contextlib.py:526: in enter_context
+    result = _enter(cm)
+             ^^^^^^^^^^
+C:\Program Files\Python312\Lib\unittest\mock.py:1451: in __enter__
+    self.target = self.getter()
+                  ^^^^^^^^^^^^^
+C:\Program Files\Python312\Lib\pkgutil.py:518: in resolve_name
+    mod = importlib.import_module(s)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Program Files\Python312\Lib\importlib\__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+omega_kg\check_nodes.py:10: in <module>
+    result = session.run("MATCH (t:Task) RETURN count(t) as count")
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\steyn\AppData\Roaming\Python\Python312\site-packages\neo4j\_sync\work\session.py:305: in run
+    self._connect(self._config.default_access_mode)
+C:\Users\steyn\AppData\Roaming\Python\Python312\site-packages\neo4j\_sync\work\session.py:126: in _connect
+    super()._connect(
+C:\Users\steyn\AppData\Roaming\Python\Python312\site-packages\neo4j\_sync\work\workspace.py:181: in _connect
+    self._connection = self._pool.acquire(**acquire_kwargs_)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\steyn\AppData\Roaming\Python\Python312\site-packages\neo4j\_sync\io\_pool.py:678: in acquire
+    return self._acquire(
+C:\Users\steyn\AppData\Roaming\Python\Python312\site-packages\neo4j\_sync\io\_pool.py:418: in _acquire
+    return connection_creator()
+           ^^^^^^^^^^^^^^^^^^^^
+C:\Users\steyn\AppData\Roaming\Python\Python312\site-packages\neo4j\_sync\io\_pool.py:231: in connection_creator
+    connection = self.opener(
+C:\Users\steyn\AppData\Roaming\Python\Python312\site-packages\neo4j\_sync\io\_pool.py:638: in opener
+    return Bolt.open(
+C:\Users\steyn\AppData\Roaming\Python\Python312\site-packages\neo4j\_sync\io\_bolt.py:424: in open
+    connection.hello()
+C:\Users\steyn\AppData\Roaming\Python\Python312\site-packages\neo4j\_sync\io\_bolt5.py:735: in hello
+    self.fetch_all()
+C:\Users\steyn\AppData\Roaming\Python\Python312\site-packages\neo4j\_sync\io\_bolt.py:881: in fetch_all
+    detail_delta, summary_delta = self.fetch_message()
+                                  ^^^^^^^^^^^^^^^^^^^^
+C:\Users\steyn\AppData\Roaming\Python\Python312\site-packages\neo4j\_sync\io\_bolt.py:866: in fetch_message
+    res = self._process_message(tag, fields)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\steyn\AppData\Roaming\Python\Python312\site-packages\neo4j\_sync\io\_bolt5.py:1202: in _process_message
+    response.on_failure(summary_metadata or {})
+C:\Users\steyn\AppData\Roaming\Python\Python312\site-packages\neo4j\_sync\io\_common.py:303: in on_failure
+    raise self._hydrate_error(metadata)
+E   neo4j.exceptions.ClientError: {neo4j_code: Neo.ClientError.Security.AuthenticationRateLimit} {message: The client has provided incorrect authentication details too many times in a row.} {gql_status: 50N42} {gql_status_description: error: general processing exception - unexpected error. Unexpected error has occurred. See debug log for details.}
+_________________________ TestCLI.test_status_command _________________________
+tests\test_cli.py:229: in test_status_command
+    assert "bolt://localhost:7687" in result.output
+E   AssertionError: assert 'bolt://localhost:7687' in '\U0001f50d System Status Check\n==================================================\n\n\U0001f4ca Neo4j Connection:\n  URI:         bolt://localhost:7688\n  Connected:   \u2713 Yes\n  Mock Mode:   No\n\n\U0001f4c1 Configuration:\n  Environment: test\n  Vault Path:  ./test_vault\n\n\U0001f4e7 Email Settings:\n  SMTP Host:   localhost:587\n  From:        test@example.com\n  To:          steynsean11@gmail.com\n  Status:      \u2713 Configured\n\n\U0001f517 Linear Integration:\n  API Key:     \u2713 Configured\n  Team ID:     ApexSigma\n'
+E    +  where '\U0001f50d System Status Check\n==================================================\n\n\U0001f4ca Neo4j Connection:\n  URI:         bolt://localhost:7688\n  Connected:   \u2713 Yes\n  Mock Mode:   No\n\n\U0001f4c1 Configuration:\n  Environment: test\n  Vault Path:  ./test_vault\n\n\U0001f4e7 Email Settings:\n  SMTP Host:   localhost:587\n  From:        test@example.com\n  To:          steynsean11@gmail.com\n  Status:      \u2713 Configured\n\n\U0001f517 Linear Integration:\n  API Key:     \u2713 Configured\n  Team ID:     ApexSigma\n' = <Result okay>.output
+---------------------------- Captured stderr call -----------------------------
+INFO:omega_kg.lifecycle:Neo4j connection established
+------------------------------ Captured log call ------------------------------
+INFO     omega_kg.lifecycle:lifecycle.py:116 Neo4j connection established
+_____ TestJwtAuthenticationFlow.test_auth_token_endpoint_requires_api_key _____
+tests\test_jwt_e2e.py:161: in test_auth_token_endpoint_requires_api_key
+    assert response.status_code == 403  # Forbidden - missing API key
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert 401 == 403
+E    +  where 401 = <Response [401 Unauthorized]>.status_code
+---------------------------- Captured stderr call -----------------------------
+INFO:httpx:HTTP Request: POST http://testserver/auth/token "HTTP/1.1 401 Unauthorized"
+------------------------------ Captured log call ------------------------------
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/auth/token "HTTP/1.1 401 Unauthorized"
+============================== warnings summary ===============================
+C:\Users\steyn\AppData\Roaming\Python\Python312\site-packages\testcontainers\core\waiting_utils.py:215
+  C:\Users\steyn\AppData\Roaming\Python\Python312\site-packages\testcontainers\core\waiting_utils.py:215: DeprecationWarning: The @wait_container_is_ready decorator is deprecated and will be removed in a future version. Use structured wait strategies instead: container.waiting_for(HttpWaitStrategy(8080).for_status_code(200)) or container.waiting_for(LogMessageWaitStrategy('ready'))
+    @wait_container_is_ready()
+
+C:\Users\steyn\AppData\Roaming\Python\Python312\site-packages\testcontainers\postgres\__init__.py:90
+  C:\Users\steyn\AppData\Roaming\Python\Python312\site-packages\testcontainers\postgres\__init__.py:90: DeprecationWarning: The @wait_container_is_ready decorator is deprecated and will be removed in a future version. Use structured wait strategies instead: container.waiting_for(HttpWaitStrategy(8080).for_status_code(200)) or container.waiting_for(LogMessageWaitStrategy('ready'))
+    @wait_container_is_ready()
+
+C:\Users\steyn\AppData\Roaming\Python\Python312\site-packages\testcontainers\neo4j\__init__.py:63
+  C:\Users\steyn\AppData\Roaming\Python\Python312\site-packages\testcontainers\neo4j\__init__.py:63: DeprecationWarning: The @wait_container_is_ready decorator is deprecated and will be removed in a future version. Use structured wait strategies instead: container.waiting_for(HttpWaitStrategy(8080).for_status_code(200)) or container.waiting_for(LogMessageWaitStrategy('ready'))
+    @wait_container_is_ready()
+
+tests\integration\test_refinery.py:143
+  D:\projects\Omega_KG_stable\tests\integration\test_refinery.py:143: PytestUnknownMarkWarning: Unknown pytest.mark.requires_postgres - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.requires_postgres
+
+tests\integration\test_refinery.py:185
+  D:\projects\Omega_KG_stable\tests\integration\test_refinery.py:185: PytestUnknownMarkWarning: Unknown pytest.mark.requires_postgres - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.requires_postgres
+
+tests\integration\test_refinery.py:241
+  D:\projects\Omega_KG_stable\tests\integration\test_refinery.py:241: PytestUnknownMarkWarning: Unknown pytest.mark.requires_postgres - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.requires_postgres
+
+tests\integration\test_refinery.py:292
+  D:\projects\Omega_KG_stable\tests\integration\test_refinery.py:292: PytestUnknownMarkWarning: Unknown pytest.mark.requires_postgres - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.requires_postgres
+
+tests\integration\test_refinery.py:327
+  D:\projects\Omega_KG_stable\tests\integration\test_refinery.py:327: PytestUnknownMarkWarning: Unknown pytest.mark.requires_postgres - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.requires_postgres
+
+infra/test_containers_sanity.py::test_neo4j_container_is_alive
+  C:\Users\steyn\AppData\Roaming\Python\Python312\site-packages\testcontainers\neo4j\__init__.py:65: DeprecationWarning: The wait_for_logs function with string or callable predicates is deprecated and will be removed in a future version. Use structured wait strategies instead: container.waiting_for(LogMessageWaitStrategy('ready')) or container.waiting_for(LogMessageWaitStrategy(re.compile(r'pattern')))
+    wait_for_logs(self, "Remote interface available at", c.timeout)
+
+test_neo4j.py::test_connection
+  C:\Users\steyn\AppData\Roaming\Python\Python312\site-packages\_pytest\python.py:170: PytestReturnNotNoneWarning: Test functions should return None, but test_neo4j.py::test_connection returned <class 'bool'>.
+  Did you mean to use `assert` instead of `return`?
+  See https://docs.pytest.org/en/stable/how-to/assert.html#return-not-none for more information.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests\test_capture_server.py::TestCaptureServerPerformance::test_memory_usage_stability - ModuleNotFoundError: No module named 'psutil'
+FAILED tests\test_check_nodes.py::TestCheckNodes::test_check_nodes_with_tasks - neo4j.exceptions.ClientError: {neo4j_code: Neo.ClientError.Security.AuthenticationRateLimit} {message: The client has provided incorrect authentication details too many times in a row.} {gql_status: 50N42} {gql_status_description: error: general processing exception - unexpected error. Unexpected error has occurred. See debug log for details.}
+FAILED tests\test_cli.py::TestCLI::test_status_command - AssertionError: assert 'bolt://localhost:7687' in '\U0001f50d System Status Check\n==================================================\n\n\U0001f4ca Neo4j Connection:\n  URI:         bolt://localhost:7688\n  Connected:   \u2713 Yes\n  Mock Mode:   No\n\n\U0001f4c1 Configuration:\n  Environment: test\n  Vault Path:  ./test_vault\n\n\U0001f4e7 Email Settings:\n  SMTP Host:   localhost:587\n  From:        test@example.com\n  To:          steynsean11@gmail.com\n  Status:      \u2713 Configured\n\n\U0001f517 Linear Integration:\n  API Key:     \u2713 Configured\n  Team ID:     ApexSigma\n'
+ +  where '\U0001f50d System Status Check\n==================================================\n\n\U0001f4ca Neo4j Connection:\n  URI:         bolt://localhost:7688\n  Connected:   \u2713 Yes\n  Mock Mode:   No\n\n\U0001f4c1 Configuration:\n  Environment: test\n  Vault Path:  ./test_vault\n\n\U0001f4e7 Email Settings:\n  SMTP Host:   localhost:587\n  From:        test@example.com\n  To:          steynsean11@gmail.com\n  Status:      \u2713 Configured\n\n\U0001f517 Linear Integration:\n  API Key:     \u2713 Configured\n  Team ID:     ApexSigma\n' = <Result okay>.output
+FAILED tests\test_jwt_e2e.py::TestJwtAuthenticationFlow::test_auth_token_endpoint_requires_api_key - assert 401 == 403
+ +  where 401 = <Response [401 Unauthorized]>.status_code
+ERROR tests\integration\test_refinery.py::test_process_issue_to_markdown - pytest.PytestRemovedIn9Warning: 'test_process_issue_to_markdown' requested an async fixture 'test_db_session', with no plugin or hook that handled it. This is usually an error, as pytest does not natively support it. This will turn into an error in pytest 9.
+See: https://docs.pytest.org/en/stable/deprecations.html#sync-test-depending-on-async-fixture
+ERROR tests\integration\test_refinery.py::test_duplicate_issue_updates_existing - pytest.PytestRemovedIn9Warning: 'test_duplicate_issue_updates_existing' requested an async fixture 'test_db_session', with no plugin or hook that handled it. This is usually an error, as pytest does not natively support it. This will turn into an error in pytest 9.
+See: https://docs.pytest.org/en/stable/deprecations.html#sync-test-depending-on-async-fixture
+ERROR tests\integration\test_refinery.py::test_invalid_event_logs_error - pytest.PytestRemovedIn9Warning: 'test_invalid_event_logs_error' requested an async fixture 'test_db_session', with no plugin or hook that handled it. This is usually an error, as pytest does not natively support it. This will turn into an error in pytest 9.
+See: https://docs.pytest.org/en/stable/deprecations.html#sync-test-depending-on-async-fixture
+ERROR tests\integration\test_refinery.py::test_process_single_event_retry - pytest.PytestRemovedIn9Warning: 'test_process_single_event_retry' requested an async fixture 'test_db_session', with no plugin or hook that handled it. This is usually an error, as pytest does not natively support it. This will turn into an error in pytest 9.
+See: https://docs.pytest.org/en/stable/deprecations.html#sync-test-depending-on-async-fixture
+ERROR tests\integration\test_refinery.py::test_skip_events_without_data - pytest.PytestRemovedIn9Warning: 'test_skip_events_without_data' requested an async fixture 'test_db_session', with no plugin or hook that handled it. This is usually an error, as pytest does not natively support it. This will turn into an error in pytest 9.
+See: https://docs.pytest.org/en/stable/deprecations.html#sync-test-depending-on-async-fixture
+ERROR tests\test_lifecycle.py::TestLifecycleRule::test_lifecycle_rule_creation
+= 4 failed, 230 passed, 7 skipped, 10 warnings, 6 errors in 74.01s (0:01:14) ==
