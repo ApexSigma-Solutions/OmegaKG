@@ -99,3 +99,13 @@ tests/test_*.json
 
 # GitHub configuration (keep workflows in remote if needed)
 .github/
+
+# Workspace and project files
+*.code-workspace
+Omega_KG_*.code-workspace
+
+# Configuration files
+.actrc
+
+# Vault directories
+vault/
