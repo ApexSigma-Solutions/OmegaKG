@@ -109,3 +109,6 @@ Omega_KG_*.code-workspace
 
 # Vault directories
 vault/
+
+# Documentation configuration
+mkdocs.yml
