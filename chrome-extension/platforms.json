@@ -1,14 +1,31 @@
 {
   "Claude.ai": {
     "hostnames": ["claude.ai"],
-    "messages": [".font-user-message", ".font-claude-response"],
-    "isUser": ["class:font-user-message", "closest:[data-testid*='user']"],
+    "messages": [".font-user-message", ".font-claude-response", "[data-test-id='conversation-turn']"],
+    "isUser": ["class:font-user-message", "closest:[data-testid*='user']", "attr:data-is-user=true"],
     "getText": ["selector:[class*='font-claude-message']", "selector:div[class*='whitespace-pre-wrap']", "textContent"]
   },
   "ChatGPT": {
     "hostnames": ["openai.com", "chatgpt.com"],
-    "messages": ["[data-message-author-role]"],
-    "isUser": ["attr:data-message-author-role=user"],
+    "messages": ["[data-message-author-role]", "div[data-message-author-role]", "article"],
+    "isUser": ["attr:data-message-author-role=user", "closest:[data-testid*='user']"],
+    "getText": ["selector:.markdown", "textContent"]
+  },
+  "Gemini": {
+    "hostnames": ["gemini.google.com"],
+    "messages": [
+      "message-content",
+      ".message-content",
+      "[data-test-id='user-query']",
+      "[data-test-id='model-response']",
+      "user-query",
+      "model-response"
+    ],
+    "isUser": [
+      "attr:data-test-id=user-query",
+      "class:user-query",
+      "closest:user-query"
+    ],
     "getText": ["textContent"]
   },
   "AI_Studio": {
@@ -17,22 +34,10 @@
     "isUser": ["text:user:", "text:you:", "closest:[class*='user']", "closest:[data-role='user']"],
     "getText": ["textContent"]
   },
-  "Nano_GPT": {
-    "hostnames": ["nano-gpt.com"],
-    "messages": ["div.whitespace-pre-wrap", "[class*='message']", "[class*='chat']"],
-    "isUser": ["closest:[class*='user']", "closest:[data-role='user']"],
-    "getText": ["textContent"]
-  },
-  "Gemini": {
-    "hostnames": ["gemini.google.com"],
-    "messages": ["user-query", "message-content"],
-    "isUser": ["tag:user-query"],
-    "getText": ["selector:.markdown", "selector:[class*='markdown']", "textContent"]
-  },
   "Perplexity": {
     "hostnames": ["perplexity.ai"],
-    "messages": ["[class*='Markdown']", ".prose"],
-    "isUser": ["closest:[class*='UserMessage']", "closest:[class*='Query']"],
+    "messages": ["[class*='Markdown']", ".prose", "[data-testid='thread-message']"],
+    "isUser": ["closest:[class*='UserMessage']", "closest:[class*='Query']", "attr:data-role=user"],
     "getText": ["textContent"]
   },
   "GitHub_Copilot": {
@@ -42,22 +47,16 @@
     "isUser": ["closest:[class*='user']"],
     "getText": ["textContent"]
   },
+  "Nano_GPT": {
+    "hostnames": ["nano-gpt.com"],
+    "messages": ["div.whitespace-pre-wrap", "[class*='message']", "[class*='chat']"],
+    "isUser": ["closest:[class*='user']", "closest:[data-role='user']"],
+    "getText": ["textContent"]
+  },
   "Qwen": {
     "hostnames": ["qwen.ai", "tongyi.aliyun.com"],
     "messages": ["[class*='message']", "[class*='chat-message']"],
     "isUser": ["closest:[class*='user']", "attr:data-role=user"],
-    "getText": ["textContent"]
-  },
-  "Z.ai": {
-    "hostnames": ["z.ai"],
-    "messages": ["[class*='message']", "[role='article']"],
-    "isUser": ["closest:[class*='user']"],
-    "getText": ["textContent"]
-  },
-  "Kimi": {
-    "hostnames": ["kimi.com", "kimi.moonshot"],
-    "messages": ["[class*='message']", "[class*='chat']"],
-    "isUser": ["closest:[class*='user']"],
     "getText": ["textContent"]
   },
   "DeepSeek": {

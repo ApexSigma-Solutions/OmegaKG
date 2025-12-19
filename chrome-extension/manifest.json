@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Omega_KG Chat Capture",
-  "version": "2.2.0",
+  "version": "2.2.1",
   "description": "Captures AI conversations to Obsidian/Neo4j knowledge graph (10+ platforms)",
   "permissions": [
     "storage",
@@ -54,6 +54,12 @@
       "js": ["content.js"],
       "run_at": "document_idle",
       "all_frames": false
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["platforms.json"],
+      "matches": ["<all_urls>"]
     }
   ],
   "action": {
