@@ -207,6 +207,115 @@ curl http://localhost:7474
 curl http://localhost:11434/api/tags
 ```
 
+## 🔐 Authentication Configuration
+
+### Overview
+
+The Omega_KG system uses a **two-stage authentication** flow for the Chrome extension:
+
+1. **Stage 1**: Static API Key (Bootstrap) → Get JWT Token
+2. **Stage 2**: JWT Token (Bearer) → Access Protected Endpoints
+
+### Configuration Steps
+
+#### 1. Generate Secure Keys
+
+```powershell
+# Generate Extension API Key
+python -c "import secrets; print('EXTENSION_API_KEY=' + secrets.token_urlsafe(32))"
+
+# Generate JWT Secret Key
+python -c "import secrets; print('JWT_SECRET_KEY=' + secrets.token_urlsafe(32))"
+```
+
+#### 2. Update .env File
+
+```bash
+# Required for authentication
+EXTENSION_API_KEY=<generated_api_key>
+JWT_SECRET_KEY=<generated_jwt_secret>
+JWT_EXPIRATION_MINUTES=1440
+
+# Required for CORS (find at chrome://extensions)
+CHROME_EXTENSION_ID=<your_extension_id>
+```
+
+#### 3. Configure Chrome Extension
+
+1. Open `chrome://extensions` (enable Developer mode)
+2. Note your extension ID
+3. Click "Extension options" on Omega_KG
+4. Enter:
+   - **Server URL**: `http://localhost:8765`
+   - **API Key**: Same value as `EXTENSION_API_KEY` from `.env`
+5. Save configuration
+
+### Authentication Flow Diagram
+
+```
+┌─────────────────┐                     ┌──────────────────┐
+│ Chrome Extension│                     │ Capture Server   │
+└────────┬────────┘                     └────────┬─────────┘
+         │                                       │
+         │  POST /auth/token                     │
+         │  Header: X-API-Key: <static_key>     │
+         ├──────────────────────────────────────>│
+         │                                       │
+         │                    Validate API Key   │
+         │                    Generate JWT Token │
+         │                                       │
+         │  Response: {"access_token": "eyJ..."} │
+         │<──────────────────────────────────────┤
+         │                                       │
+         │  POST /capture                        │
+         │  Header: Authorization: Bearer <jwt>  │
+         ├──────────────────────────────────────>│
+         │                                       │
+         │                    Validate JWT       │
+         │                    Process Request    │
+         │                                       │
+         │  Response: {"status": "success"}      │
+         │<──────────────────────────────────────┤
+```
+
+### Testing Authentication
+
+```powershell
+# Test API key → JWT exchange
+$apiKey = "your_api_key_from_env"
+$response = Invoke-RestMethod -Uri "http://localhost:8765/auth/token" `
+    -Method POST -Headers @{"X-API-Key"=$apiKey}
+
+Write-Host "Token: $($response.access_token)"
+
+# Test protected endpoint
+$headers = @{
+    "Authorization" = "Bearer $($response.access_token)"
+    "Content-Type" = "application/json"
+}
+
+Invoke-RestMethod -Uri "http://localhost:8765/capture" `
+    -Method POST -Headers $headers -Body '{"platform":"test","url":"https://example.com","messages":[]}'
+```
+
+### Common Authentication Issues
+
+| Issue | Cause | Solution |
+|-------|-------|----------|
+| 401 Unauthorized | API key mismatch | Verify `.env` and extension options match |
+| 403 Forbidden | Invalid/expired JWT | Get new token via `/auth/token` |
+| CORS error | Extension ID mismatch | Update `CHROME_EXTENSION_ID` in `.env` |
+| Connection refused | Server not running | Run `.\start-capture-server-window.ps1` |
+
+### Port Alignment Checklist
+
+**CRITICAL**: Ensure these match across all components:
+
+- [ ] `.env`: `APP_PORT=8765`
+- [ ] `chrome-extension/config.js`: `SERVER_URL: 'http://localhost:8765'`
+- [ ] Extension options: Server URL set to `http://localhost:8765`
+- [ ] Firewall: Port 8765 allowed for localhost
+
 ## Environment-Specific Notes
 
 ### Production (Omega_KG_stable)
@@ -214,15 +323,16 @@ curl http://localhost:11434/api/tags
 - Capture server on 8765
 - PostgreSQL on 5433
 - Neo4j on 7687/7474
+- **Authentication**: Use Bitwarden (`BWS_ACCESS_TOKEN`) for zero-trust secret management
 
 ### Development (Omega_KG_dev)
 - Same port configuration as production
 - Can run simultaneously if on different machines
 - Use Docker network isolation if needed
+- **Authentication**: Can use plain-text `.env` values (not recommended for production)
 
 ## Version History
 
 | Date | Change | Author |
 |------|--------|--------|
-| 2025-11-30 | Unified port 8765 for capture server | System |
-| 2025-11-30 | Created PORT_MAPPING.md documentation | System |
+| 2025-12-16 | Added authentication documentation | GitHub Copilot |
