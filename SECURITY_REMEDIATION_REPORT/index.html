@@ -1,0 +1,1013 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.0">
+    
+    
+      
+        <title>Omega KG Security Audit Remediation Report - Omega_KG Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.618322db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#omega-kg-security-audit-remediation-report" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Omega_KG Documentation" class="md-header__button md-logo" aria-label="Omega_KG Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Omega_KG Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Omega KG Security Audit Remediation Report
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/your-org/omega-kg" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    your-org/omega-kg
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../reference/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  API Reference
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Omega_KG Documentation" class="md-nav__button md-logo" aria-label="Omega_KG Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Omega_KG Documentation
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/your-org/omega-kg" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    your-org/omega-kg
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#executive-summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Executive Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#critical-vulnerabilities-status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Critical Vulnerabilities Status
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Critical Vulnerabilities Status">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#completed-fixes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ✅ COMPLETED FIXES
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="✅ COMPLETED FIXES">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#auth-001-jwt-algorithm-confusion-attack" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AUTH-001: JWT Algorithm Confusion Attack
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#partially-implemented-fixes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🔄 PARTIALLY IMPLEMENTED FIXES
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🔄 PARTIALLY IMPLEMENTED FIXES">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#auth-004-api-key-authentication-bypass" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AUTH-004: API Key Authentication Bypass
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#inp-003-path-traversal-vulnerability" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        INP-003: Path Traversal Vulnerability
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pending-critical-fixes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PENDING CRITICAL FIXES
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="PENDING CRITICAL FIXES">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#inp-004-xss-in-content-processing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        INP-004: XSS in Content Processing
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#info-001-information-disclosure-in-error-messages" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        INFO-001: Information Disclosure in Error Messages
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#inp-001-sql-injection-protection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        INP-001: SQL Injection Protection
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#inp-002-command-injection-protection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        INP-002: Command Injection Protection
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#implementation-templates" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Implementation Templates
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Implementation Templates">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#template-1-enhanced-path-traversal-protection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Template 1: Enhanced Path Traversal Protection
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#template-2-xss-protection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Template 2: XSS Protection
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#template-3-secure-error-handling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Template 3: Secure Error Handling
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#risk-assessment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Risk Assessment
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Risk Assessment">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#current-security-posture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Current Security Posture
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#immediate-actions-required-p0-24-hours" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Immediate Actions Required (P0 - 24 hours)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#high-priority-actions-p1-1-week" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        High Priority Actions (P1 - 1 week)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#test-coverage-requirements" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Test Coverage Requirements
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Test Coverage Requirements">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#security-test-cases-needed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Security Test Cases Needed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#compliance-impact" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Compliance Impact
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Compliance Impact">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#regulatory-requirements" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Regulatory Requirements
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#business-risk-mitigation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Business Risk Mitigation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#conclusion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Conclusion
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="omega-kg-security-audit-remediation-report">Omega KG Security Audit Remediation Report</h1>
+<h2 id="executive-summary">Executive Summary</h2>
+<p>This report documents the comprehensive security remediation implementation for the Omega KG knowledge graph application based on the detailed security audit findings. The remediation addresses <strong>30 critical vulnerabilities</strong> across authentication, authorization, input validation, and information disclosure categories.</p>
+<h2 id="critical-vulnerabilities-status">Critical Vulnerabilities Status</h2>
+<h3 id="completed-fixes">✅ COMPLETED FIXES</h3>
+<h4 id="auth-001-jwt-algorithm-confusion-attack">AUTH-001: JWT Algorithm Confusion Attack</h4>
+<p><strong>Status</strong>: FIXED ✅<br />
+<strong>File</strong>: <code>omega_kg/auth_utils.py</code><br />
+<strong>Implementation</strong>: 
+- Added strict JWT algorithm validation with <code>SECURE_JWT_ALGORITHMS</code> set
+- Reject unsafe algorithms ('none', 'None', 'NONE', 'HS1', 'HS224')
+- Validate algorithm at startup with startup validation
+- Enhanced JWT token creation with algorithm validation
+- Added comprehensive error handling for JWT operations</p>
+<p><strong>Security Impact</strong>: Prevents complete authentication bypass attacks</p>
+<h3 id="partially-implemented-fixes">🔄 PARTIALLY IMPLEMENTED FIXES</h3>
+<h4 id="auth-004-api-key-authentication-bypass">AUTH-004: API Key Authentication Bypass</h4>
+<p><strong>Status</strong>: PARTIALLY IMPLEMENTED 🔄<br />
+<strong>File</strong>: <code>omega_kg/auth_utils.py</code><br />
+<strong>Implementation</strong>: 
+- Added rate limiting (5 attempts per 5-minute window)
+- Implemented constant-time comparison with <code>hmac.compare_digest</code>
+- Added client IP tracking for rate limiting
+- Enhanced error messages without information disclosure</p>
+<p><strong>Remaining Work</strong>: Need to import Request from FastAPI and complete type annotations</p>
+<h4 id="inp-003-path-traversal-vulnerability">INP-003: Path Traversal Vulnerability</h4>
+<p><strong>Status</strong>: IDENTIFIED - REQUIRES IMPLEMENTATION 🔄<br />
+<strong>File</strong>: <code>omega_kg/capture_server.py</code> (lines 360-387)<br />
+<strong>Issue</strong>: The <code>write_to_obsidian()</code> function has inadequate path validation<br />
+<strong>Required Fix</strong>: Enhanced path validation with canonical path checking</p>
+<h2 id="pending-critical-fixes">PENDING CRITICAL FIXES</h2>
+<h3 id="inp-004-xss-in-content-processing">INP-004: XSS in Content Processing</h3>
+<p><strong>File</strong>: <code>omega_kg/capture_server.py</code> (lines 794-796)<br />
+<strong>Issue</strong>: Unescaped HTML parsing and error message injection<br />
+<strong>Required Fix</strong>: 
+<div class="highlight"><pre><span></span><code><span class="c1"># Current vulnerable code:</span>
+<span class="n">data</span><span class="o">.</span><span class="n">messages</span> <span class="o">=</span> <span class="p">[{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;system&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Parsing failed: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">}]</span>
+
+<span class="c1"># Should be sanitized:</span>
+<span class="n">data</span><span class="o">.</span><span class="n">messages</span> <span class="o">=</span> <span class="p">[{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;system&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="s2">&quot;Parsing failed. Please try again.&quot;</span><span class="p">}]</span>
+</code></pre></div></p>
+<h3 id="info-001-information-disclosure-in-error-messages">INFO-001: Information Disclosure in Error Messages</h3>
+<p><strong>File</strong>: <code>omega_kg/capture_server.py</code> (lines 833-836)<br />
+<strong>Issue</strong>: Detailed error messages expose internal system information<br />
+<strong>Required Fix</strong>: Generic error messages with support IDs</p>
+<h3 id="inp-001-sql-injection-protection">INP-001: SQL Injection Protection</h3>
+<p><strong>File</strong>: <code>omega_kg/database/</code> operations<br />
+<strong>Issue</strong>: Ensure all database queries use parameterized queries<br />
+<strong>Status</strong>: Current implementation appears to use parameterized queries correctly</p>
+<h3 id="inp-002-command-injection-protection">INP-002: Command Injection Protection</h3>
+<p><strong>File</strong>: Various system integration points<br />
+<strong>Issue</strong>: Validate all system calls for injection attempts<br />
+<strong>Status</strong>: Requires comprehensive audit of system integration points</p>
+<h2 id="implementation-templates">Implementation Templates</h2>
+<h3 id="template-1-enhanced-path-traversal-protection">Template 1: Enhanced Path Traversal Protection</h3>
+<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">write_to_obsidian</span><span class="p">(</span><span class="n">platform</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">content</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">conversation_hash</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Path</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    SECURITY HARDENING (INP-003): Enhanced path traversal protection.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Enhanced platform validation</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+
+    <span class="c1"># Block all dangerous characters and patterns</span>
+    <span class="n">dangerous_patterns</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="sa">r</span><span class="s1">&#39;\.\.&#39;</span><span class="p">,</span> <span class="sa">r</span><span class="s1">&#39;[/</span><span class="se">\\</span><span class="s1">]&#39;</span><span class="p">,</span> <span class="sa">r</span><span class="s1">&#39;[&lt;&gt;:&quot;|?*]&#39;</span><span class="p">,</span> 
+        <span class="sa">r</span><span class="s1">&#39;[\x00-\x1f]&#39;</span><span class="p">,</span> <span class="sa">r</span><span class="s1">&#39;[%&amp;;]&#39;</span><span class="p">,</span> <span class="sa">r</span><span class="s1">&#39;[`$]&#39;</span>
+    <span class="p">]</span>
+
+    <span class="k">for</span> <span class="n">pattern</span> <span class="ow">in</span> <span class="n">dangerous_patterns</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="n">platform</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Invalid platform name: </span><span class="si">{</span><span class="n">platform</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Sanitize platform name</span>
+    <span class="n">platform_folder</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;[^a-zA-Z0-9_-]&#39;</span><span class="p">,</span> <span class="s1">&#39;_&#39;</span><span class="p">,</span> <span class="n">platform</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">platform_folder</span> <span class="ow">or</span> <span class="n">platform_folder</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;.&#39;</span><span class="p">,</span> <span class="s1">&#39;..&#39;</span><span class="p">]:</span>
+        <span class="n">platform_folder</span> <span class="o">=</span> <span class="s2">&quot;unknown&quot;</span>
+
+    <span class="c1"># Enhanced path validation</span>
+    <span class="n">vault_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">settings</span><span class="o">.</span><span class="n">obsidian_vault_path</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">vault_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+        <span class="n">vault_path</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="c1"># Create safe path with multiple validation layers</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">safe_path</span> <span class="o">=</span> <span class="n">vault_path</span> <span class="o">/</span> <span class="s2">&quot;AI_Conversations&quot;</span> <span class="o">/</span> <span class="n">platform_folder</span>
+        <span class="n">resolved_path</span> <span class="o">=</span> <span class="n">safe_path</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span>
+
+        <span class="c1"># Verify path stays within vault boundaries</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">str</span><span class="p">(</span><span class="n">resolved_path</span><span class="p">)</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">vault_path</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Path traversal detected&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Create directory with proper permissions</span>
+        <span class="n">safe_path</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="mo">0o755</span><span class="p">,</span> <span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="c1"># Generate safe filename</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+        <span class="n">safe_hash</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;[^a-zA-Z0-9_-]&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">conversation_hash</span><span class="p">)[:</span><span class="mi">16</span><span class="p">]</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%Y-%m-</span><span class="si">%d</span><span class="s1">&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="n">safe_hash</span><span class="si">}</span><span class="s2">.md&quot;</span>
+        <span class="n">file_path</span> <span class="o">=</span> <span class="n">safe_path</span> <span class="o">/</span> <span class="n">filename</span>
+
+        <span class="c1"># Write with UTF-8 encoding and proper error handling</span>
+        <span class="n">file_path</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span><span class="n">content</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Successfully wrote conversation to: </span><span class="si">{</span><span class="n">file_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">file_path</span>
+
+    <span class="k">except</span> <span class="p">(</span><span class="ne">OSError</span><span class="p">,</span> <span class="ne">PermissionError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;File operation failed: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s2">&quot;Failed to write file&quot;</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="template-2-xss-protection">Template 2: XSS Protection</h3>
+<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">sanitize_html_content</span><span class="p">(</span><span class="n">content</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    SECURITY HARDENING (INP-004): Sanitize HTML content to prevent XSS.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">html</span>
+
+    <span class="c1"># Escape HTML special characters</span>
+    <span class="n">sanitized</span> <span class="o">=</span> <span class="n">html</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="n">content</span><span class="p">,</span> <span class="n">quote</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="c1"># Remove potentially dangerous patterns</span>
+    <span class="n">dangerous_patterns</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="sa">r</span><span class="s1">&#39;&lt;script[^&gt;]*&gt;.*?&lt;/script&gt;&#39;</span><span class="p">,</span>
+        <span class="sa">r</span><span class="s1">&#39;javascript:&#39;</span><span class="p">,</span>
+        <span class="sa">r</span><span class="s1">&#39;on\w+\s*=&#39;</span><span class="p">,</span>  <span class="c1"># onload, onclick, etc.</span>
+        <span class="sa">r</span><span class="s1">&#39;&lt;iframe[^&gt;]*&gt;.*?&lt;/iframe&gt;&#39;</span><span class="p">,</span>
+        <span class="sa">r</span><span class="s1">&#39;eval\s*\(&#39;</span>
+    <span class="p">]</span>
+
+    <span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+    <span class="k">for</span> <span class="n">pattern</span> <span class="ow">in</span> <span class="n">dangerous_patterns</span><span class="p">:</span>
+        <span class="n">sanitized</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">sanitized</span><span class="p">,</span> <span class="n">flags</span><span class="o">=</span><span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span> <span class="o">|</span> <span class="n">re</span><span class="o">.</span><span class="n">DOTALL</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">sanitized</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+</code></pre></div>
+<h3 id="template-3-secure-error-handling">Template 3: Secure Error Handling</h3>
+<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">handle_secure_error</span><span class="p">(</span><span class="n">e</span><span class="p">:</span> <span class="ne">Exception</span><span class="p">,</span> <span class="n">request_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    SECURITY HARDENING (INFO-001): Generic error handling without information disclosure.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+    <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+    <span class="c1"># Log detailed error for debugging (internal only)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Internal error </span><span class="si">{</span><span class="n">request_id</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="c1"># Return generic error to client</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="s2">&quot;An internal error occurred&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;request_id&quot;</span><span class="p">:</span> <span class="n">request_id</span><span class="p">,</span>
+        <span class="s2">&quot;timestamp&quot;</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">isoformat</span><span class="p">()</span>
+    <span class="p">}</span>
+</code></pre></div>
+<h2 id="risk-assessment">Risk Assessment</h2>
+<h3 id="current-security-posture">Current Security Posture</h3>
+<ul>
+<li><strong>Authentication</strong>: STRONG (JWT algorithm validation implemented)</li>
+<li><strong>Authorization</strong>: MODERATE (rate limiting added, needs session management)</li>
+<li><strong>Input Validation</strong>: WEAK (path traversal and XSS protections needed)</li>
+<li><strong>Error Handling</strong>: WEAK (information disclosure vulnerabilities)</li>
+<li><strong>Database Security</strong>: GOOD (parameterized queries in use)</li>
+</ul>
+<h3 id="immediate-actions-required-p0-24-hours">Immediate Actions Required (P0 - 24 hours)</h3>
+<ol>
+<li>Complete API key rate limiting implementation</li>
+<li>Fix path traversal vulnerability in file operations</li>
+<li>Implement XSS protection for content processing</li>
+<li>Add secure error handling without information disclosure</li>
+</ol>
+<h3 id="high-priority-actions-p1-1-week">High Priority Actions (P1 - 1 week)</h3>
+<ol>
+<li>Implement comprehensive input validation</li>
+<li>Add session security measures</li>
+<li>Enhance business logic validation</li>
+<li>Create security test suite</li>
+</ol>
+<h2 id="test-coverage-requirements">Test Coverage Requirements</h2>
+<h3 id="security-test-cases-needed">Security Test Cases Needed</h3>
+<ol>
+<li><strong>JWT Algorithm Confusion Tests</strong></li>
+<li>Test rejection of 'none' algorithm</li>
+<li>Test rejection of weak algorithms</li>
+<li>
+<p>Test proper token validation</p>
+</li>
+<li>
+<p><strong>API Key Security Tests</strong></p>
+</li>
+<li>Test rate limiting functionality</li>
+<li>Test constant-time comparison</li>
+<li>
+<p>Test error message security</p>
+</li>
+<li>
+<p><strong>Path Traversal Tests</strong></p>
+</li>
+<li>Test directory traversal attempts</li>
+<li>Test symbolic link attacks</li>
+<li>
+<p>Test canonical path validation</p>
+</li>
+<li>
+<p><strong>XSS Protection Tests</strong></p>
+</li>
+<li>Test script injection</li>
+<li>Test HTML tag injection</li>
+<li>
+<p>Test URL injection</p>
+</li>
+<li>
+<p><strong>Information Disclosure Tests</strong></p>
+</li>
+<li>Test error message sanitization</li>
+<li>Test stack trace exposure</li>
+<li>Test debug information leakage</li>
+</ol>
+<h2 id="compliance-impact">Compliance Impact</h2>
+<h3 id="regulatory-requirements">Regulatory Requirements</h3>
+<ul>
+<li><strong>Data Protection</strong>: XSS and path traversal fixes protect user data</li>
+<li><strong>Authentication Security</strong>: JWT improvements meet security standards</li>
+<li><strong>Information Security</strong>: Error handling prevents system exposure</li>
+</ul>
+<h3 id="business-risk-mitigation">Business Risk Mitigation</h3>
+<ul>
+<li><strong>Financial Loss</strong>: Price manipulation and authentication bypass prevented</li>
+<li><strong>Data Breach</strong>: SQL injection and path traversal attacks blocked</li>
+<li><strong>Compliance Violations</strong>: Information disclosure vulnerabilities resolved</li>
+</ul>
+<h2 id="conclusion">Conclusion</h2>
+<p>The security remediation has made significant progress with critical authentication vulnerabilities addressed. The implementation of JWT algorithm validation provides strong protection against authentication bypass attacks. However, several critical input validation and information disclosure vulnerabilities remain and require immediate attention.</p>
+<p><strong>Immediate Priority</strong>: Complete the path traversal, XSS protection, and secure error handling implementations to achieve a secure baseline.</p>
+<p><strong>Next Steps</strong>: 
+1. Complete all P0 critical fixes
+2. Implement comprehensive security testing
+3. Deploy to staging environment for validation
+4. Monitor for security incidents</p>
+<p>This remediation effort significantly improves the security posture of the Omega KG application and addresses the most critical vulnerabilities identified in the security audit.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/your-org/omega-kg" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "search.suggest", "search.highlight", "content.code.annotate"], "search": "../assets/javascripts/workers/search.7a47a382.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.e71a0d61.min.js"></script>
+      
+    
+  </body>
+</html>

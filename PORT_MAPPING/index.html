@@ -1,0 +1,1267 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.0">
+    
+    
+      
+        <title>Port Mapping & Service Configuration - Omega_KG Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.618322db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#port-mapping-service-configuration" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Omega_KG Documentation" class="md-header__button md-logo" aria-label="Omega_KG Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Omega_KG Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Port Mapping &amp; Service Configuration
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/your-org/omega-kg" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    your-org/omega-kg
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../reference/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  API Reference
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Omega_KG Documentation" class="md-nav__button md-logo" aria-label="Omega_KG Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Omega_KG Documentation
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/your-org/omega-kg" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    your-org/omega-kg
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#quick-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick Reference
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#service-details" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Service Details
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Service Details">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#capture-server-fastapiuvicorn" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Capture Server (FastAPI/Uvicorn)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#postgresql" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PostgreSQL
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#neo4j" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Neo4j
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ollama-local-embeddings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ollama (Local Embeddings)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#docker-compose-port-mappings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Docker Compose Port Mappings
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#chrome-extension-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Chrome Extension Configuration
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#firewall-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Firewall Configuration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Firewall Configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#windows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Windows
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#linuxmacos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Linux/macOS
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#port-conflict-troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Port Conflict Troubleshooting
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Port Conflict Troubleshooting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#check-whats-using-a-port" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Check what's using a port
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#kill-process-on-a-port" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Kill process on a port
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#common-port-conflicts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Common Port Conflicts
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#health-check-commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Health Check Commands
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#authentication-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🔐 Authentication Configuration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🔐 Authentication Configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configuration-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration Steps
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Configuration Steps">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-generate-secure-keys" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Generate Secure Keys
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-update-env-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Update .env File
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-configure-chrome-extension" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Configure Chrome Extension
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#authentication-flow-diagram" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Authentication Flow Diagram
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#testing-authentication" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Testing Authentication
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#common-authentication-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Common Authentication Issues
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#port-alignment-checklist" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Port Alignment Checklist
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#environment-specific-notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Environment-Specific Notes
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Environment-Specific Notes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#production-omega_kg_stable" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Production (Omega_KG_stable)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#development-omega_kg_dev" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Development (Omega_KG_dev)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#version-history" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Version History
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="port-mapping-service-configuration">Port Mapping &amp; Service Configuration</h1>
+<p>This document defines all network ports used by Omega_KG services across development and production environments.</p>
+<h2 id="quick-reference">Quick Reference</h2>
+<table>
+<thead>
+<tr>
+<th>Service</th>
+<th>Production</th>
+<th>Development</th>
+<th>Protocol</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Capture Server</strong></td>
+<td>8765</td>
+<td>8765</td>
+<td>HTTP</td>
+<td>Chrome extension capture endpoint</td>
+</tr>
+<tr>
+<td><strong>PostgreSQL</strong></td>
+<td>5433</td>
+<td>5433</td>
+<td>TCP</td>
+<td>Relational database (sessions, events)</td>
+</tr>
+<tr>
+<td><strong>Neo4j Bolt</strong></td>
+<td>7687</td>
+<td>7687</td>
+<td>Bolt</td>
+<td>Graph database queries</td>
+</tr>
+<tr>
+<td><strong>Neo4j HTTP</strong></td>
+<td>7474</td>
+<td>7474</td>
+<td>HTTP</td>
+<td>Neo4j Browser UI</td>
+</tr>
+<tr>
+<td><strong>Ollama</strong></td>
+<td>11434</td>
+<td>11434</td>
+<td>HTTP</td>
+<td>Local embedding service</td>
+</tr>
+</tbody>
+</table>
+<h2 id="service-details">Service Details</h2>
+<h3 id="capture-server-fastapiuvicorn">Capture Server (FastAPI/Uvicorn)</h3>
+<table>
+<thead>
+<tr>
+<th>Environment</th>
+<th>Host</th>
+<th>Port</th>
+<th>URL</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Production</td>
+<td>127.0.0.1</td>
+<td>8765</td>
+<td><code>http://localhost:8765</code></td>
+</tr>
+<tr>
+<td>Development</td>
+<td>127.0.0.1</td>
+<td>8765</td>
+<td><code>http://localhost:8765</code></td>
+</tr>
+<tr>
+<td>Docker</td>
+<td>0.0.0.0</td>
+<td>8765</td>
+<td><code>http://host:8765</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Endpoints:</strong>
+- <code>GET /health</code> - Health check
+- <code>POST /auth/token</code> - JWT token exchange
+- <code>POST /capture</code> - Conversation capture
+- <code>POST /webhook/linear</code> - Linear webhook receiver</p>
+<p><strong>Configuration:</strong>
+<div class="highlight"><pre><span></span><code><span class="c1"># .env</span>
+<span class="nv">APP_HOST</span><span class="o">=</span><span class="m">127</span>.0.0.1
+<span class="nv">APP_PORT</span><span class="o">=</span><span class="m">8765</span>
+</code></pre></div></p>
+<h3 id="postgresql">PostgreSQL</h3>
+<table>
+<thead>
+<tr>
+<th>Environment</th>
+<th>Host</th>
+<th>Port</th>
+<th>Database</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Production</td>
+<td>127.0.0.1</td>
+<td>5433</td>
+<td>omega_kg</td>
+</tr>
+<tr>
+<td>Development</td>
+<td>127.0.0.1</td>
+<td>5433</td>
+<td>omega_kg</td>
+</tr>
+<tr>
+<td>Docker</td>
+<td>postgres</td>
+<td>5432</td>
+<td>omega_kg</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Note:</strong> Port 5433 is used to avoid conflicts with system PostgreSQL on port 5432.</p>
+<p><strong>Configuration:</strong>
+<div class="highlight"><pre><span></span><code><span class="c1"># .env</span>
+<span class="nv">POSTGRES_SERVER</span><span class="o">=</span><span class="m">127</span>.0.0.1
+<span class="nv">POSTGRES_PORT</span><span class="o">=</span><span class="m">5433</span>
+<span class="nv">POSTGRES_USER</span><span class="o">=</span>omega_user
+<span class="nv">POSTGRES_DB</span><span class="o">=</span>omega_kg
+</code></pre></div></p>
+<h3 id="neo4j">Neo4j</h3>
+<table>
+<thead>
+<tr>
+<th>Environment</th>
+<th>Bolt Port</th>
+<th>HTTP Port</th>
+<th>Browser URL</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Production</td>
+<td>7687</td>
+<td>7474</td>
+<td><code>http://localhost:7474</code></td>
+</tr>
+<tr>
+<td>Development</td>
+<td>7687</td>
+<td>7474</td>
+<td><code>http://localhost:7474</code></td>
+</tr>
+<tr>
+<td>Docker</td>
+<td>7687</td>
+<td>7474</td>
+<td><code>http://localhost:7474</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Configuration:</strong>
+<div class="highlight"><pre><span></span><code><span class="c1"># .env</span>
+<span class="nv">NEO4J_URI</span><span class="o">=</span>bolt://localhost:7687
+<span class="nv">NEO4J_USER</span><span class="o">=</span>neo4j
+<span class="nv">NEO4J_PASSWORD</span><span class="o">=</span>&lt;secure_password&gt;
+</code></pre></div></p>
+<h3 id="ollama-local-embeddings">Ollama (Local Embeddings)</h3>
+<table>
+<thead>
+<tr>
+<th>Environment</th>
+<th>Host</th>
+<th>Port</th>
+<th>URL</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>All</td>
+<td>localhost</td>
+<td>11434</td>
+<td><code>http://localhost:11434</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Model:</strong> <code>bge-m3:567m</code> (1024-dim embeddings)</p>
+<p><strong>Test Command:</strong>
+<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>http://localhost:11434/api/embeddings<span class="w"> </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;model&quot;:&quot;bge-m3:567m&quot;,&quot;prompt&quot;:&quot;test&quot;}&#39;</span>
+</code></pre></div></p>
+<h2 id="docker-compose-port-mappings">Docker Compose Port Mappings</h2>
+<div class="highlight"><pre><span></span><code><span class="c1"># docker-compose.yml</span>
+<span class="nt">services</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">omega-kg</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;8765:8765&quot;</span><span class="w">  </span><span class="c1"># Capture server</span>
+
+<span class="w">  </span><span class="nt">neo4j</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;7474:7474&quot;</span><span class="w">  </span><span class="c1"># Neo4j Browser</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;7687:7687&quot;</span><span class="w">  </span><span class="c1"># Bolt protocol</span>
+
+<span class="w">  </span><span class="nt">postgres</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;5433:5432&quot;</span><span class="w">  </span><span class="c1"># PostgreSQL (mapped to 5433 on host)</span>
+</code></pre></div>
+<h2 id="chrome-extension-configuration">Chrome Extension Configuration</h2>
+<p>The Chrome extension connects to the capture server:</p>
+<div class="highlight"><pre><span></span><code><span class="c1">// chrome-extension/config.js</span>
+<span class="kd">const</span><span class="w"> </span><span class="nx">DEFAULT_CONFIG</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">SERVER_URL</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;http://localhost:8765&#39;</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">ENDPOINTS</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nx">AUTH_TOKEN</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;/auth/token&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="nx">CAPTURE</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;/capture&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="nx">HEALTH</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;/health&#39;</span><span class="p">,</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">};</span>
+</code></pre></div>
+<p><strong>manifest.json host_permissions:</strong>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;host_permissions&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="s2">&quot;http://localhost:8765/*&quot;</span>
+<span class="w">  </span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div></p>
+<h2 id="firewall-configuration">Firewall Configuration</h2>
+<h3 id="windows">Windows</h3>
+<div class="highlight"><pre><span></span><code><span class="c"># Allow capture server</span>
+<span class="n">netsh</span> <span class="n">advfirewall</span> <span class="n">firewall</span> <span class="n">add</span> <span class="n">rule</span> <span class="n">name</span><span class="p">=</span><span class="s2">&quot;Omega_KG Capture&quot;</span> <span class="n">dir</span><span class="p">=</span><span class="k">in</span> <span class="n">action</span><span class="p">=</span><span class="n">allow</span> <span class="n">protocol</span><span class="p">=</span><span class="n">TCP</span> <span class="n">localport</span><span class="p">=</span><span class="n">8765</span>
+
+<span class="c"># Allow Neo4j</span>
+<span class="n">netsh</span> <span class="n">advfirewall</span> <span class="n">firewall</span> <span class="n">add</span> <span class="n">rule</span> <span class="n">name</span><span class="p">=</span><span class="s2">&quot;Neo4j Bolt&quot;</span> <span class="n">dir</span><span class="p">=</span><span class="k">in</span> <span class="n">action</span><span class="p">=</span><span class="n">allow</span> <span class="n">protocol</span><span class="p">=</span><span class="n">TCP</span> <span class="n">localport</span><span class="p">=</span><span class="n">7687</span>
+<span class="n">netsh</span> <span class="n">advfirewall</span> <span class="n">firewall</span> <span class="n">add</span> <span class="n">rule</span> <span class="n">name</span><span class="p">=</span><span class="s2">&quot;Neo4j HTTP&quot;</span> <span class="n">dir</span><span class="p">=</span><span class="k">in</span> <span class="n">action</span><span class="p">=</span><span class="n">allow</span> <span class="n">protocol</span><span class="p">=</span><span class="n">TCP</span> <span class="n">localport</span><span class="p">=</span><span class="n">7474</span>
+
+<span class="c"># Allow PostgreSQL</span>
+<span class="n">netsh</span> <span class="n">advfirewall</span> <span class="n">firewall</span> <span class="n">add</span> <span class="n">rule</span> <span class="n">name</span><span class="p">=</span><span class="s2">&quot;PostgreSQL&quot;</span> <span class="n">dir</span><span class="p">=</span><span class="k">in</span> <span class="n">action</span><span class="p">=</span><span class="n">allow</span> <span class="n">protocol</span><span class="p">=</span><span class="n">TCP</span> <span class="n">localport</span><span class="p">=</span><span class="n">5433</span>
+</code></pre></div>
+<h3 id="linuxmacos">Linux/macOS</h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># Allow capture server</span>
+sudo<span class="w"> </span>ufw<span class="w"> </span>allow<span class="w"> </span><span class="m">8765</span>/tcp
+
+<span class="c1"># Allow Neo4j</span>
+sudo<span class="w"> </span>ufw<span class="w"> </span>allow<span class="w"> </span><span class="m">7474</span>/tcp
+sudo<span class="w"> </span>ufw<span class="w"> </span>allow<span class="w"> </span><span class="m">7687</span>/tcp
+
+<span class="c1"># Allow PostgreSQL</span>
+sudo<span class="w"> </span>ufw<span class="w"> </span>allow<span class="w"> </span><span class="m">5433</span>/tcp
+</code></pre></div>
+<h2 id="port-conflict-troubleshooting">Port Conflict Troubleshooting</h2>
+<h3 id="check-whats-using-a-port">Check what's using a port</h3>
+<p><strong>Windows:</strong>
+<div class="highlight"><pre><span></span><code><span class="n">netstat</span> <span class="n">-ano</span> <span class="p">|</span> <span class="n">findstr</span> <span class="p">:</span><span class="n">8765</span>
+<span class="nb">Get-Process</span> <span class="n">-Id</span> <span class="p">&lt;</span><span class="n">PID</span><span class="p">&gt;</span>
+</code></pre></div></p>
+<p><strong>Linux/macOS:</strong>
+<div class="highlight"><pre><span></span><code>lsof<span class="w"> </span>-i<span class="w"> </span>:8765
+</code></pre></div></p>
+<h3 id="kill-process-on-a-port">Kill process on a port</h3>
+<p><strong>Windows:</strong>
+<div class="highlight"><pre><span></span><code><span class="nb">Stop-Process</span> <span class="n">-Id</span> <span class="p">&lt;</span><span class="n">PID</span><span class="p">&gt;</span> <span class="n">-Force</span>
+</code></pre></div></p>
+<p><strong>Linux/macOS:</strong>
+<div class="highlight"><pre><span></span><code><span class="nb">kill</span><span class="w"> </span>-9<span class="w"> </span>&lt;PID&gt;
+</code></pre></div></p>
+<h3 id="common-port-conflicts">Common Port Conflicts</h3>
+<table>
+<thead>
+<tr>
+<th>Port</th>
+<th>Common Conflict</th>
+<th>Solution</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>5432</td>
+<td>System PostgreSQL</td>
+<td>Use 5433 instead</td>
+</tr>
+<tr>
+<td>8000</td>
+<td>Other web apps</td>
+<td>Use 8765</td>
+</tr>
+<tr>
+<td>8080</td>
+<td>Proxy servers</td>
+<td>Use 8765</td>
+</tr>
+<tr>
+<td>7474</td>
+<td>Other Neo4j instances</td>
+<td>Stop conflicting instance</td>
+</tr>
+</tbody>
+</table>
+<h2 id="health-check-commands">Health Check Commands</h2>
+<div class="highlight"><pre><span></span><code><span class="c1"># Capture Server</span>
+curl<span class="w"> </span>http://localhost:8765/health
+
+<span class="c1"># PostgreSQL</span>
+pg_isready<span class="w"> </span>-h<span class="w"> </span>localhost<span class="w"> </span>-p<span class="w"> </span><span class="m">5433</span>
+
+<span class="c1"># Neo4j</span>
+curl<span class="w"> </span>http://localhost:7474
+
+<span class="c1"># Ollama</span>
+curl<span class="w"> </span>http://localhost:11434/api/tags
+</code></pre></div>
+<h2 id="authentication-configuration">🔐 Authentication Configuration</h2>
+<h3 id="overview">Overview</h3>
+<p>The Omega_KG system uses a <strong>two-stage authentication</strong> flow for the Chrome extension:</p>
+<ol>
+<li><strong>Stage 1</strong>: Static API Key (Bootstrap) → Get JWT Token</li>
+<li><strong>Stage 2</strong>: JWT Token (Bearer) → Access Protected Endpoints</li>
+</ol>
+<h3 id="configuration-steps">Configuration Steps</h3>
+<h4 id="1-generate-secure-keys">1. Generate Secure Keys</h4>
+<div class="highlight"><pre><span></span><code><span class="c"># Generate Extension API Key</span>
+<span class="n">python</span> <span class="n">-c</span> <span class="s2">&quot;import secrets; print(&#39;EXTENSION_API_KEY=&#39; + secrets.token_urlsafe(32))&quot;</span>
+
+<span class="c"># Generate JWT Secret Key</span>
+<span class="n">python</span> <span class="n">-c</span> <span class="s2">&quot;import secrets; print(&#39;JWT_SECRET_KEY=&#39; + secrets.token_urlsafe(32))&quot;</span>
+</code></pre></div>
+<h4 id="2-update-env-file">2. Update .env File</h4>
+<div class="highlight"><pre><span></span><code><span class="c1"># Required for authentication</span>
+<span class="nv">EXTENSION_API_KEY</span><span class="o">=</span>&lt;generated_api_key&gt;
+<span class="nv">JWT_SECRET_KEY</span><span class="o">=</span>&lt;generated_jwt_secret&gt;
+<span class="nv">JWT_EXPIRATION_MINUTES</span><span class="o">=</span><span class="m">1440</span>
+
+<span class="c1"># Required for CORS (find at chrome://extensions)</span>
+<span class="nv">CHROME_EXTENSION_ID</span><span class="o">=</span>&lt;your_extension_id&gt;
+</code></pre></div>
+<h4 id="3-configure-chrome-extension">3. Configure Chrome Extension</h4>
+<ol>
+<li>Open <code>chrome://extensions</code> (enable Developer mode)</li>
+<li>Note your extension ID</li>
+<li>Click "Extension options" on Omega_KG</li>
+<li>Enter:</li>
+<li><strong>Server URL</strong>: <code>http://localhost:8765</code></li>
+<li><strong>API Key</strong>: Same value as <code>EXTENSION_API_KEY</code> from <code>.env</code></li>
+<li>Save configuration</li>
+</ol>
+<h3 id="authentication-flow-diagram">Authentication Flow Diagram</h3>
+<div class="highlight"><pre><span></span><code>┌─────────────────┐                     ┌──────────────────┐
+│ Chrome Extension│                     │ Capture Server   │
+└────────┬────────┘                     └────────┬─────────┘
+         │                                       │
+         │  POST /auth/token                     │
+         │  Header: X-API-Key: &lt;static_key&gt;     │
+         ├──────────────────────────────────────&gt;│
+         │                                       │
+         │                    Validate API Key   │
+         │                    Generate JWT Token │
+         │                                       │
+         │  Response: {&quot;access_token&quot;: &quot;eyJ...&quot;} │
+         │&lt;──────────────────────────────────────┤
+         │                                       │
+         │  POST /capture                        │
+         │  Header: Authorization: Bearer &lt;jwt&gt;  │
+         ├──────────────────────────────────────&gt;│
+         │                                       │
+         │                    Validate JWT       │
+         │                    Process Request    │
+         │                                       │
+         │  Response: {&quot;status&quot;: &quot;success&quot;}      │
+         │&lt;──────────────────────────────────────┤
+</code></pre></div>
+<h3 id="testing-authentication">Testing Authentication</h3>
+<div class="highlight"><pre><span></span><code><span class="c"># Test API key → JWT exchange</span>
+<span class="nv">$apiKey</span> <span class="p">=</span> <span class="s2">&quot;your_api_key_from_env&quot;</span>
+<span class="nv">$response</span> <span class="p">=</span> <span class="nb">Invoke-RestMethod</span> <span class="n">-Uri</span> <span class="s2">&quot;http://localhost:8765/auth/token&quot;</span> <span class="p">`</span>
+    <span class="n">-Method</span> <span class="n">POST</span> <span class="n">-Headers</span> <span class="p">@{</span><span class="s2">&quot;X-API-Key&quot;</span><span class="p">=</span><span class="nv">$apiKey</span><span class="p">}</span>
+
+<span class="nb">Write-Host</span> <span class="s2">&quot;Token: </span><span class="p">$(</span><span class="nv">$response</span><span class="p">.</span><span class="n">access_token</span><span class="p">)</span><span class="s2">&quot;</span>
+
+<span class="c"># Test protected endpoint</span>
+<span class="nv">$headers</span> <span class="p">=</span> <span class="p">@{</span>
+    <span class="s2">&quot;Authorization&quot;</span> <span class="p">=</span> <span class="s2">&quot;Bearer </span><span class="p">$(</span><span class="nv">$response</span><span class="p">.</span><span class="n">access_token</span><span class="p">)</span><span class="s2">&quot;</span>
+    <span class="s2">&quot;Content-Type&quot;</span> <span class="p">=</span> <span class="s2">&quot;application/json&quot;</span>
+<span class="p">}</span>
+
+<span class="nb">Invoke-RestMethod</span> <span class="n">-Uri</span> <span class="s2">&quot;http://localhost:8765/capture&quot;</span> <span class="p">`</span>
+    <span class="n">-Method</span> <span class="n">POST</span> <span class="n">-Headers</span> <span class="nv">$headers</span> <span class="n">-Body</span> <span class="s1">&#39;{&quot;platform&quot;:&quot;test&quot;,&quot;url&quot;:&quot;https://example.com&quot;,&quot;messages&quot;:[]}&#39;</span>
+</code></pre></div>
+<h3 id="common-authentication-issues">Common Authentication Issues</h3>
+<table>
+<thead>
+<tr>
+<th>Issue</th>
+<th>Cause</th>
+<th>Solution</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>401 Unauthorized</td>
+<td>API key mismatch</td>
+<td>Verify <code>.env</code> and extension options match</td>
+</tr>
+<tr>
+<td>403 Forbidden</td>
+<td>Invalid/expired JWT</td>
+<td>Get new token via <code>/auth/token</code></td>
+</tr>
+<tr>
+<td>CORS error</td>
+<td>Extension ID mismatch</td>
+<td>Update <code>CHROME_EXTENSION_ID</code> in <code>.env</code></td>
+</tr>
+<tr>
+<td>Connection refused</td>
+<td>Server not running</td>
+<td>Run <code>.\start-capture-server-window.ps1</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="port-alignment-checklist">Port Alignment Checklist</h3>
+<p><strong>CRITICAL</strong>: Ensure these match across all components:</p>
+<ul class="task-list">
+<li class="task-list-item"><input type="checkbox" disabled/> <code>.env</code>: <code>APP_PORT=8765</code></li>
+<li class="task-list-item"><input type="checkbox" disabled/> <code>chrome-extension/config.js</code>: <code>SERVER_URL: 'http://localhost:8765'</code></li>
+<li class="task-list-item"><input type="checkbox" disabled/> Extension options: Server URL set to <code>http://localhost:8765</code></li>
+<li class="task-list-item"><input type="checkbox" disabled/> Firewall: Port 8765 allowed for localhost</li>
+</ul>
+<h2 id="environment-specific-notes">Environment-Specific Notes</h2>
+<h3 id="production-omega_kg_stable">Production (Omega_KG_stable)</h3>
+<ul>
+<li>All services run on standard ports</li>
+<li>Capture server on 8765</li>
+<li>PostgreSQL on 5433</li>
+<li>Neo4j on 7687/7474</li>
+<li><strong>Authentication</strong>: Use Bitwarden (<code>BWS_ACCESS_TOKEN</code>) for zero-trust secret management</li>
+</ul>
+<h3 id="development-omega_kg_dev">Development (Omega_KG_dev)</h3>
+<ul>
+<li>Same port configuration as production</li>
+<li>Can run simultaneously if on different machines</li>
+<li>Use Docker network isolation if needed</li>
+<li><strong>Authentication</strong>: Can use plain-text <code>.env</code> values (not recommended for production)</li>
+</ul>
+<h2 id="version-history">Version History</h2>
+<table>
+<thead>
+<tr>
+<th>Date</th>
+<th>Change</th>
+<th>Author</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2025-12-16</td>
+<td>Added authentication documentation</td>
+<td>GitHub Copilot</td>
+</tr>
+</tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/your-org/omega-kg" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "search.suggest", "search.highlight", "content.code.annotate"], "search": "../assets/javascripts/workers/search.7a47a382.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.e71a0d61.min.js"></script>
+      
+    
+  </body>
+</html>

@@ -1,0 +1,1028 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.0">
+    
+    
+      
+        <title>Zero Trust Security - Quick Reference - Omega_KG Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.618322db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#zero-trust-security-quick-reference" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Omega_KG Documentation" class="md-header__button md-logo" aria-label="Omega_KG Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Omega_KG Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Zero Trust Security - Quick Reference
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/your-org/omega-kg" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    your-org/omega-kg
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../reference/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  API Reference
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Omega_KG Documentation" class="md-nav__button md-logo" aria-label="Omega_KG Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Omega_KG Documentation
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/your-org/omega-kg" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    your-org/omega-kg
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#status-summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-two-bitwarden-projects" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Two Bitwarden Projects
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The Two Bitwarden Projects">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-dev-project-active-now" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. DEV Project (Active Now)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-prdstable-project-ready-to-activate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. PRD/Stable Project (Ready to Activate)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-it-works" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How It Works
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="How It Works">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#dev-currently-active" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dev (Currently Active)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#stable-when-ready" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Stable (When Ready)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#security-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Security Architecture
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#key-differences-between-dev-stable" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key Differences Between Dev &amp; Stable
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#fallback-configuration-safety-net" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fallback Configuration (Safety Net)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#secret-fetching-details" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Secret Fetching Details
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Secret Fetching Details">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#dev-environment-8-secrets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dev Environment - 8 Secrets
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#stableprd-environment-10-secrets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Stable/PRD Environment - 10 Secrets
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#enabling-stables-zero-trust" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Enabling Stable's Zero Trust
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Enabling Stable&#39;s Zero Trust">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#when-you-have-the-prd-machine-account-token" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When You Have the PRD Machine Account Token:
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#zero-trust-benefits-in-practice" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Zero Trust Benefits in Practice
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#code-implementation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Code Implementation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Code Implementation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#location-omega_kgsettingspy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Location: omega_kg/settings.py
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#verification-checklist" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verification Checklist
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Next Steps
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Next Steps">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#immediate-already-done" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Immediate (Already Done)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#when-ready" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When Ready
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#optional-recommended" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Optional (Recommended)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#security-posture-excellent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Security Posture: EXCELLENT ✅
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="zero-trust-security-quick-reference">Zero Trust Security - Quick Reference</h1>
+<h2 id="status-summary">Status Summary</h2>
+<p>✅ <strong>Zero Trust Configuration</strong>: FULLY OPERATIONAL (Dev) &amp; READY (Stable)
+✅ <strong>Bitwarden Secret Manager</strong>: ACTIVE (Dev) &amp; Configured (Stable)
+✅ <strong>Separate Project UUIDs</strong>: DEV &amp; PRD (Production) - Completely Isolated
+✅ <strong>Hybrid Security Mode</strong>: Active with fallback safety net</p>
+<hr />
+<h2 id="the-two-bitwarden-projects">The Two Bitwarden Projects</h2>
+<h3 id="1-dev-project-active-now">1. DEV Project (Active Now)</h3>
+<ul>
+<li><strong>Token Status</strong>: ✅ Machine account token present in dev .env</li>
+<li><strong>Secrets UUIDs</strong>: 8 separate secret IDs (no <em>PRD</em> suffix)</li>
+<li><strong>Configuration</strong>: <code>BWS_ACCESS_TOKEN=0.6a85fd67-...</code> (ACTIVE)</li>
+<li><strong>Current State</strong>: Bitwarden fetching secrets at runtime</li>
+<li><strong>Examples</strong>:</li>
+<li>LINEAR_WEBHOOK_SECRET_ID (dev)</li>
+<li>POSTGRES_PASSWORD_ID (dev)</li>
+<li>NEO4J_PASSWORD_ID (dev)</li>
+</ul>
+<h3 id="2-prdstable-project-ready-to-activate">2. PRD/Stable Project (Ready to Activate)</h3>
+<ul>
+<li><strong>Token Status</strong>: ⏸️ Placeholder in stable .env (needs real token)</li>
+<li><strong>Secrets UUIDs</strong>: 10 separate secret IDs (<em>PRD</em> suffix)</li>
+<li><strong>Project Name</strong>: ApexSigma_Secret_Manager_PRD</li>
+<li><strong>Configuration</strong>: <code>BWS_ACCESS_TOKEN= &lt;place_your_machine_account_token_here&gt;</code></li>
+<li><strong>Current State</strong>: Ready; awaiting machine account token</li>
+<li><strong>Examples</strong>:</li>
+<li>LINEAR_WEBHOOK_SECRET_PRD_ID (production)</li>
+<li>POSTGRES_PASSWORD_PRD_ID (production)</li>
+<li>NEO4J_PASSWORD_PRD_ID (production)</li>
+</ul>
+<hr />
+<h2 id="how-it-works">How It Works</h2>
+<h3 id="dev-currently-active">Dev (Currently Active)</h3>
+<div class="highlight"><pre><span></span><code>1. App starts → Reads dev .env
+2. Finds BWS_ACCESS_TOKEN ✅
+3. Authenticates with Bitwarden SDK
+4. Fetches secrets from DEV project by UUID
+5. Injects secrets into Settings class
+6. App runs with Bitwarden-managed secrets
+</code></pre></div>
+<h3 id="stable-when-ready">Stable (When Ready)</h3>
+<div class="highlight"><pre><span></span><code>1. Add machine account token to stable .env
+2. Restart stable server
+3. App authenticates with Bitwarden SDK
+4. Fetches secrets from PRD project by UUID
+5. Injects secrets into Settings class
+6. App runs with production-managed secrets
+</code></pre></div>
+<hr />
+<h2 id="security-architecture">Security Architecture</h2>
+<div class="highlight"><pre><span></span><code>┌──────────────────────────────────────────┐
+│  PYDANTIC SETTINGS SOURCE PRIORITY       │
+├──────────────────────────────────────────┤
+│  1. Init Settings                        │
+│  2. BitwardenSettingsSource ✅ PRIMARY   │
+│     ├─ Checks for BWS_ACCESS_TOKEN      │
+│     ├─ Fetches secrets from Bitwarden   │
+│     └─ Returns dict of fetched secrets  │
+│  3. Env Settings                         │
+│  4. Dotenv Settings (fallback)           │
+└──────────────────────────────────────────┘
+</code></pre></div>
+<p><strong>Result</strong>: Bitwarden secrets have highest priority; .env is only used if token missing.</p>
+<hr />
+<h2 id="key-differences-between-dev-stable">Key Differences Between Dev &amp; Stable</h2>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Dev</th>
+<th>Stable</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>BWS Token</strong></td>
+<td>✅ Active</td>
+<td>⏸️ Awaiting</td>
+</tr>
+<tr>
+<td><strong>Status</strong></td>
+<td>✅ Fetching</td>
+<td>⏸️ Ready</td>
+</tr>
+<tr>
+<td><strong>Project</strong></td>
+<td>DEV secrets</td>
+<td>PRD secrets</td>
+</tr>
+<tr>
+<td><strong>UUID Pattern</strong></td>
+<td>No suffix</td>
+<td><em>PRD</em> suffix</td>
+</tr>
+<tr>
+<td><strong># of Secrets</strong></td>
+<td>8 mapped</td>
+<td>10 mapped</td>
+</tr>
+<tr>
+<td><strong>Operational</strong></td>
+<td>YES</td>
+<td>Ready</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="fallback-configuration-safety-net">Fallback Configuration (Safety Net)</h2>
+<p>If BWS_ACCESS_TOKEN missing or Bitwarden unavailable:</p>
+<p><strong>Dev</strong>: Uses <code>LINEAR_WEBHOOK_SECRET=dev_webhook_secret_12345</code> (non-prod)
+<strong>Stable</strong>: Falls back to .env placeholder values (template only)</p>
+<p>✅ <strong>Benefit</strong>: App never crashes; always has fallback values
+⚠️ <strong>Note</strong>: Fallback values are non-production only</p>
+<hr />
+<h2 id="secret-fetching-details">Secret Fetching Details</h2>
+<h3 id="dev-environment-8-secrets">Dev Environment - 8 Secrets</h3>
+<ol>
+<li>linear_webhook_secret ← LINEAR_WEBHOOK_SECRET_ID</li>
+<li>postgres_password ← POSTGRES_PASSWORD_ID</li>
+<li>neo4j_password ← NEO4J_PASSWORD_ID</li>
+<li>linear_api_key ← LINEAR_API_KEY_ID</li>
+<li>perplexity_api_key ← PERPLEXITY_API_KEY_ID</li>
+<li>gemini_api_key ← GEMINI_API_KEY_ID</li>
+<li>extension_api_key ← EXTENSION_API_KEY_ID</li>
+<li>jwt_secret_key ← JWT_SECRET_KEY_ID</li>
+</ol>
+<h3 id="stableprd-environment-10-secrets">Stable/PRD Environment - 10 Secrets</h3>
+<ol>
+<li>linear_webhook_secret ← LINEAR_WEBHOOK_SECRET_PRD_ID</li>
+<li>postgres_password ← POSTGRES_PASSWORD_PRD_ID</li>
+<li>neo4j_password ← NEO4J_PASSWORD_PRD_ID</li>
+<li>linear_api_key ← LINEAR_API_KEY_PRD_ID</li>
+<li>perplexity_api_key ← PERPLEXITY_API_KEY_PRD_ID</li>
+<li>gemini_api_key ← GEMINI_API_KEY_PRD_ID</li>
+<li>extension_api_key ← EXTENSION_API_KEY_PRD_ID</li>
+<li>jwt_secret_key ← JWT_SECRET_KEY_ID</li>
+<li>nanogpt_api_key ← NANOGPT_OMEGAKG_API_KEY</li>
+<li>ollama_api_key ← OLLAMA_OKG_API_KEY_PRD_ID</li>
+</ol>
+<hr />
+<h2 id="enabling-stables-zero-trust">Enabling Stable's Zero Trust</h2>
+<h3 id="when-you-have-the-prd-machine-account-token">When You Have the PRD Machine Account Token:</h3>
+<ol>
+<li>
+<p><strong>Update stable/.env</strong>:
+   <div class="highlight"><pre><span></span><code><span class="c1"># Change from:</span>
+<span class="na">BWS_ACCESS_TOKEN</span><span class="o">=</span><span class="w"> </span><span class="s">&lt;place_your_machine_account_token_here&gt;</span>
+
+<span class="c1"># To:</span>
+<span class="na">BWS_ACCESS_TOKEN</span><span class="o">=</span><span class="s">&lt;actual_token_from_bitwarden&gt;</span>
+</code></pre></div></p>
+</li>
+<li>
+<p><strong>Restart stable server</strong>:
+   <div class="highlight"><pre><span></span><code><span class="n">omega-stable</span>
+<span class="n">omega-stop</span>
+<span class="n">omega-start-term</span>  <span class="c"># Restarts with token</span>
+</code></pre></div></p>
+</li>
+<li>
+<p><strong>Verify activation</strong>:
+   <div class="highlight"><pre><span></span><code><span class="c"># Watch logs for successful Bitwarden authentication</span>
+<span class="n">omega-status</span>
+</code></pre></div></p>
+</li>
+</ol>
+<hr />
+<h2 id="zero-trust-benefits-in-practice">Zero Trust Benefits in Practice</h2>
+<table>
+<thead>
+<tr>
+<th>Benefit</th>
+<th>How It Works</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>No Plaintext Secrets</strong></td>
+<td>Fetched only at runtime from Bitwarden</td>
+</tr>
+<tr>
+<td><strong>Secret Rotation</strong></td>
+<td>Update in Bitwarden → next app restart picks up new value</td>
+</tr>
+<tr>
+<td><strong>Separate Projects</strong></td>
+<td>Dev can't access production secrets (impossible by design)</td>
+</tr>
+<tr>
+<td><strong>Audit Trail</strong></td>
+<td>Bitwarden logs who accessed what secrets and when</td>
+</tr>
+<tr>
+<td><strong>Rapid Deployment</strong></td>
+<td>No need to rebuild Docker images for secret changes</td>
+</tr>
+<tr>
+<td><strong>Environment Safety</strong></td>
+<td>Machine accounts tied to specific projects (least privilege)</td>
+</tr>
+<tr>
+<td><strong>Defense in Depth</strong></td>
+<td>Multiple layers: token auth, UUID mapping, SDK validation</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="code-implementation">Code Implementation</h2>
+<h3 id="location-omega_kgsettingspy">Location: <code>omega_kg/settings.py</code></h3>
+<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">BitwardenSettingsSource</span><span class="p">(</span><span class="n">PydanticBaseSettingsSource</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+        <span class="c1"># 1. Check if BWS_ACCESS_TOKEN is set</span>
+        <span class="n">bws_token</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;BWS_ACCESS_TOKEN&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">bws_token</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{}</span>  <span class="c1"># Skip to next source (env_settings, dotenv)</span>
+
+        <span class="c1"># 2. Authenticate and fetch secrets</span>
+        <span class="n">client</span> <span class="o">=</span> <span class="n">BitwardenClient</span><span class="p">(</span><span class="n">device_type</span><span class="o">=</span><span class="n">DeviceType</span><span class="o">.</span><span class="n">SDK</span><span class="p">)</span>
+        <span class="n">client</span><span class="o">.</span><span class="n">auth</span><span class="o">.</span><span class="n">login_access_token</span><span class="p">(</span><span class="n">bws_token</span><span class="p">)</span>
+
+        <span class="c1"># 3. Map config keys to Bitwarden UUIDs</span>
+        <span class="n">secret_mappings</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;postgres_password&quot;</span><span class="p">:</span> <span class="s2">&quot;POSTGRES_PASSWORD_PRD_ID&quot;</span><span class="p">,</span>
+            <span class="c1"># ... more mappings</span>
+        <span class="p">}</span>
+
+        <span class="c1"># 4. Fetch each secret</span>
+        <span class="k">for</span> <span class="n">config_key</span><span class="p">,</span> <span class="n">uuid_env_var</span> <span class="ow">in</span> <span class="n">secret_mappings</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">uuid</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="n">uuid_env_var</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">uuid</span><span class="p">:</span>
+                <span class="n">secret</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">secrets</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">uuid</span><span class="o">.</span><span class="n">UUID</span><span class="p">(</span><span class="n">uuid</span><span class="p">))</span>
+                <span class="n">fetched_secrets</span><span class="p">[</span><span class="n">config_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">secret</span><span class="o">.</span><span class="n">value</span>
+
+        <span class="k">return</span> <span class="n">fetched_secrets</span>
+
+<span class="c1"># Settings class injects BitwardenSettingsSource with highest priority</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Settings</span><span class="p">(</span><span class="n">BaseSettings</span><span class="p">):</span>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">settings_customise_sources</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">...</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="n">init_settings</span><span class="p">,</span>
+            <span class="n">BitwardenSettingsSource</span><span class="p">(</span><span class="n">settings_cls</span><span class="p">),</span>  <span class="c1"># ← PRIMARY</span>
+            <span class="n">env_settings</span><span class="p">,</span>
+            <span class="n">dotenv_settings</span><span class="p">,</span>
+        <span class="p">)</span>
+</code></pre></div>
+<hr />
+<h2 id="verification-checklist">Verification Checklist</h2>
+<p>✅ Dev .env has active BWS_ACCESS_TOKEN
+✅ Dev has 8 secret UUIDs mapped
+✅ Stable .env has placeholder BWS_ACCESS_TOKEN
+✅ Stable has 10 secret UUIDs mapped
+✅ Both use separate Bitwarden projects (DEV vs PRD)
+✅ BitwardenSettingsSource implemented in settings.py
+✅ Hybrid mode (Bitwarden primary, .env fallback)
+✅ No plaintext secrets in git-committed code
+✅ Fallback values are non-production only
+✅ Settings source priority correctly ordered</p>
+<hr />
+<h2 id="next-steps">Next Steps</h2>
+<h3 id="immediate-already-done">Immediate (Already Done)</h3>
+<p>✅ Dev zero trust active and operational
+✅ Stable zero trust configured and ready
+✅ Both use separate Bitwarden project UUIDs
+✅ Hybrid security mode implemented</p>
+<h3 id="when-ready">When Ready</h3>
+<p>⏸️ Obtain machine account token for Stable PRD project
+⏸️ Add token to stable/.env BWS_ACCESS_TOKEN
+⏸️ Restart stable server to activate</p>
+<h3 id="optional-recommended">Optional (Recommended)</h3>
+<ul>
+<li>📋 Document machine account token management</li>
+<li>📋 Set up secret rotation schedule</li>
+<li>📋 Train team on zero trust operations</li>
+</ul>
+<hr />
+<h2 id="security-posture-excellent">Security Posture: EXCELLENT ✅</h2>
+<p>Both environments implement zero trust with Bitwarden Secret Manager:
+- No plaintext secrets in code
+- Environment-specific secret isolation
+- Audit trail for compliance
+- Rapid secret rotation capability
+- Hybrid fallback for reliability</p>
+<p><strong>Status</strong>: Production-ready for secure operations.</p>
+<hr />
+<p><strong>Last Verified</strong>: 2025-11-30 19:18:54 UTC</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/your-org/omega-kg" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "search.suggest", "search.highlight", "content.code.annotate"], "search": "../../assets/javascripts/workers/search.7a47a382.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.e71a0d61.min.js"></script>
+      
+    
+  </body>
+</html>

@@ -1,0 +1,1089 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.0">
+    
+    
+      
+        <title>Code Coverage Guide - Omega_KG Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.618322db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#code-coverage-guide" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Omega_KG Documentation" class="md-header__button md-logo" aria-label="Omega_KG Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Omega_KG Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Code Coverage Guide
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/your-org/omega-kg" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    your-org/omega-kg
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../reference/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  API Reference
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Omega_KG Documentation" class="md-nav__button md-logo" aria-label="Omega_KG Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Omega_KG Documentation
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/your-org/omega-kg" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    your-org/omega-kg
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#quick-start" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick Start
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Quick Start">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#run-all-tests-with-coverage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Run All Tests with Coverage
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#coverage-thresholds" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Coverage Thresholds
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#view-html-report" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        View HTML Report
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#coverage-reports" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Coverage Reports
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Coverage Reports">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-terminal-report" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Terminal Report
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-html-report" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. HTML Report
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-xml-report" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. XML Report
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#coverage-commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Coverage Commands
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Coverage Commands">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#using-pytest-directly" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Using pytest Directly
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#using-helper-script" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Using Helper Script
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#coverage-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Coverage Configuration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Coverage Configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#run-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Run Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#report-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Report Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#coverage-best-practices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Coverage Best Practices
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Coverage Best Practices">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-write-tests-for-new-features" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Write Tests for New Features
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-use-pytestmarkskip-for-code-you-dont-want-to-cover" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Use @pytest.mark.skip for Code You Don't Want to Cover
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-check-coverage-before-committing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Check Coverage Before Committing
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-focus-on-critical-paths" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Focus on Critical Paths
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-review-html-report" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Review HTML Report
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#branch-coverage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Branch Coverage
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#integration-with-cicd" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Integration with CI/CD
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#common-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Common Issues
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Common Issues">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-coverage-below-threshold" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. "Coverage below threshold"
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-failed-to-generate-html-report" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. "Failed to generate HTML report"
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-tests-take-too-long-with-coverage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. "Tests take too long with coverage"
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#excluding-code-from-coverage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Excluding Code from Coverage
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Excluding Code from Coverage">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#method-1-pragma-no-cover-comment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Method 1: pragma: no cover comment
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#method-2-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Method 2: Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#method-3-skip-or-xfail-markers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Method 3: @skip or @xfail markers
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#coverage-goals" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Coverage Goals
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#useful-commands-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Useful Commands Reference
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#resources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Resources
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="code-coverage-guide">Code Coverage Guide</h1>
+<p>This document explains how to use code coverage in the Omega_KG project.</p>
+<h2 id="overview">Overview</h2>
+<p>Code coverage helps us understand how much of our codebase is tested. The project uses <strong>pytest-cov</strong> for coverage reporting with multiple output formats.</p>
+<h2 id="quick-start">Quick Start</h2>
+<h3 id="run-all-tests-with-coverage">Run All Tests with Coverage</h3>
+<div class="highlight"><pre><span></span><code>poetry<span class="w"> </span>run<span class="w"> </span>pytest
+</code></pre></div>
+<p>This will automatically generate:
+- Terminal report showing uncovered lines
+- HTML report at <code>htmlcov/index.html</code>
+- XML report at <code>coverage.xml</code> (for CI/CD)</p>
+<h3 id="coverage-thresholds">Coverage Thresholds</h3>
+<p>The project is configured with a <strong>70% minimum coverage threshold</strong>. Tests will fail if coverage falls below this threshold.</p>
+<h3 id="view-html-report">View HTML Report</h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># Using the helper script</span>
+python<span class="w"> </span>scripts/coverage-report.py<span class="w"> </span>view
+
+<span class="c1"># Or manually</span>
+open<span class="w"> </span>htmlcov/index.html<span class="w">  </span><span class="c1"># macOS</span>
+xdg-open<span class="w"> </span>htmlcov/index.html<span class="w">  </span><span class="c1"># Linux</span>
+start<span class="w"> </span>htmlcov/index.html<span class="w">  </span><span class="c1"># Windows</span>
+</code></pre></div>
+<h2 id="coverage-reports">Coverage Reports</h2>
+<h3 id="1-terminal-report">1. Terminal Report</h3>
+<p>Shows coverage percentage and lists uncovered lines:</p>
+<div class="highlight"><pre><span></span><code>---------- coverage: platform win32, python 3.12.x.x ----------
+Name                           Stmts   Miss  Cover   Missing
+--------------------------------------------------------------
+omega_kg/__init__.py             12      0   100%
+omega_kg/auth_utils.py          143     12    92%   45, 67, 89-90, 102, 134, 147, 156, 174, 189
+...
+--------------------------------------------------------------
+TOTAL                           3421    287    92%
+</code></pre></div>
+<h3 id="2-html-report">2. HTML Report</h3>
+<p>Interactive report showing:
+- Coverage percentage per file
+- Highlighted source code with uncovered lines in red
+- Clickable file tree navigation</p>
+<p>View: <code>htmlcov/index.html</code></p>
+<h3 id="3-xml-report">3. XML Report</h3>
+<p>Machine-readable format for CI/CD:
+- Location: <code>coverage.xml</code>
+- Used by GitHub Actions, Jenkins, SonarQube, etc.</p>
+<h2 id="coverage-commands">Coverage Commands</h2>
+<h3 id="using-pytest-directly">Using pytest Directly</h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># Full coverage with all reports</span>
+poetry<span class="w"> </span>run<span class="w"> </span>pytest<span class="w"> </span>--cov<span class="o">=</span>omega_kg<span class="w"> </span>--cov-report<span class="o">=</span>term-missing<span class="w"> </span>--cov-report<span class="o">=</span>html
+
+<span class="c1"># Quick check (unit tests only, no integration tests)</span>
+poetry<span class="w"> </span>run<span class="w"> </span>pytest<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;not requires_neo4j&quot;</span><span class="w"> </span>--cov<span class="o">=</span>omega_kg<span class="w"> </span>--cov-report<span class="o">=</span>term
+
+<span class="c1"># Coverage check only (fail if below threshold)</span>
+poetry<span class="w"> </span>run<span class="w"> </span>pytest<span class="w"> </span>--cov<span class="o">=</span>omega_kg<span class="w"> </span>--cov-fail-under<span class="o">=</span><span class="m">70</span>
+
+<span class="c1"># Coverage with specific output formats</span>
+poetry<span class="w"> </span>run<span class="w"> </span>pytest<span class="w"> </span>--cov<span class="o">=</span>omega_kg<span class="w"> </span>--cov-report<span class="o">=</span>json:coverage.json
+poetry<span class="w"> </span>run<span class="w"> </span>pytest<span class="w"> </span>--cov<span class="o">=</span>omega_kg<span class="w"> </span>--cov-report<span class="o">=</span>xml:custom-coverage.xml
+</code></pre></div>
+<h3 id="using-helper-script">Using Helper Script</h3>
+<p>We've created a convenient helper script:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Quick coverage (unit tests only)</span>
+python<span class="w"> </span>scripts/coverage-report.py<span class="w"> </span>quick
+
+<span class="c1"># Full coverage with HTML report</span>
+python<span class="w"> </span>scripts/coverage-report.py<span class="w"> </span>full
+
+<span class="c1"># View HTML report in browser</span>
+python<span class="w"> </span>scripts/coverage-report.py<span class="w"> </span>view
+
+<span class="c1"># Compare with baseline</span>
+python<span class="w"> </span>scripts/coverage-report.py<span class="w"> </span>compare
+
+<span class="c1"># Minimal check (just threshold validation)</span>
+python<span class="w"> </span>scripts/coverage-report.py<span class="w"> </span>minimal
+</code></pre></div>
+<h2 id="coverage-configuration">Coverage Configuration</h2>
+<p>Coverage settings are in <code>pyproject.toml</code>:</p>
+<h3 id="run-configuration">Run Configuration</h3>
+<div class="highlight"><pre><span></span><code><span class="k">[tool.coverage.run]</span>
+<span class="n">source</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;omega_kg&quot;</span><span class="p">]</span><span class="w">      </span><span class="c1"># Source code to measure</span>
+<span class="n">branch</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span><span class="w">               </span><span class="c1"># Enable branch coverage</span>
+<span class="n">omit</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="s2">&quot;*/tests/*&quot;</span><span class="p">,</span><span class="w">            </span><span class="c1"># Exclude test files</span>
+<span class="w">    </span><span class="s2">&quot;*/__pycache__/*&quot;</span><span class="p">,</span><span class="w">      </span><span class="c1"># Exclude cache files</span>
+<span class="w">    </span><span class="s2">&quot;*/alembic/*&quot;</span><span class="p">,</span><span class="w">          </span><span class="c1"># Exclude migrations</span>
+<span class="p">]</span>
+</code></pre></div>
+<h3 id="report-configuration">Report Configuration</h3>
+<div class="highlight"><pre><span></span><code><span class="k">[tool.coverage.report]</span>
+<span class="n">exclude_lines</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="s2">&quot;pragma: no cover&quot;</span><span class="p">,</span><span class="w">      </span><span class="c1"># Skip @pytest.mark.skip</span>
+<span class="w">    </span><span class="s2">&quot;raise NotImplementedError&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;if __name__ == .__main__.:&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;if TYPE_CHECKING:&quot;</span><span class="p">,</span>
+<span class="p">]</span>
+<span class="n">precision</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span><span class="w">               </span><span class="c1"># Decimal places</span>
+<span class="n">show_missing</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span><span class="w">         </span><span class="c1"># Show uncovered lines</span>
+<span class="n">skip_covered</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span><span class="w">        </span><span class="c1"># Don&#39;t skip files with 100% coverage</span>
+<span class="n">fail_under</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">70</span><span class="w">             </span><span class="c1"># Fail if below 70%</span>
+</code></pre></div>
+<h2 id="coverage-best-practices">Coverage Best Practices</h2>
+<h3 id="1-write-tests-for-new-features">1. Write Tests for New Features</h3>
+<p>When adding new code, write tests simultaneously:</p>
+<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">test_new_feature</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Test the new feature.&quot;&quot;&quot;</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">my_new_function</span><span class="p">()</span>
+    <span class="k">assert</span> <span class="n">result</span> <span class="o">==</span> <span class="n">expected</span>
+</code></pre></div>
+<h3 id="2-use-pytestmarkskip-for-code-you-dont-want-to-cover">2. Use <code>@pytest.mark.skip</code> for Code You Don't Want to Cover</h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># Example: Experimental code</span>
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">skip</span><span class="p">(</span><span class="n">reason</span><span class="o">=</span><span class="s2">&quot;Experimental feature&quot;</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_experimental</span><span class="p">():</span>
+    <span class="k">pass</span>
+
+<span class="c1"># Or in production code:</span>
+<span class="k">if</span> <span class="n">TYPE_CHECKING</span><span class="p">:</span>
+    <span class="c1"># This is excluded automatically</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span>
+</code></pre></div>
+<h3 id="3-check-coverage-before-committing">3. Check Coverage Before Committing</h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># Run quick coverage check</span>
+python<span class="w"> </span>scripts/coverage-report.py<span class="w"> </span>quick
+
+<span class="c1"># If below threshold, run full report to see what&#39;s missing</span>
+python<span class="w"> </span>scripts/coverage-report.py<span class="w"> </span>full
+</code></pre></div>
+<h3 id="4-focus-on-critical-paths">4. Focus on Critical Paths</h3>
+<p>Prioritize testing:
+- User-facing features
+- Business logic
+- Error handling
+- Edge cases</p>
+<p>Less critical:
+- Private helper functions (unless complex)
+- Simple getters/setters
+- Code marked with <code>pragma: no cover</code></p>
+<h3 id="5-review-html-report">5. Review HTML Report</h3>
+<p>The HTML report is the best tool for finding gaps:</p>
+<ol>
+<li>Open <code>htmlcov/index.html</code></li>
+<li>Click on files with low coverage</li>
+<li>Red highlighting shows uncovered lines</li>
+<li>Review and write tests for missing paths</li>
+</ol>
+<h2 id="branch-coverage">Branch Coverage</h2>
+<p>The project enables <strong>branch coverage</strong>, which checks if all branches of conditional statements are tested:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Example: Both branches should be tested</span>
+<span class="k">if</span> <span class="n">user</span><span class="o">.</span><span class="n">is_admin</span><span class="p">:</span>
+    <span class="n">grant_permission</span><span class="p">()</span>  <span class="c1"># Should have test</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="n">deny_permission</span><span class="p">()</span>   <span class="c1"># Should have test</span>
+</code></pre></div>
+<h2 id="integration-with-cicd">Integration with CI/CD</h2>
+<p>The XML report can be used in CI/CD:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># GitHub Actions example</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Run tests with coverage</span>
+<span class="w">  </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">poetry run pytest --cov=omega_kg --cov-report=xml</span>
+
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Upload coverage to Codecov</span>
+<span class="w">  </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">codecov/codecov-action@v3</span>
+<span class="w">  </span><span class="nt">with</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./coverage.xml</span>
+</code></pre></div>
+<h2 id="common-issues">Common Issues</h2>
+<h3 id="1-coverage-below-threshold">1. "Coverage below threshold"</h3>
+<p><strong>Solution:</strong> Write more tests or lower the threshold (not recommended)</p>
+<div class="highlight"><pre><span></span><code><span class="k">[tool.coverage.report]</span>
+<span class="n">fail_under</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">60</span><span class="w">  </span><span class="c1"># Lower if needed</span>
+</code></pre></div>
+<h3 id="2-failed-to-generate-html-report">2. "Failed to generate HTML report"</h3>
+<p><strong>Solution:</strong> Ensure the htmlcov directory exists and is writable</p>
+<div class="highlight"><pre><span></span><code>mkdir<span class="w"> </span>-p<span class="w"> </span>htmlcov
+poetry<span class="w"> </span>run<span class="w"> </span>pytest<span class="w"> </span>--cov<span class="o">=</span>omega_kg<span class="w"> </span>--cov-report<span class="o">=</span>html
+</code></pre></div>
+<h3 id="3-tests-take-too-long-with-coverage">3. "Tests take too long with coverage"</h3>
+<p><strong>Solution:</strong> Run only unit tests</p>
+<div class="highlight"><pre><span></span><code>poetry<span class="w"> </span>run<span class="w"> </span>pytest<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;not requires_neo4j&quot;</span><span class="w"> </span>--cov<span class="o">=</span>omega_kg
+</code></pre></div>
+<h2 id="excluding-code-from-coverage">Excluding Code from Coverage</h2>
+<h3 id="method-1-pragma-no-cover-comment">Method 1: <code>pragma: no cover</code> comment</h3>
+<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">experimental_function</span><span class="p">():</span>  <span class="c1"># pragma: no cover</span>
+    <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Experimental&quot;</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="method-2-configuration">Method 2: Configuration</h3>
+<p>Add patterns to <code>[tool.coverage.run].omit</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="k">[tool.coverage.run]</span>
+<span class="n">omit</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="s2">&quot;*/migrations/*&quot;</span><span class="p">,</span><span class="w">           </span><span class="c1"># Exclude database migrations</span>
+<span class="w">    </span><span class="s2">&quot;*/deprecated/*&quot;</span><span class="p">,</span><span class="w">          </span><span class="c1"># Exclude deprecated modules</span>
+<span class="w">    </span><span class="s2">&quot;*/third_party/*&quot;</span><span class="p">,</span><span class="w">         </span><span class="c1"># Exclude third-party code</span>
+<span class="p">]</span>
+</code></pre></div>
+<h3 id="method-3-skip-or-xfail-markers">Method 3: <code>@skip</code> or <code>@xfail</code> markers</h3>
+<div class="highlight"><pre><span></span><code><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">skip</span><span class="p">(</span><span class="n">reason</span><span class="o">=</span><span class="s2">&quot;Testing framework limitation&quot;</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_skip_this</span><span class="p">():</span>
+    <span class="k">pass</span>
+
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">xfail</span><span class="p">(</span><span class="n">reason</span><span class="o">=</span><span class="s2">&quot;Known issue&quot;</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_expected_failure</span><span class="p">():</span>
+    <span class="k">pass</span>
+</code></pre></div>
+<h2 id="coverage-goals">Coverage Goals</h2>
+<p>Current project goals:</p>
+<ul>
+<li><strong>Minimum threshold:</strong> 70%</li>
+<li><strong>Target for new code:</strong> 85%</li>
+<li><strong>Critical modules:</strong> 95%+ (auth, lifecycle, sync)</li>
+</ul>
+<h2 id="useful-commands-reference">Useful Commands Reference</h2>
+<div class="highlight"><pre><span></span><code><span class="c1"># Quick check (unit tests)</span>
+poetry<span class="w"> </span>run<span class="w"> </span>pytest<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;not requires_neo4j&quot;</span><span class="w"> </span>--cov<span class="o">=</span>omega_kg
+
+<span class="c1"># Full coverage with HTML</span>
+poetry<span class="w"> </span>run<span class="w"> </span>pytest<span class="w"> </span>--cov<span class="o">=</span>omega_kg<span class="w"> </span>--cov-report<span class="o">=</span>html
+
+<span class="c1"># View specific file coverage</span>
+poetry<span class="w"> </span>run<span class="w"> </span>pytest<span class="w"> </span>--cov<span class="o">=</span>omega_kg.auth_utils<span class="w"> </span>--cov-report<span class="o">=</span>term
+
+<span class="c1"># Coverage with diff coverage (only changed lines)</span>
+poetry<span class="w"> </span>run<span class="w"> </span>pytest<span class="w"> </span>--cov<span class="o">=</span>omega_kg<span class="w"> </span>--cov-report<span class="o">=</span>term-missing<span class="w"> </span>--cov-branch
+
+<span class="c1"># Run with debug output</span>
+poetry<span class="w"> </span>run<span class="w"> </span>pytest<span class="w"> </span>--cov<span class="o">=</span>omega_kg<span class="w"> </span>--cov-report<span class="o">=</span>term<span class="w"> </span>--cov-report<span class="o">=</span>debug-out
+</code></pre></div>
+<h2 id="resources">Resources</h2>
+<ul>
+<li><a href="https://pytest-cov.readthedocs.io/">pytest-cov Documentation</a></li>
+<li><a href="https://coverage.readthedocs.io/">Coverage.py Documentation</a></li>
+<li><a href="https://realpython.com/python-testing/#coverage">Python Testing 101: Coverage</a></li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/your-org/omega-kg" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "search.suggest", "search.highlight", "content.code.annotate"], "search": "../../assets/javascripts/workers/search.7a47a382.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.e71a0d61.min.js"></script>
+      
+    
+  </body>
+</html>
