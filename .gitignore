@@ -90,3 +90,12 @@ tests/test_*.json
 .env.backup
 .env.local
 .env.*.local
+
+# IDE and tool specific directories
+.claude/
+.cursor/
+.genkit/
+.serena/
+
+# GitHub configuration (keep workflows in remote if needed)
+.github/
