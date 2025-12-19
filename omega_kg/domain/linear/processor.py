@@ -120,8 +120,11 @@ async def process_pending_events(
                 stats["skipped"] += 1
                 continue
 
+            # Validate issue as LinearIssue object BEFORE calling mapper
+            issue = LinearIssue.model_validate(payload.data)
+
             # Map to Obsidian markdown
-            file_path, markdown_content = mapper.map_issue_to_markdown(payload.data)  # type: ignore[arg-type]
+            file_path, markdown_content = mapper.map_issue_to_markdown(issue)
 
             # Ensure directory exists
             file_path.parent.mkdir(parents=True, exist_ok=True)
@@ -133,29 +136,26 @@ async def process_pending_events(
 
             # Phase 6: Sync to Graph (Topology)
             # Phase 7: Enrich with embedding for semantic search
-            if isinstance(payload.data, dict) and payload.data.get("id"):
-                try:
-                    issue = LinearIssue.model_validate(payload.data)
+            try:
+                # Phase 7: Generate embedding (non-blocking)
+                embedding = await _generate_issue_embedding(issue)
 
-                    # Phase 7: Generate embedding (non-blocking)
-                    embedding = await _generate_issue_embedding(issue)
+                # Upsert issue with optional embedding
+                await graph_writer.upsert_issue(issue, embedding=embedding)
 
-                    # Upsert issue with optional embedding
-                    await graph_writer.upsert_issue(issue, embedding=embedding)
-
-                    if embedding:
-                        logger.info(
-                            f"Synced {issue.identifier} to graph with 1024-dim embedding"
-                        )
-                    else:
-                        logger.info(
-                            f"Synced {issue.identifier} to graph (no embedding)"
-                        )
-                except Exception as graph_err:
-                    logger.warning(
-                        f"Graph sync failed for event {event.id}: {graph_err}"
+                if embedding:
+                    logger.info(
+                        f"Synced {issue.identifier} to graph with 1024-dim embedding"
                     )
-                    # Continue processing - graph sync is non-blocking
+                else:
+                    logger.info(
+                        f"Synced {issue.identifier} to graph (no embedding)"
+                    )
+            except Exception as graph_err:
+                logger.warning(
+                    f"Graph sync failed for event {event.id}: {graph_err}"
+                )
+                # Continue processing - graph sync is non-blocking
 
             # Mark as processed
             await session.execute(
