@@ -76,3 +76,17 @@ id_rsa*
 
 # Specific sensitive files
 Omega_KG_Capture.pem
+
+# Temporary development files
+.omegakg_temp/
+.omega_kg_setup_complete
+
+# Test output files
+tests/pytest_*.txt
+tests/test_*.txt
+tests/test_*.json
+
+# Environment variations (keep .env.example)
+.env.backup
+.env.local
+.env.*.local
