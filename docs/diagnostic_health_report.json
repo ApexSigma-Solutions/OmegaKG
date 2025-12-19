@@ -1,0 +1,44 @@
+{
+  "timestamp": "2025-12-19T22:37:22.000412",
+  "working_directory": "d:\\projects\\Omega_KG_stable",
+  "checks": {
+    "environment": {
+      "database_url_configured": true,
+      "obsidian_vault_configured": true,
+      "embedding_provider": "ollama",
+      "ollama_base_url": "http://localhost:11434",
+      "postgres_config": {
+        "user": "omega_user",
+        "server": "127.0.0.1",
+        "port": 5800,
+        "database": "omega_kg_stable"
+      },
+      "postgres_connection": "OK"
+    },
+    "code_structure": {
+      "processor_exists": true,
+      "mapper_exists": true,
+      "models_defined": true,
+      "embedding_service_exists": true
+    },
+    "e2e_test": {
+      "diag_events_found": 3,
+      "processed_count": 3
+    },
+    "error_handling": {
+      "total_errors": 2,
+      "unprocessed_errors": 2
+    },
+    "ollama": {
+      "status": "running",
+      "version": "0.13.1",
+      "url": "http://localhost:11434"
+    }
+  },
+  "summary": {
+    "health_score": "100/100",
+    "health_percentage": "100.0%",
+    "status": "HEALTHY"
+  },
+  "recommendations": []
+}
