@@ -881,7 +881,7 @@ class TestCaptureServerEndpoints:
         client = TestClient(app)
 
         with patch(
-            "omega_kg.capture_server.get_vector_store",
+            "omega_kg.routers.capture.get_vector_store",
             side_effect=Exception("Vector store failed"),
         ):
             response = client.get("/health/vectors")

@@ -14,17 +14,19 @@
   "Gemini": {
     "hostnames": ["gemini.google.com"],
     "messages": [
-      "message-content",
-      ".message-content",
       "[data-test-id='user-query']",
       "[data-test-id='model-response']",
-      "user-query",
-      "model-response"
+      "div[class*='message-content']",
+      "div[class*='model-response']",
+      "div[class*='user-query']",
+      ".message-content",
+      "message-content"
     ],
     "isUser": [
       "attr:data-test-id=user-query",
       "class:user-query",
-      "closest:user-query"
+      "closest:[data-test-id='user-query']",
+      "text:user"
     ],
     "getText": ["textContent"]
   },
@@ -65,10 +67,28 @@
     "isUser": ["closest:[class*='user']", "attr:data-role=user"],
     "getText": ["textContent"]
   },
-  "Mistral": {
-    "hostnames": ["mistral.ai"],
-    "messages": ["[class*='message']", "[class*='chat']"],
-    "isUser": ["closest:[class*='user']"],
+  "Mistral_LeChat": {
+    "hostnames": ["chat.mistral.ai"],
+    "messages": ["[class*='message']", "[class*='chat']", "div[class*='prose']"],
+    "isUser": ["closest:[class*='user']", "closest:[data-role='user']"],
+    "getText": ["textContent"]
+  },
+  "Grok_xAI": {
+    "hostnames": ["grok.com", "x.ai"],
+    "messages": ["[class*='message']", "[class*='response']", "div[data-testid*='message']"],
+    "isUser": ["closest:[class*='user']", "attr:data-role=user"],
+    "getText": ["textContent"]
+  },
+  "Kimi_Moonshot": {
+    "hostnames": ["kimi.moonshot.cn"],
+    "messages": ["[class*='message']", "[class*='chat-item']"],
+    "isUser": ["closest:[class*='user']", "closest:[class*='right']"],
+    "getText": ["textContent"]
+  },
+  "Zhipu_GLM": {
+    "hostnames": ["chatglm.cn"],
+    "messages": ["[class*='message']", "[class*='bubble']"],
+    "isUser": ["closest:[class*='user']", "closest:[class*='human']"],
     "getText": ["textContent"]
   }
-}
+} 

@@ -45,6 +45,15 @@ from omega_kg.utils.capture_utils import generate_conversation_hash
 from omega_kg.vector_store import VectorStore, get_vector_store
 from omega_kg.workers.embedding_worker import start_worker, stop_worker
 
+# Ngrok tunnel integration
+try:
+    from omega_kg.ngrok_tunnel import ngrok_tunnel
+    _ngrok_available = True
+except ImportError:
+    _ngrok_available = False
+    logger = logging.getLogger(__name__)
+    logger.warning("ngrok_tunnel module not available. Ngrok integration disabled.")
+
 # Async scheduling with graceful fallback
 _scheduler_available = True
 
@@ -184,7 +193,7 @@ async def percolate_to_neo4j_with_embedding(
                 message_id=session_id, node_label="ChatSession"
             )
             logger.info(
-                f"✓ Queued embedding for ChatSession {conv_hash} "
+                f"[OK] Queued embedding for ChatSession {conv_hash} "
                 f"(neo4j_id={session_id}, vector_id={vector_id})"
             )
         except Exception as e:
@@ -330,7 +339,7 @@ def batch_percolate_sessions():
 
         elapsed_ms = (time.time() - start_time) * 1000
         logger.info(
-            f"✓ Scheduler completed in {elapsed_ms:.0f}ms: "
+            f"[OK] Scheduler completed in {elapsed_ms:.0f}ms: "
             f"{stats['tasks']} tasks, "
             f"{stats['commits']} commits, {stats['links']} decision links"
         )
@@ -361,7 +370,7 @@ async def _check_ollama_ready(timeout: int = 30) -> bool:
             try:
                 resp = await client.get(f"{ollama_url}/api/tags", timeout=2)
                 if resp.status_code == 200:
-                    logger.info(f"✓ Ollama ready at {ollama_url}")
+                    logger.info(f"[OK] Ollama ready at {ollama_url}")
                     return True
             except Exception:
                 pass
@@ -401,7 +410,7 @@ async def _start_ollama() -> bool:
 
         # Wait for Ollama to be ready
         if await _check_ollama_ready(timeout=30):
-            logger.info("✓ Ollama started successfully")
+            logger.info("[OK] Ollama started successfully")
             return True
         else:
             logger.error("Ollama started but not responding")
@@ -419,7 +428,7 @@ async def _stop_ollama():
         try:
             _ollama_process.terminate()
             _ollama_process.wait(timeout=5)
-            logger.info("✓ Ollama stopped")
+            logger.info("[OK] Ollama stopped")
         except Exception as e:
             logger.error(f"Error stopping Ollama: {e}")
         _ollama_process = None
@@ -435,7 +444,7 @@ async def _run_heartbeat_loop():
         return
 
     logger.info(
-        f"✓ Quipu heartbeat started (interval: {settings.heartbeat_interval_sec}s)"
+        f"[OK] Quipu heartbeat started (interval: {settings.heartbeat_interval_sec}s)"
     )
 
     while True:
@@ -480,7 +489,7 @@ async def lifespan(app: FastAPI):
     # 2. Initialize vector store
     try:
         await get_vector_store()
-        logger.info("✓ Vector store initialized")
+        logger.info("[OK] Vector store initialized")
     except Exception as e:
         logger.error(f"Failed to initialize vector store: {e}")
         raise
@@ -488,7 +497,7 @@ async def lifespan(app: FastAPI):
     # 3. Start embedding worker
     try:
         await start_worker()
-        logger.info("✓ Embedding worker started (polling every 10s)")
+        logger.info("[OK] Embedding worker started (polling every 10s)")
     except Exception as e:
         logger.error(f"Failed to start embedding worker: {e}")
         raise
@@ -514,7 +523,7 @@ async def lifespan(app: FastAPI):
                 id="session_percolation",
             )
             scheduler.start()
-            logger.info("✓ Session percolation scheduled (every 5 minutes)")
+            logger.info("[OK] Session percolation scheduled (every 5 minutes)")
     except Exception as e:
         logger.error(f"Failed to start scheduler: {e}")
         scheduler = None
@@ -532,14 +541,14 @@ async def lifespan(app: FastAPI):
         try:
             _heartbeat_task.cancel()
             await asyncio.sleep(0.1)  # Allow cancellation to propagate
-            logger.info("✓ Heartbeat task stopped")
+            logger.info("[OK] Heartbeat task stopped")
         except Exception as e:
             logger.error(f"Error stopping heartbeat: {e}")
 
     # Stop embedding worker gracefully
     try:
         await stop_worker()
-        logger.info("✓ Embedding worker stopped")
+        logger.info("[OK] Embedding worker stopped")
     except Exception as e:
         logger.error(f"Error stopping embedding worker: {e}")
 
@@ -547,7 +556,7 @@ async def lifespan(app: FastAPI):
     if scheduler is not None:
         try:
             scheduler.shutdown(wait=False)
-            logger.info("✓ Scheduler stopped")
+            logger.info("[OK] Scheduler stopped")
         except Exception as e:
             logger.error(f"Error stopping scheduler: {e}")
     else:
@@ -556,7 +565,7 @@ async def lifespan(app: FastAPI):
     # Close vector store pool
     try:
         await VectorStore.close_pool()
-        logger.info("✓ Vector store pool closed")
+        logger.info("[OK] Vector store pool closed")
     except Exception as e:
         logger.error(f"Error closing vector store: {e}")
 
@@ -582,11 +591,15 @@ app.include_router(capture_router)
 app.include_router(linear_receiver.router, tags=["Linear Ingest"])
 
 # CORS middleware
+cors_origins = []
+if settings.chrome_extension_id:
+    cors_origins.append(f"chrome-extension://{settings.chrome_extension_id}")
+# Allow localhost for development
+cors_origins.extend(["http://localhost:8765", "http://127.0.0.1:8765"])
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        f"chrome-extension://{settings.chrome_extension_id}",
-    ],
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["POST", "GET", "OPTIONS"],
     allow_headers=["X-API-Key", "Authorization", "Content-Type"],
@@ -624,10 +637,54 @@ async def linear_webhook_endpoint(request: Request):
 def main():
     """Starts the Omega_KG Capture Server using Uvicorn."""
     import uvicorn
+    import os
 
     logger.info("Starting Omega_KG Capture Server...")
+    logger.info(f"Server: {settings.app_host}:{settings.app_port}")
     logger.info(f"Vault path: {settings.obsidian_vault_path}")
     logger.info(f"Neo4j URI: {settings.neo4j_uri}")
+    logger.info(f"Extension ID: {settings.chrome_extension_id}")
+
+    # Start ngrok tunnel if enabled (optional, won't crash server if fails)
+    if _ngrok_available:
+        try:
+            enable_ngrok = os.getenv("ENABLE_NGROK", "false").lower() == "true"
+            if enable_ngrok:
+                logger.info("🚀 Ngrok tunnel enabled - starting tunnel...")
+                try:
+                    import asyncio
+                    import threading
+
+                    def start_tunnel():
+                        try:
+                            loop = asyncio.new_event_loop()
+                            asyncio.set_event_loop(loop)
+                            tunnel_url = loop.run_until_complete(
+                                ngrok_tunnel.start_tunnel(port=settings.app_port)
+                            )
+                            if tunnel_url:
+                                logger.info(f"[OK] Ngrok tunnel active: {tunnel_url}")
+                                logger.info(f"📡 Linear webhook URL: {tunnel_url}/webhook/linear")
+                                logger.info("💡 Update your Linear webhook to use this URL")
+                            else:
+                                logger.warning("⚠️ Failed to start ngrok tunnel")
+                        except Exception as e:
+                            logger.error(f"[ERROR] Error starting ngrok tunnel: {e}")
+                            logger.info("Continuing without ngrok (webhook testing will not work)")
+
+                    # Start ngrok in background thread so it doesn't block server startup
+                    tunnel_thread = threading.Thread(target=start_tunnel, daemon=True)
+                    tunnel_thread.start()
+                    logger.info("Ngrok tunnel starting in background...")
+                except Exception as e:
+                    logger.warning(f"Ngrok tunnel error: {e}")
+                    logger.info("Continuing without ngrok...")
+            else:
+                logger.info("Ngrok tunnel disabled (set ENABLE_NGROK=true to enable)")
+        except Exception as e:
+            logger.warning(f"Error checking ngrok configuration: {e}")
+    else:
+        logger.info("Ngrok integration not available (ngrok_tunnel module not found)")
 
     uvicorn.run(
         "omega_kg.capture_server:app",
@@ -639,5 +696,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
     main()

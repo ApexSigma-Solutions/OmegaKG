@@ -144,7 +144,8 @@ class ObsidianNeo4jSync:
                         t.last_modified = $modified,
                         t.filepath = $filepath,
                         t.content = $content,
-                        t.parent_plan = $parent
+                        t.parent_plan = $parent,
+                        t.linear_id = $linear_id
                     RETURN t
                 """,
                     uid=uid,
@@ -157,6 +158,7 @@ class ObsidianNeo4jSync:
                     filepath=str(task_file.relative_to(self.vault_path)),
                     content=content,
                     parent=metadata.get("parent", None),
+                    linear_id=metadata.get("linear_id", None),
                 )
                 # Consume result to execute the query
                 _ = result.single()
@@ -182,7 +184,11 @@ class ObsidianNeo4jSync:
             print("[WARN] Sync skipped (no database connection)")
             return 0
 
-        task_files = self.vault_path.glob("Tasks/*.md")
+        task_files = []
+        for folder in ["Tasks", "Workflow", "Linear"]:
+            folder_path = self.vault_path / folder
+            if folder_path.exists() and folder_path.is_dir():
+                task_files.extend(list(folder_path.rglob("*.md")))
 
         count = 0
         for task_file in task_files:

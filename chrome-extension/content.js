@@ -1,6 +1,9 @@
 /**
- * Omega_KG Extension v2.3.2 - Modularized Content Script
- * Fixed: Filename consistency (platforms.json) and strict payload validation.
+ * Omega_KG Extension v2.3.4 - Zombie Script Handler
+ * Change Log:
+ * - Added error handling for 'Extension context invalidated'.
+ * - Shows "Please Refresh Page" notification if extension was reloaded.
+ * - Preserves v2.3.3 selector robustness.
  */
 
 // --- 1. Rule Evaluation Strategies ---
@@ -34,6 +37,7 @@ class OmegaUI {
       #omega-kg-capture-btn.omega-captured { background: linear-gradient(135deg, #0CB577 0%, #0A9560 100%); border: 3px solid #41FDFE; box-shadow: 0 0 15px rgba(65, 253, 254, 0.5); animation: breathe 3s ease-in-out infinite; }
       #omega-kg-capture-btn.omega-experimental { background: linear-gradient(135deg, #2B956F 0%, #1F6E52 100%); border: 3px solid #FF0AE6; box-shadow: 0 0 20px rgba(255, 10, 230, 0.5); animation: experimental-pulse 2.5s ease-in-out infinite; }
       #omega-kg-capture-btn.omega-capturing { animation: capture-pulse 0.8s ease-out !important; }
+      #omega-kg-capture-btn.omega-disconnected { background: #666; border-color: #999; animation: none; opacity: 0.7; cursor: not-allowed; }
       #omega-kg-capture-btn:hover { transform: scale(1.1); }
       @keyframes breathe { 0%, 100% { opacity: 1; box-shadow: 0 4px 12px rgba(12, 181, 119, 0.4); } 50% { opacity: 0.85; box-shadow: 0 4px 16px rgba(12, 181, 119, 0.6); } }
       @keyframes persist-glow { 0%, 100% { box-shadow: 0 0 15px rgba(255, 89, 0, 0.4); border-color: #FF5900; } 50% { box-shadow: 0 0 30px rgba(255, 89, 0, 0.8); border-color: #FF7033; } }
@@ -52,6 +56,10 @@ class OmegaUI {
     
     button.addEventListener("click", (e) => {
       e.preventDefault();
+      if (button.classList.contains('omega-disconnected')) {
+        this.showNotification("Extension updated. Please refresh page.", "error");
+        return;
+      }
       if (tier <= 2) {
         this.controller.captureConversation(true);
       } else {
@@ -70,7 +78,15 @@ class OmegaUI {
   updateButtonState(state, title = "") {
     const button = document.getElementById("omega-kg-capture-btn");
     if (!button) return;
-    button.classList.remove('omega-initial', 'omega-persisted', 'omega-captured', 'omega-experimental');
+    
+    // Safety check for zombie state
+    if (state === 'disconnected') {
+      button.className = 'omega-disconnected';
+      button.title = "Extension context invalidated. Refresh page.";
+      return;
+    }
+
+    button.classList.remove('omega-initial', 'omega-persisted', 'omega-captured', 'omega-experimental', 'omega-disconnected');
     button.classList.add(`omega-${state}`);
     if (title) button.title = title;
   }
@@ -88,18 +104,18 @@ class OmegaUI {
     
     const notification = document.createElement("div");
     notification.id = "omega-kg-notification";
-    const colors = { success: "#019387", error: "#FF7C87", info: "#3799ad" };
+    const colors = { success: "#019387", error: "#FF7C87", info: "#3799ad", warning: "#FFB02E" };
     
     notification.style.cssText = `
       position: fixed; top: 20px; right: 20px; padding: 12px 20px;
-      border-radius: 8px; background: ${colors[type]}; color: white;
+      border-radius: 8px; background: ${colors[type] || colors.info}; color: white;
       font-family: system-ui, -apple-system, sans-serif; font-size: 14px;
       font-weight: 500; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
       z-index: 999999; animation: slideIn 0.3s ease-out;
     `;
     notification.textContent = `Ω_KG: ${message}`;
     document.body.appendChild(notification);
-    setTimeout(() => notification.remove(), 3000);
+    setTimeout(() => notification.remove(), 4000);
   }
 
   showContextMenu(event) {
@@ -294,12 +310,16 @@ class ChatCapture {
 
   async loadConfig() {
     try {
-      // FIX: Changed to plural to match manifest.json
       const url = chrome.runtime.getURL('platforms.json');
       const response = await fetch(url);
       this.platformConfig = await response.json();
       console.log('[Omega_KG] Loaded platform configurations');
     } catch (error) {
+      // Check for context invalidation
+      if (error.message.includes('Extension context invalidated')) {
+        this.handleInvalidatedContext();
+        return;
+      }
       console.error('[Omega_KG] Failed to load platforms.json:', error);
       this.platformConfig = {};
     }
@@ -434,12 +454,25 @@ class ChatCapture {
         throw new Error(response?.error || "Unknown server error");
       }
     } catch (error) {
+      // HANDLE ZOMBIE SCRIPT
+      if (error.message.includes('Extension context invalidated')) {
+        this.handleInvalidatedContext();
+        return false;
+      }
+      
       console.error("[Omega_KG] Capture Error:", error);
       if (manualTrigger) this.ui.showNotification("Capture failed: " + error.message, "error");
       return false;
     } finally {
       this.captureInProgress = false;
     }
+  }
+
+  handleInvalidatedContext() {
+    console.error("[Omega_KG] EXTENSION CONTEXT INVALIDATED. Script is orphaned.");
+    this.ui.showNotification("Extension updated. Please refresh the page.", "error");
+    this.ui.updateButtonState('disconnected');
+    if (this.observer) this.observer.disconnect(); // Stop trying to capture
   }
 
   validateCapture(messages, manualTrigger) {
@@ -543,6 +576,10 @@ class ChatCapture {
         throw new Error(res?.error);
       }
     } catch (e) {
+      if (e.message.includes('Extension context invalidated')) {
+        this.handleInvalidatedContext();
+        return;
+      }
       this.ui.showNotification("Webclip failed", "error");
     }
   }

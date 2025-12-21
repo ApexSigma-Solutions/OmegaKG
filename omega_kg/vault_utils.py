@@ -136,16 +136,16 @@ class VaultUtils:
             return False
 
         try:
-            # Read the entire post (frontmatter + content)
-            with resolved_path.open("r", encoding="utf-8") as f:
-                post = frontmatter.load(f)
+            # Read the entire file as a string first to be safe
+            content_str = resolved_path.read_text(encoding="utf-8")
+            post = frontmatter.loads(content_str)
 
             # Update the metadata
             post.metadata.update(updates)
 
             # Write the entire post back
             with resolved_path.open("w", encoding="utf-8") as f:
-                frontmatter.dump(post, f)
+                f.write(frontmatter.dumps(post))
 
             logger.info(f"Successfully updated frontmatter for: {resolved_path.name}")
             return True

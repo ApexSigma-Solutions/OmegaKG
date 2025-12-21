@@ -3,6 +3,11 @@ import os
 import uuid
 from typing import Any, Dict, Optional, Tuple
 
+# CRITICAL: Load .env file BEFORE any Settings class instantiation
+# This ensures environment variables override any shell/system values
+from dotenv import load_dotenv
+load_dotenv(override=True)
+
 from bitwarden_sdk import BitwardenClient
 from bitwarden_sdk.schemas import ClientSettings, DeviceType
 from pydantic import AliasChoices, Field, model_validator
@@ -84,6 +89,10 @@ class Settings(BaseSettings):
     app_env: str = Field("development", validation_alias="APP_ENV")
     app_host: str = Field("0.0.0.0", validation_alias="APP_HOST")
     app_port: int = Field(8765, validation_alias="APP_PORT")
+    
+    # --- Ngrok / Tunneling ---
+    enable_ngrok: bool = Field(False, validation_alias="ENABLE_NGROK")
+    ngrok_api_key: Optional[str] = Field(None, validation_alias="NGROK_API_KEY")
 
     # --- Postgres Infrastructure (New) ---
     postgres_user: str = Field("omega_user", validation_alias="POSTGRES_USER")

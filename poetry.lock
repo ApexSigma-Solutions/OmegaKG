@@ -2900,6 +2900,25 @@ pyyaml = "*"
 extra = ["pygments (>=2.19.1)"]
 
 [[package]]
+name = "pyngrok"
+version = "7.5.0"
+description = "A Python wrapper for ngrok"
+optional = false
+python-versions = ">=3.9"
+groups = ["main"]
+files = [
+    {file = "pyngrok-7.5.0-py3-none-any.whl", hash = "sha256:1e50e71a59f1086f59e12e3d186f07ae2cbdccaf6f523678ef7ce3a180aba5c4"},
+    {file = "pyngrok-7.5.0.tar.gz", hash = "sha256:2fe91cba2c2531ecfb124b5071f377808b61a68a14ca3c99fcb7f3fdae05278f"},
+]
+
+[package.dependencies]
+PyYAML = ">=5.1"
+
+[package.extras]
+dev = ["coverage[toml]", "flake8", "flake8-pyproject", "pep8-naming", "psutil", "pytest"]
+docs = ["Sphinx (<8.2)", "mypy", "sphinx-notfound-page", "sphinx-substitution-extensions", "sphinx_autodoc_typehints (==1.25.2)", "types-PyYAML"]
+
+[[package]]
 name = "pytest"
 version = "9.0.1"
 description = "pytest: simple powerful testing with Python"
@@ -4527,4 +4546,4 @@ dev = ["pytest", "setuptools"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<3.13"
-content-hash = "74e4751f4d9f06ef3b6167bfdd4aed20c259aef26a2f707b40da734ab1f4867a"
+content-hash = "ef1a57dead074be2ba7b835b87996005fcef67163bf75ff0b165b9a2765f6d4f"
