@@ -41,13 +41,13 @@ class LinearSync:
 
     async def verify_linear_signature(self, request: Request) -> bytes:
         """
-        Verifies the X-Linear-Signature header.
+        Verifies the Linear-Signature header (supports both Linear-Signature and X-Linear-Signature).
         Raises HTTPException if invalid.
         """
-        signature = request.headers.get("X-Linear-Signature")
+        signature = request.headers.get("Linear-Signature") or request.headers.get("X-Linear-Signature")
         if not signature:
-            logger.error("Missing X-Linear-Signature header.")
-            raise HTTPException(status_code=400, detail="Missing X-Linear-Signature")
+            logger.error("Missing Linear-Signature header.")
+            raise HTTPException(status_code=400, detail="Missing Linear-Signature header")
 
         raw_body = await request.body()
 
@@ -59,7 +59,6 @@ class LinearSync:
         secret = settings.linear_webhook_secret.encode("utf-8")
 
         hashed_body = hmac.new(secret, raw_body, hashlib.sha256).hexdigest()
-
         if not hmac.compare_digest(hashed_body, signature):
             logger.error(
                 f"Invalid signature. Expected: {hashed_body}, Got: {signature}"
