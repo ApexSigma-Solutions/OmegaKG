@@ -162,7 +162,7 @@ async def percolate_to_neo4j_with_embedding(
                     s.url = $url, s.message_count = $msg_count, s.created_at = datetime($created_at)
                 ON MATCH SET
                     s.updated_at = datetime($created_at)
-                RETURN id(s) AS session_id
+                RETURN elementId(s) AS session_id
                 """,
                 hash=conv_hash,
                 date=datetime.now().strftime("%Y-%m-%d"),
@@ -579,6 +579,7 @@ app = FastAPI(
     description="Receives AI conversations and integrates with Neo4j",
     version="1.0.0",
     lifespan=lifespan,
+    max_request_size=50 * 1024 * 1024,  # 50MB limit for large conversation captures
 )
 
 sync_engine = LinearSync()
@@ -636,8 +637,9 @@ async def linear_webhook_endpoint(request: Request):
 # --- Main Entry Point ---
 def main():
     """Starts the Omega_KG Capture Server using Uvicorn."""
-    import uvicorn
     import os
+
+    import uvicorn
 
     logger.info("Starting Omega_KG Capture Server...")
     logger.info(f"Server: {settings.app_host}:{settings.app_port}")

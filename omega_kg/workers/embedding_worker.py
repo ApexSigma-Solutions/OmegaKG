@@ -27,12 +27,10 @@ import asyncio
 import logging
 from typing import Any, Optional
 
-from omega_kg.config import (
-    VECTOR_EMBEDDING_MAX_RETRIES,
-    VECTOR_WORKER_BATCH_SIZE,
-    VECTOR_WORKER_POLL_INTERVAL_SECONDS,
-    VECTOR_WORKER_TIMEOUT_SECONDS,
-)
+from omega_kg.config import (VECTOR_EMBEDDING_MAX_RETRIES,
+                             VECTOR_WORKER_BATCH_SIZE,
+                             VECTOR_WORKER_POLL_INTERVAL_SECONDS,
+                             VECTOR_WORKER_TIMEOUT_SECONDS)
 from omega_kg.vector_store import VectorStore, get_vector_store
 
 logger = logging.getLogger(__name__)
@@ -162,9 +160,8 @@ class EmbeddingWorker:
 
                     # Generate embedding
                     try:
-                        from omega_kg.domain.common.embedding_service import (
-                            generate_embedding,
-                        )
+                        from omega_kg.domain.common.embedding_service import \
+                            generate_embedding
 
                         embedding = await asyncio.wait_for(
                             generate_embedding(message_text),
@@ -220,7 +217,7 @@ class EmbeddingWorker:
         Uses AsyncGraphDriver for non-blocking, pooled connections.
 
         Args:
-            message_id: Neo4j internal node ID (from id(n))
+            message_id: Neo4j internal node ID (from elementId(n))
             node_label: Neo4j node type (ChatMessage, LinearIssue, Decision, ChatSession)
 
         Returns:
@@ -240,22 +237,22 @@ class EmbeddingWorker:
             query_map = {
                 "ChatMessage": """
                     MATCH (n:ChatMessage)
-                    WHERE id(n) = $message_id
-                    RETURN n.content AS text
+                    WHERE elementId(n) = $message_id
+                    RETURN coalesce(n.content, n.message, n.text, '[Empty message]') AS text
                 """,
                 "LinearIssue": """
                     MATCH (n:LinearIssue)
-                    WHERE id(n) = $message_id
-                    RETURN n.title + '\\n\\n' + coalesce(n.description, '') AS text
+                    WHERE elementId(n) = $message_id
+                    RETURN coalesce(n.title, '[Untitled issue]') + '\\n\\n' + coalesce(n.description, '') AS text
                 """,
                 "ChatSession": """
                     MATCH (n:ChatSession)
-                    WHERE id(n) = $message_id
+                    WHERE elementId(n) = $message_id
                     RETURN 'Session Summary: ' + coalesce(n.summary, 'No summary available') AS text
                 """,
                 "Decision": """
                     MATCH (n:Decision)
-                    WHERE id(n) = $message_id
+                    WHERE elementId(n) = $message_id
                     RETURN coalesce(n.content, n.text, n.description) AS text
                 """,
             }
@@ -265,7 +262,7 @@ class EmbeddingWorker:
                 node_label,
                 f"""
                     MATCH (n:{node_label})
-                    WHERE id(n) = $message_id
+                    WHERE elementId(n) = $message_id
                     RETURN coalesce(n.content, n.message, n.text, n.body) AS text
                 """,
             )

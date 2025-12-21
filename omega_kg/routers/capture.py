@@ -17,26 +17,21 @@ from fastapi import APIRouter, HTTPException, Request, Security
 from neo4j import GraphDatabase
 from sqlalchemy import text
 
-from omega_kg.auth_utils import (
-    create_access_token,
-    get_static_api_key,
-    validate_access_token,
-)
+from omega_kg.auth_utils import (create_access_token, get_static_api_key,
+                                 validate_access_token)
 from omega_kg.database.session import get_db
 from omega_kg.models.capture import CaptureResponse, ConversationData, Token
 from omega_kg.parsers import parse_html_content
 from omega_kg.settings import settings
-from omega_kg.utils.capture_utils import (
-    format_conversation_markdown,
-    generate_conversation_hash,
-    write_to_obsidian,
-)
+from omega_kg.utils.capture_utils import (format_conversation_markdown,
+                                          generate_conversation_hash,
+                                          write_to_obsidian)
 from omega_kg.vector_store import get_vector_store
 
 logger = logging.getLogger(__name__)
 
 # Security limits
-MAX_HTML_SIZE = 500_000  # 500KB - reduced from 1.5MB to prevent DoS via large payloads
+MAX_HTML_SIZE = 10 * 1024 * 1024  # 10MB - increased to accommodate larger conversation captures
 
 router = APIRouter(tags=["Capture"])
 
