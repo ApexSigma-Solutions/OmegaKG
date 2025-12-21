@@ -11,22 +11,24 @@ Usage:
 - Integration Tests: Use 'postgres_container', 'neo4j_container', 'db_session'
 """
 
+import logging
 import os
+import shutil
 import sys
 import time
-import pytest
-import logging
-import shutil
 from pathlib import Path
+from typing import AsyncGenerator
 from unittest.mock import MagicMock
 
-# --- Infrastructure Imports ---
-from testcontainers.postgres import PostgresContainer
-from testcontainers.neo4j import Neo4jContainer
-from sqlalchemy import create_engine, text
-
+import pytest
 # CRITICAL FIX: Neo4j Driver 6.x requires explicit Auth object or helper
 from neo4j import GraphDatabase, basic_auth
+from sqlalchemy import create_engine, text
+from sqlalchemy.ext.asyncio import (AsyncSession, async_sessionmaker,
+                                    create_async_engine)
+from testcontainers.neo4j import Neo4jContainer
+# --- Infrastructure Imports ---
+from testcontainers.postgres import PostgresContainer
 
 # --- Logging Setup ---
 logging.basicConfig(level=logging.INFO)
@@ -282,6 +284,65 @@ def graph_session(graph_driver):
         yield session
 
 
+@pytest.fixture(scope="session")
+def async_db_engine(postgres_container):
+    """
+    Async SQLAlchemy AsyncEngine for integration tests.
+    Manually constructs asyncpg URL from postgres_container details.
+    Creates all tables once at session setup.
+    """
+    from omega_kg.models import Base
+
+    # Extract connection details from the container
+    host = postgres_container.get_container_host_ip()
+    port = postgres_container.get_exposed_port(5432)
+    user = postgres_container.username
+    password = postgres_container.password
+    dbname = postgres_container.dbname
+
+    # Construct async URL with asyncpg driver (not psycopg2)
+    async_url = f"postgresql+asyncpg://{user}:{password}@{host}:{port}/{dbname}"
+
+    engine = create_async_engine(async_url, echo=False)
+
+    # Create tables once at session setup (synchronously)
+    def setup_tables():
+        import asyncio
+
+        async def async_setup():
+            async with engine.begin() as conn:
+                await conn.run_sync(Base.metadata.create_all)
+
+        try:
+            asyncio.run(async_setup())
+        except RuntimeError:
+            # If event loop already exists, create a new one
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            loop.run_until_complete(async_setup())
+
+    setup_tables()
+    yield engine
+    # Note: actual disposal happens when session ends
+
+
+@pytest.fixture
+async def async_db_session(async_db_engine) -> AsyncGenerator:
+    """
+    Async database session for async integration tests.
+    Tables created once at session setup in async_db_engine.
+    This fixture just provides a fresh session per test.
+    """
+    # Create session factory
+    async_session_maker = async_sessionmaker(
+        async_db_engine, class_=AsyncSession, expire_on_commit=False
+    )
+
+    async with async_session_maker() as session:
+        yield session
+        # Session is cleaned up automatically
+
+
 # =============================================================================
 # 4. MOCK FIXTURES (UNIT TESTS)
 # =============================================================================
@@ -346,6 +407,18 @@ def sample_frontmatter_data():
     return {
         "valid": {"content": "---\nuid: 1\n---\n# H1", "expected": {"uid": 1}},
         "invalid": {"content": "Just text", "expected": None},
+    }
+
+
+@pytest.fixture
+def sample_lifecycle_rule_data():
+    """Sample lifecycle rule data for tests that need rule examples."""
+    return {
+        "from_status": "draft",
+        "to_status": "archived",
+        "days_threshold": 14,
+        "condition": "NOT t.pinned = true",
+        "action": "auto",
     }
 
 

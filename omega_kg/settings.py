@@ -180,6 +180,9 @@ class Settings(BaseSettings):
         "http://0.0.0.0:11434", validation_alias="OLLAMA_BASE_URL"
     )
 
+    # --- Hookdeck Configuration ---
+    hookdeck_api_key: Optional[str] = Field(None, validation_alias="HOOKDECK_API_KEY")
+
     # --- Quipu Monitoring Configuration ---
     ollama_host_url: str = Field(
         "http://localhost:11434", validation_alias="OLLAMA_HOST_URL"

@@ -193,6 +193,10 @@ def get_exempted_keys() -> FrozenSet[str]:
         "ZERO_TRUST_REQUIRED",
         # Special format fields (don't require underscore)
         "VERSION",
+        # Exemptions for optional / third-party configs not modeled in Settings
+        "APIDOG_ACCESS_TOKEN",
+        "APIDOG_PROJECT_ID",
+        "OMEGA_ENV",
     }
 
     return frozenset(exempted)

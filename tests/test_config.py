@@ -79,6 +79,11 @@ def get_exempted_keys() -> Set[str]:
         # Optional parsing configs (not in Settings class)
         "LINEAR_USER_MAP_JSON",
         "LINEAR_LABEL_MAP_JSON",
+        # External tools / optional envs not represented in Settings
+        "APIDOG_ACCESS_TOKEN",
+        "APIDOG_PROJECT_ID",
+        # Environment marker used in CI / orchestration
+        "OMEGA_ENV",
     }
 
 

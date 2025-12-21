@@ -11,25 +11,17 @@ from pydantic import ValidationError
 
 # Import auth utilities for dependency override
 from omega_kg.auth_utils import validate_access_token
-
 # Import remaining items from capture_server
-from omega_kg.capture_server import (
-    _create_chat_session,
-    _create_decision_nodes,
-    _create_decision_nodes_async,
-    app,
-    percolate_to_neo4j,
-)
-
+from omega_kg.capture_server import (_create_chat_session,
+                                     _create_decision_nodes,
+                                     _create_decision_nodes_async, app,
+                                     percolate_to_neo4j)
 # Import models from new location
 from omega_kg.models.capture import ConversationData, Message
-
 # Import utils from new location
-from omega_kg.utils.capture_utils import (
-    format_conversation_markdown,
-    generate_conversation_hash,
-    write_to_obsidian,
-)
+from omega_kg.utils.capture_utils import (format_conversation_markdown,
+                                          generate_conversation_hash,
+                                          write_to_obsidian)
 
 
 # --- Helper fixture for authenticated requests ---
@@ -769,8 +761,8 @@ class TestCaptureServerEndpoints:
         try:
             client = TestClient(app)
 
-            # Create payload larger than MAX_HTML_SIZE
-            large_content = "x" * 600_000  # Larger than 500KB limit
+            # Create payload larger than MAX_HTML_SIZE (10MB)
+            large_content = "x" * (10 * 1024 * 1024 + 1)  # Slightly over 10MB
             conversation_data = {"platform": "test", "raw_html": large_content}
 
             response = client.post(
