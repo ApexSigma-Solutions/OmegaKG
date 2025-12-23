@@ -45,6 +45,7 @@ from omega_kg.routers import linear_receiver
 from omega_kg.routers.capture import router as capture_router
 from omega_kg.routers.capture import set_percolate_function
 from omega_kg.settings import settings
+from omega_kg.smart_parser import SmartParser
 from omega_kg.utils.capture_utils import generate_conversation_hash
 from omega_kg.vector_store import VectorStore, get_vector_store
 from omega_kg.workers.embedding_worker import start_worker, stop_worker
@@ -650,8 +651,6 @@ async def obsidian_update_endpoint(
     Raises:
         HTTPException: 500 if sync fails
     """
-    from omega_kg.smart_parser import SmartParser
-
     logger.info(f"Received Obsidian update request for: {data.note_path}")
 
     try:
@@ -663,7 +662,7 @@ async def obsidian_update_endpoint(
             logger.error(f"Failed to sync note: {data.note_path}")
             raise HTTPException(
                 status_code=500,
-                detail=f"Failed to sync note to Linear. Check server logs for details.",
+                detail="Failed to sync note to Linear - parser returned None (check LINEAR_TEAM_ID configuration and note content)",
             )
 
         # Extract Linear issue details from result
@@ -683,6 +682,9 @@ async def obsidian_update_endpoint(
             message=f"Successfully synced to Linear issue {linear_identifier}",
         )
 
+    except HTTPException:
+        # Re-raise HTTPExceptions as-is
+        raise
     except Exception as e:
         logger.error(f"Error syncing note to Linear: {e}", exc_info=True)
         raise HTTPException(

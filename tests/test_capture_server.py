@@ -1335,8 +1335,8 @@ class TestObsidianUpdateEndpoint:
 
         payload = {"note_path": "D:\\projects\\vault\\Tasks\\task.md"}
 
-        # Mock SmartParser - patch where it's imported in the endpoint
-        with patch("omega_kg.smart_parser.SmartParser") as mock_parser_class:
+        # Mock SmartParser where it's used in capture_server
+        with patch("omega_kg.capture_server.SmartParser") as mock_parser_class:
             mock_parser = MagicMock()
             mock_parser_class.return_value = mock_parser
 
@@ -1370,7 +1370,7 @@ class TestObsidianUpdateEndpoint:
 
         payload = {"note_path": "/home/vault/Tasks/existing_task.md"}
 
-        with patch("omega_kg.smart_parser.SmartParser") as mock_parser_class:
+        with patch("omega_kg.capture_server.SmartParser") as mock_parser_class:
             mock_parser = MagicMock()
             mock_parser_class.return_value = mock_parser
 
@@ -1396,7 +1396,7 @@ class TestObsidianUpdateEndpoint:
 
         payload = {"note_path": "/home/vault/Tasks/invalid_task.md"}
 
-        with patch("omega_kg.smart_parser.SmartParser") as mock_parser_class:
+        with patch("omega_kg.capture_server.SmartParser") as mock_parser_class:
             mock_parser = MagicMock()
             mock_parser_class.return_value = mock_parser
 
@@ -1414,7 +1414,7 @@ class TestObsidianUpdateEndpoint:
 
         payload = {"note_path": "/home/vault/Tasks/task.md"}
 
-        with patch("omega_kg.smart_parser.SmartParser") as mock_parser_class:
+        with patch("omega_kg.capture_server.SmartParser") as mock_parser_class:
             mock_parser = MagicMock()
             mock_parser_class.return_value = mock_parser
 
@@ -1445,7 +1445,7 @@ class TestObsidianUpdateEndpoint:
 
         payload = {"note_path": "/home/vault/Tasks/task.md"}
 
-        with patch("omega_kg.smart_parser.SmartParser") as mock_parser_class:
+        with patch("omega_kg.capture_server.SmartParser") as mock_parser_class:
             mock_parser = MagicMock()
             mock_parser_class.return_value = mock_parser
 
@@ -1471,7 +1471,7 @@ class TestObsidianUpdateEndpoint:
 
         payload = {"note_path": "C:\\Users\\username\\vault\\Tasks\\task.md"}
 
-        with patch("omega_kg.smart_parser.SmartParser") as mock_parser_class:
+        with patch("omega_kg.capture_server.SmartParser") as mock_parser_class:
             mock_parser = MagicMock()
             mock_parser_class.return_value = mock_parser
 
@@ -1500,7 +1500,7 @@ class TestObsidianUpdateEndpoint:
 
         payload = {"note_path": "/home/vault/Tasks/task.md"}
 
-        with patch("omega_kg.smart_parser.SmartParser") as mock_parser_class:
+        with patch("omega_kg.capture_server.SmartParser") as mock_parser_class:
             mock_parser = MagicMock()
             mock_parser_class.return_value = mock_parser
 
