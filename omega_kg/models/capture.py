@@ -55,4 +55,33 @@ class CaptureResponse(BaseModel):
     message: str
 
 
-__all__ = ["Token", "Message", "ConversationData", "CaptureResponse"]
+class ObsidianUpdateRequest(BaseModel):
+    """Request model for Obsidian note sync to Linear."""
+
+    note_path: str = Field(
+        ...,
+        description="Path to the Obsidian note (relative or absolute)",
+        examples=["D:\\projects\\vault\\Tasks\\task.md"],
+    )
+
+
+class ObsidianUpdateResponse(BaseModel):
+    """Response model for Obsidian update operations."""
+
+    success: bool
+    linear_id: Optional[str] = Field(None, description="Linear issue ID")
+    linear_identifier: Optional[str] = Field(
+        None, description="Linear issue identifier (e.g., LIN-123)"
+    )
+    linear_url: Optional[str] = Field(None, description="Linear issue URL")
+    message: str
+
+
+__all__ = [
+    "Token",
+    "Message",
+    "ConversationData",
+    "CaptureResponse",
+    "ObsidianUpdateRequest",
+    "ObsidianUpdateResponse",
+]
