@@ -78,6 +78,7 @@ class LinearIssue(BaseModel):
     priority: Optional[int] = None
     labels: List[LinearLabel] = Field(default_factory=list)
     assignee: Optional[LinearUser] = None
+    children: List["LinearIssue"] = Field(default_factory=list)
     createdAt: Optional[datetime] = None
     updatedAt: Optional[datetime] = None
     url: Optional[str] = None

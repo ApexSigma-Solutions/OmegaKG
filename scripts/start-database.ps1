@@ -1,7 +1,8 @@
 #!/usr/bin/env pwsh
 # Start Docker Services (Neo4j + PostgreSQL)
 $ErrorActionPreference = "Stop"
-Set-Location "d:\projects\Omega_KG_stable"
+$ProjectRoot = (Split-Path -Parent $PSScriptRoot)
+Set-Location $ProjectRoot
 
 Write-Host "🐳 Starting Docker services..." -ForegroundColor Cyan
 

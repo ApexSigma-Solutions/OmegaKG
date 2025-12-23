@@ -134,6 +134,27 @@ async def process_pending_events(
 
             logger.info(f"Wrote {file_path.name} for event {event.id}")
 
+            # Create Task Note Plan (.tnp.md) if it doesn't exist
+            try:
+                # Template is in test_vault at project root
+                template_path = (
+                    Path(__file__).parents[3]
+                    / "test_vault"
+                    / "template_task-note-plan.tnp.md"
+                )
+                tnp_path, tnp_content = mapper.map_issue_to_tnp(issue, template_path)
+
+                if not tnp_path.exists():
+                    tnp_path.write_text(tnp_content, encoding="utf-8")
+                    logger.info(f"Created new TNP file: {tnp_path.name}")
+                else:
+                    logger.debug(
+                        f"TNP file already exists: {tnp_path.name}, skipping creation"
+                    )
+            except Exception as tnp_err:
+                logger.warning(f"Failed to create TNP file for {issue.identifier}: {tnp_err}")
+                # Non-blocking, continue with graph sync
+
             # Phase 6: Sync to Graph (Topology)
             # Phase 7: Enrich with embedding for semantic search
             try:

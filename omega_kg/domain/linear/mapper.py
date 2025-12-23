@@ -5,11 +5,14 @@ Converts Linear Issue domain models to Obsidian markdown format.
 """
 
 import re
+import logging
 from pathlib import Path
 from typing import Dict, Any, Tuple
 from bs4 import BeautifulSoup
 
 from omega_kg.domain.linear.models import LinearIssue
+
+logger = logging.getLogger(__name__)
 
 
 class LinearToObsidianMapper:
@@ -73,6 +76,109 @@ class LinearToObsidianMapper:
         file_path = self._generate_filename(issue)
 
         return file_path, markdown_content
+
+    def map_issue_to_tnp(
+        self, issue: LinearIssue, template_path: Path
+    ) -> Tuple[Path, str]:
+        """
+        Convert Linear Issue to Task Note Plan (.tnp.md) format.
+
+        Args:
+            issue: LinearIssue domain model
+            template_path: Path to the .tnp.md template
+
+        Returns:
+            Tuple of (file_path, markdown_content)
+        """
+        if not template_path.exists():
+            logger.warning(f"TNP template not found at {template_path}")
+            # Fallback to a very basic structure if template is missing
+            template_content = (
+                "## 1. High-Level Objective\n\n"
+                "## 2. \"Done Means Done\" Criteria\n\n"
+                "## 3. Task Breakdown\n\n"
+                "## 4. Notes & Context"
+            )
+        else:
+            template_content = template_path.read_text(encoding="utf-8")
+
+        # Map fields to template
+        content = self._fill_tnp_template(template_content, issue)
+
+        # Generate filename
+        file_path = self._generate_tnp_filename(issue)
+
+        return file_path, content
+
+    def _generate_tnp_filename(self, issue: LinearIssue) -> Path:
+        """
+        Generate sanitized filename for TNP file.
+
+        Format: [IDENTIFIER] Title.tnp.md
+        """
+        sanitized_title = self._sanitize_filename(issue.title)
+        filename = f"[{issue.identifier}] {sanitized_title}.tnp.md"
+        return self.vault_path / "Linear" / filename
+
+    def _fill_tnp_template(self, template: str, issue: LinearIssue) -> str:
+        """
+        Fill the TNP template with issue data.
+        """
+        # 1. Objective
+        objective = issue.title
+
+        # 3. Task Breakdown
+        tasks = []
+        if issue.children:
+            for child in issue.children:
+                status = (
+                    "x" if child.state and child.state.type == "completed" else " "
+                )
+                tasks.append(f"- [{status}] [{child.identifier}] {child.title}")
+        else:
+            tasks.append("- [ ] ")
+
+        task_breakdown = "\n".join(tasks)
+
+        # 4. Notes & Context
+        notes_parts = []
+        if issue.url:
+            notes_parts.append(f"Linear URL: {issue.url}")
+        if issue.description:
+            notes_parts.append(self._convert_description(issue.description))
+
+        notes = "\n\n".join(notes_parts)
+
+        # Replacement logic using regex to find sections
+        content = template
+
+        # Replace Objective section (after header until next header)
+        content = re.sub(
+            r"(## 1\. High-Level Objective\n\n).*?(\n\n## 2\.)",
+            lambda m: f"{m.group(1)}{objective}{m.group(2)}",
+            content,
+            flags=re.DOTALL,
+        )
+
+        # Replace Task Breakdown section
+        # We keep the "This is the granular..." instruction if it exists
+        instruction = "This is the granular, tactical list of work. **Every task here MUST use the `- [ ]` or `- [x]` syntax.**"
+        content = re.sub(
+            r"(## 3\. Task Breakdown\n\n).*?(\n\n## 4\.)",
+            lambda m: f"{m.group(1)}{instruction}\n\n{task_breakdown}{m.group(2)}",
+            content,
+            flags=re.DOTALL,
+        )
+
+        # Replace Notes & Context section (until end of file)
+        content = re.sub(
+            r"(## 4\. Notes & Context\n\n).*",
+            lambda m: f"{m.group(1)}{notes}",
+            content,
+            flags=re.DOTALL,
+        )
+
+        return content
 
     def _generate_frontmatter(self, issue: LinearIssue) -> Dict[str, Any]:
         """

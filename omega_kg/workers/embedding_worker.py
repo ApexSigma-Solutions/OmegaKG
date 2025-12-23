@@ -203,7 +203,7 @@ class EmbeddingWorker:
             raise
 
     async def _fetch_message_text(
-        self, message_id: int, node_label: str
+        self, message_id: str, node_label: str
     ) -> Optional[str]:
         """
         Fetch message content from Neo4j by node ID and label asynchronously.

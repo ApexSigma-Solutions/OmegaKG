@@ -10,7 +10,7 @@
 #Requires -RunAsAdministrator
 
 $ErrorActionPreference = "Stop"
-$ProjectRoot = "d:\projects\Omega_KG_stable"
+$ProjectRoot = (Split-Path -Parent $PSScriptRoot)
 
 Write-Host "╔══════════════════════════════════════════════════════════════╗" -ForegroundColor Cyan
 Write-Host "║     Omega KG - Auto-Start Configuration                     ║" -ForegroundColor Cyan
@@ -36,53 +36,20 @@ if ($ExistingTask) {
 }
 
 # Create startup script wrapper
-$StartupScriptPath = Join-Path $ProjectRoot "start-server-window.ps1"
+$StartupScriptPath = Join-Path $ProjectRoot "start-full-stack-persistent.ps1"
 @"
 #!/usr/bin/env pwsh
 # Auto-generated startup script for Task Scheduler
 `$ErrorActionPreference = "Stop"
 
 # Set window title
-`$host.UI.RawUI.WindowTitle = "Omega KG Capture Server"
+`$host.UI.RawUI.WindowTitle = "Omega KG Full Stack (Persistent)"
 
 # Change to project directory
 Set-Location "$ProjectRoot"
 
-# Clear Python cache
-Get-ChildItem -Path omega_kg -Recurse -Filter "__pycache__" -ErrorAction SilentlyContinue | Remove-Item -Recurse -Force
-Get-ChildItem -Path omega_kg -Recurse -Filter "*.pyc" -ErrorAction SilentlyContinue | Remove-Item -Force
-
-Write-Host "╔══════════════════════════════════════════════════════════════╗" -ForegroundColor Cyan
-Write-Host "║         Omega KG Capture Server - Auto-Started              ║" -ForegroundColor Cyan
-Write-Host "╚══════════════════════════════════════════════════════════════╝" -ForegroundColor Cyan
-Write-Host ""
-
-# Start databases if not running
-`$neo4j = docker ps --filter "name=neo4j.stable" --format "{{.Names}}" | Select-String "neo4j"
-`$postgres = docker ps --filter "name=postgres.stable" --format "{{.Names}}" | Select-String "postgres"
-
-if (-not `$neo4j -or -not `$postgres) {
-    Write-Host "🐳 Starting databases..." -ForegroundColor Yellow
-    docker-compose up -d postgres neo4j
-    Write-Host "⏳ Waiting for databases to initialize..." -ForegroundColor Gray
-    Start-Sleep -Seconds 8
-}
-
-Write-Host "🚀 Starting Omega KG Capture Server..." -ForegroundColor Cyan
-Write-Host "   Server URL: http://localhost:8765" -ForegroundColor White
-Write-Host "   Press Ctrl+C to stop, or close this window to exit" -ForegroundColor Yellow
-Write-Host ""
-
-# Start the server
-poetry run python omega_kg/capture_server.py
-
-# Keep window open if server crashes
-if (`$LASTEXITCODE -ne 0) {
-    Write-Host ""
-    Write-Host "❌ Server exited with error code `$LASTEXITCODE" -ForegroundColor Red
-    Write-Host "Press any key to close..." -ForegroundColor Yellow
-    `$null = `$Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
-}
+Write-Host "🚀 Launching Omega KG Full Stack in Persistent Mode..." -ForegroundColor Cyan
+& (Join-Path "$ProjectRoot" "scripts\start_full_stack.ps1") -Persistent -ShowConsole
 "@ | Set-Content $StartupScriptPath -Encoding UTF8
 
 Write-Host "✓ Created startup script: $StartupScriptPath" -ForegroundColor Green

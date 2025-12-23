@@ -690,7 +690,7 @@ def main():
 
     uvicorn.run(
         "omega_kg.capture_server:app",
-        host=settings.app_host,
+        host="127.0.0.1",
         port=settings.app_port,
         log_level="info",
         reload=False,
@@ -699,3 +699,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

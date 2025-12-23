@@ -26,7 +26,7 @@ import sqlalchemy as sa
 from pgvector.sqlalchemy import Vector
 
 revision = "001_create_omega_vectors_1024"
-down_revision = None
+down_revision = "b0222cbe34b1"
 branch_labels = None
 depends_on = None
 

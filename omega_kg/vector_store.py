@@ -108,7 +108,7 @@ class VectorStore:
 
     async def store_pending(
         self,
-        message_id: int,
+        message_id: str,
         node_label: str = DEFAULT_NODE_TYPE,
     ) -> Optional[int]:
         """
@@ -300,7 +300,7 @@ class VectorStore:
 
         Returns:
             List of dicts: [
-                {'vector_id': int, 'message_id': int, 'node_label': str},
+                {'vector_id': int, 'message_id': str, 'node_label': str},
                 ...
             ]
 
