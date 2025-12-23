@@ -29,18 +29,23 @@ from typing import Optional
 
 import httpx
 import neo4j
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from neo4j import GraphDatabase
 
 from omega_kg.config import log_config_summary
 from omega_kg.linear_sync import LinearSync
-from omega_kg.models.capture import ConversationData
+from omega_kg.models.capture import (
+    ConversationData,
+    ObsidianUpdateRequest,
+    ObsidianUpdateResponse,
+)
 from omega_kg.percolation import PercolationEngine
 from omega_kg.routers import linear_receiver
 from omega_kg.routers.capture import router as capture_router
 from omega_kg.routers.capture import set_percolate_function
 from omega_kg.settings import settings
+from omega_kg.smart_parser import SmartParser
 from omega_kg.utils.capture_utils import generate_conversation_hash
 from omega_kg.vector_store import VectorStore, get_vector_store
 from omega_kg.workers.embedding_worker import start_worker, stop_worker
@@ -617,11 +622,74 @@ async def root():
         "endpoints": {
             "capture": "POST /capture",
             "health": "GET /health",
+            "obsidian_update": "POST /obsidian-update",
             "linear_webhook": "POST /webhook/linear",
         },
         "docs": "/docs",
         "openapi": "/openapi.json",
     }
+
+
+# --- Obsidian Update Endpoint ---
+@app.post("/obsidian-update")
+async def obsidian_update_endpoint(
+    data: ObsidianUpdateRequest,
+) -> ObsidianUpdateResponse:
+    """
+    Sync an Obsidian note to Linear.
+
+    This endpoint is triggered by the Obsidian client to create or update
+    a Linear issue based on the note content. The SmartParser handles parsing
+    tags, assignees, labels, and priority from the note content.
+
+    Args:
+        data: ObsidianUpdateRequest with note_path
+
+    Returns:
+        ObsidianUpdateResponse with Linear ticket ID and URL
+
+    Raises:
+        HTTPException: 500 if sync fails
+    """
+    logger.info(f"Received Obsidian update request for: {data.note_path}")
+
+    try:
+        # Initialize SmartParser and sync note
+        parser = SmartParser()
+        result = await parser.sync_note_to_linear(data.note_path)
+
+        if result is None:
+            logger.error(f"Failed to sync note: {data.note_path}")
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to sync note to Linear - parser returned None (check LINEAR_TEAM_ID configuration and note content)",
+            )
+
+        # Extract Linear issue details from result
+        linear_id = result.get("id")
+        linear_identifier = result.get("identifier")
+        linear_url = result.get("url")
+
+        logger.info(
+            f"Successfully synced {data.note_path} to Linear issue {linear_identifier}"
+        )
+
+        return ObsidianUpdateResponse(
+            success=True,
+            linear_id=linear_id,
+            linear_identifier=linear_identifier,
+            linear_url=linear_url,
+            message=f"Successfully synced to Linear issue {linear_identifier}",
+        )
+
+    except HTTPException:
+        # Re-raise HTTPExceptions as-is
+        raise
+    except Exception as e:
+        logger.error(f"Error syncing note to Linear: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500, detail=f"Internal server error: {str(e)}"
+        )
 
 
 # --- Linear Webhook Endpoint ---
