@@ -197,6 +197,7 @@ def get_exempted_keys() -> FrozenSet[str]:
         "APIDOG_ACCESS_TOKEN",
         "APIDOG_PROJECT_ID",
         "OMEGA_ENV",
+        "HOOKDECK_PUBLIC_URL",
     }
 
     return frozenset(exempted)

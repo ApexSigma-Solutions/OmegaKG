@@ -1,8 +1,9 @@
 import hashlib
 import hmac
 import json
-import requests
 import os
+
+import requests
 
 # Configuration
 # EXTRACTED SECRET: lin_wh_R35AOOhJfSHuZdk8tG6zCdDPkwHNcTfpuhlrKXCCfrYl
@@ -29,10 +30,14 @@ headers = {
     "X-Linear-Signature": signature
 }
 
-print(f"Sending test webhook to {ENDPOINT}...")
-try:
-    response = requests.post(ENDPOINT, data=body, headers=headers)
-    print(f"Status Code: {response.status_code}")
-    print(f"Response: {response.text}")
-except Exception as e:
-    print(f"Error: {e}")
+def test_webhook_live():
+    print(f"Sending test webhook to {ENDPOINT}...")
+    try:
+        response = requests.post(ENDPOINT, data=body, headers=headers, timeout=10)
+        print(f"Status Code: {response.status_code}")
+        print(f"Response: {response.text}")
+    except requests.exceptions.RequestException as e:
+        print(f"Error: {e}")
+
+if __name__ == "__main__":
+    test_webhook_live()

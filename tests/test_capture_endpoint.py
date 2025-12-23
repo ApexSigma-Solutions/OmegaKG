@@ -1,8 +1,9 @@
-import requests
 import json
 
+import requests
+
 # CONFIGURATION
-BASE_URL = "http://localhost:8002"
+BASE_URL = "http://localhost:8765"
 API_KEY = "test-api-key-for-testing-only"
 
 

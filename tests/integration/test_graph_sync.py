@@ -106,4 +106,6 @@ async def test_upsert_issue_topology(graph_driver):
 
     # 4. Cleanup (ephemeral container usually handles this)
     async with graph_driver.session() as session:
-        await session.run("MATCH (n) DETACH DELETE n")
+        # Use a more memory-efficient way to clear the database if it's large, 
+        # though for tests we usually just delete what we created.
+        await session.run("MATCH (n) CALL { WITH n DETACH DELETE n } IN TRANSACTIONS OF 1000 ROWS")

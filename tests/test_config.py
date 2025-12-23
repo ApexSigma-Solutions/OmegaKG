@@ -84,6 +84,8 @@ def get_exempted_keys() -> Set[str]:
         "APIDOG_PROJECT_ID",
         # Environment marker used in CI / orchestration
         "OMEGA_ENV",
+        # Hookdeck configuration
+        "HOOKDECK_PUBLIC_URL",
     }
 
 

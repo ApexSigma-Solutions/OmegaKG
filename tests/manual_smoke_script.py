@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Smoke test for Phase 3 & 4 vector embedding pipeline"""
 
-import requests
-import time
 import json
 import sys
+import time
+
+import requests
 
 # Prepare test payload
 payload = {
@@ -27,7 +28,7 @@ try:
     print("[STEP 2/4] Sending capture request...")
     start = time.time()
     response = requests.post(
-        "http://localhost:8002/v1/capture", json=payload, timeout=10
+        "http://localhost:8765/v1/capture", json=payload, timeout=10
     )
     elapsed = time.time() - start
 
@@ -55,15 +56,12 @@ try:
     # Query PostgreSQL
     print("[STEP 4/4] Querying PostgreSQL for embedding status...")
     import asyncio
+
     import asyncpg
-    from omega_kg.config import (
-        POSTGRES_SERVER,
-        POSTGRES_PORT,
-        POSTGRES_USER,
-        POSTGRES_PASSWORD,
-        POSTGRES_DB,
-        VECTOR_TABLE_NAME,
-    )
+
+    from omega_kg.config import (POSTGRES_DB, POSTGRES_PASSWORD, POSTGRES_PORT,
+                                 POSTGRES_SERVER, POSTGRES_USER,
+                                 VECTOR_TABLE_NAME)
 
     async def check_embedding():
         try:
