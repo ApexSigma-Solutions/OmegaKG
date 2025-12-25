@@ -4,6 +4,10 @@ from omega_kg.routers import linear_receiver
 from omega_kg.settings import settings
 from omega_kg.database.session import get_db
 
+# Import models to ensure SQLAlchemy tracks them
+from omega_kg.database.models import RawWebhookEvent  # noqa: F401
+from omega_kg.models.linear import RawLinearEvent  # noqa: F401
+
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.VERSION,
