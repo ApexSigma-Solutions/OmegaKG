@@ -20,11 +20,9 @@ Write-Host "Step 1: Starting databases..." -ForegroundColor Magenta
 & .\start-database.ps1
 
 # Wait for databases
-Write-Host "
-Step 2: Waiting for databases to be ready..." -ForegroundColor Magenta
+Write-Host "`nStep 2: Waiting for databases to be ready..." -ForegroundColor Magenta
 Start-Sleep -Seconds 5
 
 # Start capture server
-Write-Host "
-Step 3: Starting capture server..." -ForegroundColor Magenta
+Write-Host "`nStep 3: Starting capture server..." -ForegroundColor Magenta
 & .\start-server.ps1

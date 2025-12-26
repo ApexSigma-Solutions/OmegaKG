@@ -49,6 +49,7 @@ from omega_kg.smart_parser import SmartParser
 from omega_kg.utils.capture_utils import generate_conversation_hash
 from omega_kg.vector_store import VectorStore, get_vector_store
 from omega_kg.workers.embedding_worker import start_worker, stop_worker
+from omega_kg.pre_flight import pre_flight_checks
 
 # Ngrok tunnel integration
 try:

@@ -211,7 +211,7 @@ class EmbeddingWorker:
         Implements strategic content extraction patterns per node type:
         - ChatMessage: Simple content field
         - LinearIssue: Title + Description (compound context)
-        - ChatSession: Summary field with fallback
+        - ChatSession: Platform, date, and message count metadata
         - Decision: Multi-field coalesce
 
         Uses AsyncGraphDriver for non-blocking, pooled connections.
@@ -248,7 +248,9 @@ class EmbeddingWorker:
                 "ChatSession": """
                     MATCH (n:ChatSession)
                     WHERE elementId(n) = $message_id
-                    RETURN 'Session Summary: ' + coalesce(n.summary, 'No summary available') AS text
+                    RETURN 'ChatSession on ' + coalesce(n.platform, 'unknown platform') +
+                           ' from ' + coalesce(n.date, 'unknown date') +
+                           ' with ' + coalesce(toString(n.message_count), '0') + ' messages' AS text
                 """,
                 "Decision": """
                     MATCH (n:Decision)
