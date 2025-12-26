@@ -158,6 +158,12 @@ class Settings(BaseSettings):
     linear_project_id: Optional[str] = Field(None, validation_alias="LINEAR_PROJECT_ID")
 
     github_token: Optional[str] = Field(None, validation_alias="GITHUB_TOKEN")
+    github_webhook_secret: Optional[str] = Field(
+        None, validation_alias="GITHUB_WEBHOOK_SECRET"
+    )
+    linear_done_state_id: Optional[str] = Field(
+        None, validation_alias="LINEAR_DONE_STATE_ID"
+    )
 
     # --- AI Services ---
     nanogpt_api_key: Optional[str] = Field(
@@ -200,6 +206,21 @@ class Settings(BaseSettings):
         le=1.0,
         validation_alias="PERCOLATION_SIMILARITY_THRESHOLD",
         description="Similarity threshold for creating relationships in the percolation engine (0.0-1.0)",
+    )
+
+    # --- Event Processor Configuration (TN-103) ---
+    webhook_poll_interval: float = Field(
+        5.0,
+        ge=0.1,
+        validation_alias="WEBHOOK_POLL_INTERVAL",
+        description="Seconds between polling cycles for unprocessed webhook events (default: 5.0)",
+    )
+    webhook_batch_size: int = Field(
+        10,
+        ge=1,
+        le=100,
+        validation_alias="WEBHOOK_BATCH_SIZE",
+        description="Number of events to fetch per batch (default: 10, max: 100)",
     )
 
     # --- Paths ---

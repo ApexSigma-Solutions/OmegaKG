@@ -118,6 +118,28 @@ class KnowledgeGraphSchema:
                         FOR (n:{label}) REQUIRE n.id IS UNIQUE
                     """
                     )
+                
+                # Intelligence Layer constraints
+                session.run(
+                    """
+                    CREATE CONSTRAINT constraint_id IF NOT EXISTS
+                    FOR (n:Constraint) REQUIRE n.id IS UNIQUE
+                """
+                )
+                
+                session.run(
+                    """
+                    CREATE CONSTRAINT context_name IF NOT EXISTS
+                    FOR (n:Context) REQUIRE n.name IS UNIQUE
+                """
+                )
+                
+                session.run(
+                    """
+                    CREATE CONSTRAINT incident_id IF NOT EXISTS
+                    FOR (n:Incident) REQUIRE n.id IS UNIQUE
+                """
+                )
 
                 # Indexes - keep commonly used indexes for Task
                 session.run(

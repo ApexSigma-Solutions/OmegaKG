@@ -1,239 +1,620 @@
-"""Tests for Linear client and Smart Parser integration."""
+"""
+Unit Tests for LinearSync
 
-from __future__ import annotations
+Tests the LinearSync.update_local_note() method and related functionality.
+"""
 
-from typing import Generator
-from unittest.mock import AsyncMock, MagicMock, patch
+import json
+import tempfile
+from pathlib import Path
+from unittest.mock import patch, MagicMock
 
 import pytest
 
-from omega_kg.linear_client import LinearClient
-from omega_kg.smart_parser import SmartParser
+from omega_kg.linear_sync import (
+    LinearSync,
+    LinearSyncError,
+    FileNotFoundError,
+    LinearAPIError,
+    LINEAR_TO_VAULT_STATUS,
+)
 
 
-# --- FIXTURES ---
+class TestLinearStateMapping:
+    """Test Linear state to vault status mapping."""
+
+    def test_map_started_state(self):
+        """Test mapping 'started' state type."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            sync = LinearSync(vault_path=Path(tmpdir))
+            assert sync.map_linear_state_to_vault_status("In Progress", "started") == "In Progress"
+            assert sync.map_linear_state_to_vault_status("Doing", "started") == "In Progress"
+
+    def test_map_completed_state(self):
+        """Test mapping 'completed' state type."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            sync = LinearSync(vault_path=Path(tmpdir))
+            assert sync.map_linear_state_to_vault_status("Done", "completed") == "Done"
+            assert sync.map_linear_state_to_vault_status("Complete", "completed") == "Done"
+
+    def test_map_canceled_state(self):
+        """Test mapping 'canceled' state type."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            sync = LinearSync(vault_path=Path(tmpdir))
+            assert sync.map_linear_state_to_vault_status("Canceled", "canceled") == "Canceled"
+            assert sync.map_linear_state_to_vault_status("Cancelled", "canceled") == "Canceled"
+
+    def test_map_backlog_state(self):
+        """Test mapping 'backlog' state type."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            sync = LinearSync(vault_path=Path(tmpdir))
+            assert sync.map_linear_state_to_vault_status("Backlog", "backlog") == "Backlog"
+            assert sync.map_linear_state_to_vault_status("Todo", "backlog") == "Backlog"
+
+    def test_map_triage_state(self):
+        """Test mapping 'triage' state type."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            sync = LinearSync(vault_path=Path(tmpdir))
+            assert sync.map_linear_state_to_vault_status("Triage", "triage") == "Backlog"
+
+    def test_map_unknown_state_fallback(self):
+        """Test fallback for unknown state types."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            sync = LinearSync(vault_path=Path(tmpdir))
+            assert sync.map_linear_state_to_vault_status("Unknown", "unknown") == "Backlog"
 
 
-@pytest.fixture
-def mock_settings() -> Generator[MagicMock, None, None]:
-    """Mock settings for Linear client tests."""
-    with patch("omega_kg.linear_client.settings") as mock:
-        mock.linear_api_key = "test_api_key"
-        yield mock
+class TestExtractIssueData:
+    """Test issue data extraction from webhook payload."""
 
-
-@pytest.fixture
-def mock_parser_settings() -> Generator[MagicMock, None, None]:
-    """Mock settings for Smart Parser tests."""
-    with patch("omega_kg.smart_parser.settings") as mock:
-        mock.linear_team_id = "team_123"
-        # Note: linear_user_map_json and linear_label_map_json are not in Settings
-        # They are optional parsing configs that SmartParser may read from env directly
-        # For testing, we mock them as attributes that may be accessed
-        mock.linear_user_map_json = '{"test_user": "user_123"}'
-        mock.linear_label_map_json = '{"TestLabel": "label_123"}'
-        mock.linear_status_map_json = '{"in-progress": "state_123"}'
-        yield mock
-
-
-@pytest.fixture
-def mock_httpx() -> Generator[AsyncMock, None, None]:
-    """Mock httpx AsyncClient for Linear API calls."""
-    with patch("httpx.AsyncClient") as mock_client:
-        mock_instance = AsyncMock()
-        mock_client.return_value.__aenter__.return_value = mock_instance
-        yield mock_instance
-
-
-@pytest.fixture
-def mock_vault() -> Generator[MagicMock, None, None]:
-    """Mock VaultUtils for file operations."""
-    with patch("omega_kg.smart_parser.VaultUtils") as mock:
-        yield mock.return_value
-
-
-# --- LINEAR CLIENT TESTS ---
-
-
-@pytest.mark.asyncio
-async def test_update_issue(mock_settings: MagicMock, mock_httpx: AsyncMock) -> None:
-    """Test updating an existing Linear issue."""
-    client = LinearClient()
-
-    mock_response = AsyncMock()
-    mock_response.json = MagicMock(
-        return_value={
-            "data": {
-                "issueUpdate": {
-                    "success": True,
-                    "issue": {
-                        "id": "issue_123",
-                        "identifier": "APX-1",
-                        "title": "Updated Title",
-                    },
+    def test_extract_valid_payload(self):
+        """Test extracting data from a valid payload."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            sync = LinearSync(vault_path=Path(tmpdir))
+            payload = {
+                "action": "update",
+                "type": "Issue",
+                "data": {
+                    "id": "issue-123",
+                    "identifier": "TEST-123",
+                    "state": {
+                        "name": "Done",
+                        "type": "completed"
+                    }
                 }
             }
-        }
-    )
-    mock_response.raise_for_status = MagicMock()
-    mock_httpx.post = AsyncMock(return_value=mock_response)
+            issue_id, state_name, state_type, identifier = sync.extract_issue_data(payload)
+            assert issue_id == "issue-123"
+            assert state_name == "Done"
+            assert state_type == "completed"
+            assert identifier == "TEST-123"
 
-    result = await client.update_issue("issue_123", {"title": "Updated Title"})
+    def test_extract_payload_missing_data(self):
+        """Test error when payload missing 'data' field."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            sync = LinearSync(vault_path=Path(tmpdir))
+            payload = {"action": "update", "type": "Issue"}
+            with pytest.raises(KeyError):
+                sync.extract_issue_data(payload)
 
-    assert result["title"] == "Updated Title"
+    def test_extract_payload_missing_id(self):
+        """Test error when payload missing 'data.id' field."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            sync = LinearSync(vault_path=Path(tmpdir))
+            payload = {"action": "update", "type": "Issue", "data": {}}
+            with pytest.raises(KeyError):
+                sync.extract_issue_data(payload)
 
-    payload = mock_httpx.post.call_args.kwargs["json"]
-    assert payload["variables"]["id"] == "issue_123"
-    assert payload["variables"]["input"]["title"] == "Updated Title"
 
+class TestFindNoteByLinearId:
+    """Test finding notes by linear_id."""
 
-# --- SMART PARSER TESTS ---
+    def test_find_existing_note(self):
+        """Test finding a note that exists."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            vault_path = Path(tmpdir)
+            sync = LinearSync(vault_path=vault_path)
 
-
-@pytest.mark.asyncio
-async def test_sync_note_create(
-    mock_parser_settings: MagicMock, mock_vault: MagicMock
-) -> None:
-    """Test creating a new Linear issue from a note."""
-    # Mock LinearClient within SmartParser
-    with patch("omega_kg.smart_parser.linear_client") as mock_client:
-        mock_client.create_issue = AsyncMock(
-            return_value={"id": "issue_123", "identifier": "APX-1", "url": "http://url"}
-        )
-
-        parser = SmartParser()
-
-        # Mock Vault interactions
-        mock_vault.read_note_frontmatter.return_value = {"status": "In Progress"}
-        mock_vault.resolve_path.return_value.is_file.return_value = True
-
-        # Mock file content
-        mock_file = MagicMock()
-        mock_file.__enter__.return_value.read.return_value = """---
-status: In Progress
+            # Create a test note
+            note_content = """---
+linear_id: test-issue-456
+status: Todo
 ---
-# New Task
-Description here.
-@assignee/test_user
-@label/TestLabel
-@priority/1
+# Test Note
 """
-        # We need to mock frontmatter.load to return content
-        with patch("omega_kg.smart_parser.frontmatter.load") as mock_fm:
-            mock_fm.return_value.content = """# New Task
-Description here.
-@assignee/test_user
-@label/TestLabel
-@priority/1
+            note_path = vault_path / "Linear" / "TEST-456.md"
+            note_path.parent.mkdir(parents=True, exist_ok=True)
+            note_path.write_text(note_content, encoding="utf-8")
+
+            found = sync.find_note_by_linear_id("test-issue-456")
+            assert found == note_path
+
+    def test_find_nonexistent_note(self):
+        """Test finding a note that doesn't exist."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            sync = LinearSync(vault_path=Path(tmpdir))
+            found = sync.find_note_by_linear_id("non-existent-id")
+            assert found is None
+
+
+class TestUpdateLocalNote:
+    """Test updating local note with Linear status changes."""
+
+    def test_update_status_success(self):
+        """Test successful status update."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            vault_path = Path(tmpdir)
+            sync = LinearSync(vault_path=vault_path)
+
+            # Create a test note with initial status
+            note_content = """---
+linear_id: issue-789
+status: Todo
+identifier: TEST-789
+---
+# Test Issue
 """
-            mock_fm.return_value.metadata = {"status": "In Progress"}
+            note_path = vault_path / "Linear" / "TEST-789.md"
+            note_path.parent.mkdir(parents=True, exist_ok=True)
+            note_path.write_text(note_content, encoding="utf-8")
 
-            mock_vault.resolve_path.return_value.open.return_value = mock_file
+            # Simulate status change in Linear
+            payload = {
+                "action": "update",
+                "type": "Issue",
+                "data": {
+                    "id": "issue-789",
+                    "identifier": "TEST-789",
+                    "state": {
+                        "name": "Done",
+                        "type": "completed"
+                    }
+                }
+            }
 
-            # Run Sync
-            result: dict[str, str] | None = await parser.sync_note_to_linear(
-                "Tasks/NewTask.md"
-            )
+            result = sync.update_local_note(payload)
+            assert result is True
 
-            # Verify result is not None before accessing
-            assert result is not None
-            assert result["identifier"] == "APX-1"
+            # Verify the update
+            metadata = sync.vault_utils.read_note_frontmatter(note_path)
+            assert metadata.get("status") == "Done"
 
-            # Verify Create Call
-            mock_client.create_issue.assert_called_once()
-            args = mock_client.create_issue.call_args.kwargs
-            assert args["title"] == "New Task"
-            assert args["assignee_id"] == "user_123"
-            assert "label_123" in args["label_ids"]
-            assert args["priority"] == 1
-            assert args["state_id"] == "state_123"
+    def test_update_no_change(self):
+        """Test that no update occurs when status hasn't changed."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            vault_path = Path(tmpdir)
+            sync = LinearSync(vault_path=vault_path)
 
-            # Verify Write Back
-            mock_vault.update_note_frontmatter.assert_called_once()
-            updates = mock_vault.update_note_frontmatter.call_args[0][1]
-            assert updates["linear_id"] == "issue_123"
+            # Create a test note with same status
+            note_content = """---
+linear_id: issue-101
+status: In Progress
+identifier: TEST-101
+---
+# Test Issue
+"""
+            note_path = vault_path / "Linear" / "TEST-101.md"
+            note_path.parent.mkdir(parents=True, exist_ok=True)
+            note_path.write_text(note_content, encoding="utf-8")
+
+            # Simulate same status
+            payload = {
+                "action": "update",
+                "type": "Issue",
+                "data": {
+                    "id": "issue-101",
+                    "identifier": "TEST-101",
+                    "state": {
+                        "name": "In Progress",
+                        "type": "started"
+                    }
+                }
+            }
+
+            result = sync.update_local_note(payload)
+            assert result is True  # Should succeed, just no change needed
+
+    def test_update_file_not_found(self):
+        """Test error when file not found for linear_id."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            sync = LinearSync(vault_path=Path(tmpdir))
+
+            payload = {
+                "action": "update",
+                "type": "Issue",
+                "data": {
+                    "id": "non-existent-issue",
+                    "identifier": "NON-EXISTENT",
+                    "state": {
+                        "name": "Done",
+                        "type": "completed"
+                    }
+                }
+            }
+
+            with pytest.raises(FileNotFoundError):
+                sync.update_local_note(payload)
+
+    def test_update_invalid_payload(self):
+        """Test error when payload is invalid."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            sync = LinearSync(vault_path=Path(tmpdir))
+
+            payload = {"invalid": "payload"}
+
+            with pytest.raises(LinearSyncError):
+                sync.update_local_note(payload)
+
+    def test_update_with_fallback_to_identifier(self):
+        """Test fallback to identifier when linear_id search fails."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            vault_path = Path(tmpdir)
+            sync = LinearSync(vault_path=vault_path)
+
+            # Create a note with identifier but different linear_id format
+            note_content = """---
+linear_id: TEST-112
+status: Todo
+identifier: TEST-112
+---
+# Test Issue
+"""
+            note_path = vault_path / "Linear" / "TEST-112.md"
+            note_path.parent.mkdir(parents=True, exist_ok=True)
+            note_path.write_text(note_content, encoding="utf-8")
+
+            payload = {
+                "action": "update",
+                "type": "Issue",
+                "data": {
+                    "id": "TEST-112",
+                    "identifier": "TEST-112",
+                    "state": {
+                        "name": "Done",
+                        "type": "completed"
+                    }
+                }
+            }
+
+            result = sync.update_local_note(payload)
+            assert result is True
+
+            metadata = sync.vault_utils.read_note_frontmatter(note_path)
+            assert metadata.get("status") == "Done"
 
 
-@pytest.mark.asyncio
-async def test_sync_note_update(
-    mock_parser_settings: MagicMock, mock_vault: MagicMock
-) -> None:
-    """Test updating an existing Linear issue from a note."""
-    with patch("omega_kg.smart_parser.linear_client") as mock_client:
-        mock_client.update_issue = AsyncMock(
-            return_value={"id": "issue_123", "identifier": "APX-1"}
-        )
+class TestHandleIssueUpdated:
+    """Test the handle_issue_updated alias method."""
 
-        parser = SmartParser()
+    def test_handle_issue_updated_success(self):
+        """Test successful issue update handling."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            vault_path = Path(tmpdir)
+            sync = LinearSync(vault_path=vault_path)
 
-        # Existing ID in frontmatter
-        mock_vault.read_note_frontmatter.return_value = {
-            "linear_id": "issue_123",
-            "status": "In Progress",
-        }
-        mock_vault.resolve_path.return_value.is_file.return_value = True
+            # Create a test note
+            note_content = """---
+linear_id: issue-update-test
+status: Backlog
+identifier: UPDATE-001
+---
+# Test Issue
+"""
+            note_path = vault_path / "Linear" / "UPDATE-001.md"
+            note_path.parent.mkdir(parents=True, exist_ok=True)
+            note_path.write_text(note_content, encoding="utf-8")
 
-        mock_file = MagicMock()
-        with patch("omega_kg.smart_parser.frontmatter.load") as mock_fm:
-            mock_fm.return_value.content = "# Updated Task"
-            mock_fm.return_value.metadata = {"linear_id": "issue_123"}
-            mock_vault.resolve_path.return_value.open.return_value = mock_file
+            payload = {
+                "action": "update",
+                "type": "Issue",
+                "data": {
+                    "id": "issue-update-test",
+                    "identifier": "UPDATE-001",
+                    "state": {
+                        "name": "In Progress",
+                        "type": "started"
+                    }
+                }
+            }
 
-            # Run Sync
-            result: dict[str, str] | None = await parser.sync_note_to_linear(
-                "Tasks/ExistingTask.md"
-            )
+            result = sync.handle_issue_updated(payload)
+            assert result is True
 
-            # Verify result is not None before accessing
-            assert result is not None
-            assert result["identifier"] == "APX-1"
-
-            # Verify Update Call
-            mock_client.update_issue.assert_called_once()
-            call_args = mock_client.update_issue.call_args
-            assert call_args[0][0] == "issue_123"
-            assert call_args[0][1]["title"] == "Updated Task"
-
-
-@pytest.mark.asyncio
-async def test_sync_note_with_none_result(
-    mock_parser_settings: MagicMock, mock_vault: MagicMock
-) -> None:
-    """Test handling when sync returns None (e.g., file not found)."""
-    with patch("omega_kg.smart_parser.linear_client") as mock_client:
-        parser = SmartParser()
-
-        # Mock file not found
-        mock_vault.resolve_path.return_value.is_file.return_value = False
-
-        # Run Sync
-        result = await parser.sync_note_to_linear("Tasks/NonExistent.md")
-
-        # Should return None when file doesn't exist
-        assert result is None
-
-        # Verify no API calls were made
-        mock_client.create_issue.assert_not_called()
-        mock_client.update_issue.assert_not_called()
+            metadata = sync.vault_utils.read_note_frontmatter(note_path)
+            assert metadata.get("status") == "In Progress"
 
 
-@pytest.mark.asyncio
-async def test_sync_note_with_missing_team_id(mock_vault: MagicMock) -> None:
-    """Test handling when team ID is not configured."""
-    with patch("omega_kg.smart_parser.settings") as mock_settings:
-        mock_settings.linear_team_id = None
-        mock_settings.linear_user_map_json = "{}"
-        mock_settings.linear_label_map_json = "{}"
-        mock_settings.linear_status_map_json = "{}"
+class TestGetLinearSync:
+    """Test the get_linear_sync convenience function."""
 
-        parser = SmartParser()
+    def test_get_linear_sync(self):
+        """Test getting a LinearSync instance."""
+        from omega_kg.linear_sync import get_linear_sync
 
-        # Mock file exists
-        mock_vault.read_note_frontmatter.return_value = {"status": "In Progress"}
-        mock_vault.resolve_path.return_value.is_file.return_value = True
+        with tempfile.TemporaryDirectory() as tmpdir:
+            sync = get_linear_sync(vault_path=Path(tmpdir))
+            assert isinstance(sync, LinearSync)
 
-        # Run Sync
-        result = await parser.sync_note_to_linear("Tasks/Test.md")
 
-        # Should return None when team ID is missing
-        assert result is None
+class TestExtractTitleFromContent:
+    """Test title extraction from markdown content."""
+
+    def test_extract_title_from_h1(self):
+        """Test extracting title from first H1 heading."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            sync = LinearSync(vault_path=Path(tmpdir))
+            content = "# This is a Test Title\n\nSome content here."
+            title = sync._extract_title_from_content(content)
+            assert title == "This is a Test Title"
+
+    def test_extract_title_no_h1(self):
+        """Test empty string when no H1 present."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            sync = LinearSync(vault_path=Path(tmpdir))
+            content = "Some content without a title."
+            title = sync._extract_title_from_content(content)
+            assert title == ""
+
+    def test_extract_title_with_extra_whitespace(self):
+        """Test title extraction handles whitespace."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            sync = LinearSync(vault_path=Path(tmpdir))
+            content = "#   Title with spaces   \n\nContent"
+            title = sync._extract_title_from_content(content)
+            assert title == "Title with spaces"
+
+
+class TestMapVaultStatusToLinearState:
+    """Test vault status to Linear state mapping."""
+
+    def test_map_backlog_status(self):
+        """Test mapping 'backlog' status."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            sync = LinearSync(vault_path=Path(tmpdir))
+            state_id = sync._map_vault_status_to_linear_state("backlog", "team-123")
+            assert state_id is None  # Backlog creates without specific state
+
+    def test_map_unknown_status(self):
+        """Test mapping unknown status returns None."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            sync = LinearSync(vault_path=Path(tmpdir))
+            state_id = sync._map_vault_status_to_linear_state("unknown_status", "team-123")
+            assert state_id is None
+
+
+class TestCreateFromNote:
+    """Test the create_from_note outbound sync method."""
+
+    def test_create_from_note_idempotency_skip(self):
+        """Test that existing linear_id causes immediate return (idempotency)."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            vault_path = Path(tmpdir)
+            sync = LinearSync(vault_path=vault_path)
+
+            # Create a note with existing linear_id
+            note_content = """---
+linear_id: TEST-001
+status: Todo
+---
+# Test Issue
+
+This issue is already synced.
+"""
+            note_path = vault_path / "Tasks" / "TEST-001.md"
+            note_path.parent.mkdir(parents=True, exist_ok=True)
+            note_path.write_text(note_content, encoding="utf-8")
+
+            # Should return existing ID without calling API
+            result = sync.create_from_note(str(note_path))
+            assert result == "TEST-001"
+
+    def test_create_from_note_extracts_title_from_frontmatter(self):
+        """Test title extraction prefers frontmatter over H1."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            vault_path = Path(tmpdir)
+            sync = LinearSync(vault_path=vault_path)
+
+            # Create a mock client that doesn't actually call API
+            class MockLinearClient:
+                async def create_issue(self, **kwargs):
+                    return {"id": "new-issue-id", "identifier": "TEST-002"}
+
+            sync.linear_client = MockLinearClient()
+            sync.team_id = "team-123"
+
+            note_content = """---
+title: Frontmatter Title
+status: Todo
+---
+# H1 Title
+
+Content body here.
+"""
+            note_path = vault_path / "Tasks" / "TEST-002.md"
+            note_path.parent.mkdir(parents=True, exist_ok=True)
+            note_path.write_text(note_content, encoding="utf-8")
+
+            result = sync.create_from_note(str(note_path))
+            assert result == "TEST-002"
+
+            # Verify linear_id was written back
+            metadata = sync.vault_utils.read_note_frontmatter(note_path)
+            assert metadata.get("linear_id") == "TEST-002"
+
+    def test_create_from_note_extracts_title_from_h1(self):
+        """Test title extraction falls back to H1 when no frontmatter title."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            vault_path = Path(tmpdir)
+            sync = LinearSync(vault_path=vault_path)
+
+            captured_title = []
+
+            class MockLinearClient:
+                async def create_issue(self, **kwargs):
+                    captured_title.append(kwargs.get("title"))
+                    return {"id": "new-issue-id", "identifier": "TEST-003"}
+
+            sync.linear_client = MockLinearClient()
+            sync.team_id = "team-123"
+
+            note_content = """---
+status: Todo
+---
+# H1 Title From Content
+
+Content body here.
+"""
+            note_path = vault_path / "Tasks" / "TEST-003.md"
+            note_path.parent.mkdir(parents=True, exist_ok=True)
+            note_path.write_text(note_content, encoding="utf-8")
+
+            result = sync.create_from_note(str(note_path))
+            assert result == "TEST-003"
+            assert captured_title[0] == "H1 Title From Content"
+
+    def test_create_from_note_uses_filename_as_fallback(self):
+        """Test filename is used when no title available."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            vault_path = Path(tmpdir)
+            sync = LinearSync(vault_path=vault_path)
+
+            captured_title = []
+
+            class MockLinearClient:
+                async def create_issue(self, **kwargs):
+                    captured_title.append(kwargs.get("title"))
+                    return {"id": "new-issue-id", "identifier": "TEST-004"}
+
+            sync.linear_client = MockLinearClient()
+            sync.team_id = "team-123"
+
+            note_content = """---
+status: Todo
+---
+No title here, just content.
+"""
+            note_path = vault_path / "Tasks" / "my-test-task.md"
+            note_path.parent.mkdir(parents=True, exist_ok=True)
+            note_path.write_text(note_content, encoding="utf-8")
+
+            result = sync.create_from_note(str(note_path))
+            assert result == "TEST-004"
+            assert captured_title[0] == "my-test-task"  # Filename without extension
+
+    def test_create_from_note_handles_missing_team_id(self):
+        """Test error when LINEAR_TEAM_ID is not configured."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            vault_path = Path(tmpdir)
+            sync = LinearSync(vault_path=vault_path)
+            sync.team_id = None  # No team configured
+
+            note_content = """---
+title: Test Issue
+---
+# Test Issue
+
+Content here.
+"""
+            note_path = vault_path / "Tasks" / "TEST-005.md"
+            note_path.parent.mkdir(parents=True, exist_ok=True)
+            note_path.write_text(note_content, encoding="utf-8")
+
+            with pytest.raises(LinearSyncError) as exc_info:
+                sync.create_from_note(str(note_path))
+
+            assert "LINEAR_TEAM_ID" in str(exc_info.value)
+
+    def test_create_from_note_file_not_found(self):
+        """Test error when note file doesn't exist."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            vault_path = Path(tmpdir)
+            sync = LinearSync(vault_path=vault_path)
+
+            with pytest.raises(LinearSyncError) as exc_info:
+                sync.create_from_note(str(vault_path / "nonexistent.md"))
+
+            assert "Failed to read note" in str(exc_info.value)
+
+    def test_create_from_note_preserves_existing_frontmatter(self):
+        """Test that existing frontmatter keys are preserved when writing back linear_id."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            vault_path = Path(tmpdir)
+            sync = LinearSync(vault_path=vault_path)
+
+            class MockLinearClient:
+                async def create_issue(self, **kwargs):
+                    return {"id": "new-issue-id", "identifier": "TEST-006"}
+
+            sync.linear_client = MockLinearClient()
+            sync.team_id = "team-123"
+
+            note_content = """---
+status: In Progress
+priority: high
+tags:
+  - dev
+  - bug
+---
+# Test Issue
+
+Content body here.
+"""
+            note_path = vault_path / "Tasks" / "TEST-006.md"
+            note_path.parent.mkdir(parents=True, exist_ok=True)
+            note_path.write_text(note_content, encoding="utf-8")
+
+            sync.create_from_note(str(note_path))
+
+            # Verify all original frontmatter is preserved
+            metadata = sync.vault_utils.read_note_frontmatter(note_path)
+            assert metadata.get("linear_id") == "TEST-006"
+            assert metadata.get("status") == "In Progress"
+            assert metadata.get("priority") == "high"
+            assert metadata.get("tags") == ["dev", "bug"]
+
+    def test_create_from_note_api_error_handling(self):
+        """Test that API errors are properly caught and wrapped."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            vault_path = Path(tmpdir)
+            sync = LinearSync(vault_path=vault_path)
+
+            class MockLinearClient:
+                async def create_issue(self, **kwargs):
+                    raise Exception("API rate limit exceeded")
+
+            sync.linear_client = MockLinearClient()
+            sync.team_id = "team-123"
+
+            note_content = """---
+title: Test Issue
+---
+# Test Issue
+
+Content here.
+"""
+            note_path = vault_path / "Tasks" / "TEST-007.md"
+            note_path.parent.mkdir(parents=True, exist_ok=True)
+            note_path.write_text(note_content, encoding="utf-8")
+
+            with pytest.raises(LinearAPIError) as exc_info:
+                sync.create_from_note(str(note_path))
+
+            assert "Linear API error" in str(exc_info.value)
+
+
+class TestLinearSyncExceptions:
+    """Test exception handling in LinearSync."""
+
+    def test_file_not_found_exception(self):
+        """Test FileNotFoundError is raised correctly."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            sync = LinearSync(vault_path=Path(tmpdir))
+
+            # Try to find a non-existent note
+            with pytest.raises(FileNotFoundError):
+                sync.find_note_by_linear_id("totally-fake-id")
+
+    def test_linear_api_error_exception(self):
+        """Test LinearAPIError can be raised."""
+        with pytest.raises(LinearAPIError):
+            raise LinearAPIError("Test API error")

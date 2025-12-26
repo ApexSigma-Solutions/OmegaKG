@@ -1,13 +1,12 @@
 import hmac
 import hashlib
-import json
 import logging
-from datetime import datetime
 from fastapi import APIRouter, Request, HTTPException, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from omega_kg.database.session import get_db
 from omega_kg.settings import settings
-from omega_kg.models.linear import RawLinearEvent
+from omega_kg.models.webhook import RawWebhookEvent
+from omega_kg.models.linear import RawLinearEvent  # Keep for backward compatibility in processor
 
 # Setup Logger
 logger = logging.getLogger(__name__)
@@ -43,39 +42,30 @@ async def receive_linear_event(
     db: AsyncSession = Depends(get_db),
     verification: tuple = Depends(verify_signature),
 ):
+    """
+    Dumb and fast webhook endpoint.
+    
+    Workflow:
+    1. Verify signature (via dependency)
+    2. Persist raw payload to RawWebhookEvent
+    3. Return 200 OK immediately
+    
+    No business logic in hot path - processing happens in background.
+    """
     payload_bytes, signature = verification
 
-    try:
-        payload = json.loads(payload_bytes)
-        headers = dict(request.headers)
+    # Create RawWebhookEvent (dumb and fast)
+    db_event = RawWebhookEvent(
+        source="linear",
+        headers=dict(request.headers),
+        payload=payload_bytes,  # Store raw bytes, not parsed JSON
+        processed_status=False,
+    )
 
-        # Extract External Timestamp
-        ext_ts = None
-        data_obj = payload.get("data", {})
-        if "createdAt" in data_obj:
-            try:
-                # Linear sends ISO 8601 strings e.g. "2020-01-01T00:00:00.000Z"
-                ext_ts = datetime.fromisoformat(
-                    data_obj["createdAt"].replace("Z", "+00:00")
-                )
-            except ValueError:
-                pass
+    db.add(db_event)
+    await db.commit()
 
-        db_event = RawLinearEvent(
-            signature=signature,
-            external_timestamp=ext_ts,
-            event_type=payload.get("type", "unknown"),
-            action=payload.get("action", "unknown"),
-            headers=headers,
-            body=payload,
-            processed=False,
-        )
+    # Log event ID for debugging
+    logger.info(f"Received Linear webhook event ID: {db_event.id}")
 
-        db.add(db_event)
-        await db.commit()
-
-        return {"status": "persisted", "id": db_event.id}
-
-    except Exception as e:
-        logger.error(f"Persistence Failed: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Persistence Failure")
+    return {"status": "persisted", "id": db_event.id}

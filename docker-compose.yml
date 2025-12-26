@@ -181,7 +181,7 @@ services:
       postgres:
         condition: service_healthy
     entrypoint: [""]
-    command: ["python", "-c", "from omega_kg.quipu_ollama_heartbeat import run_heartbeat_loop; run_heartbeat_loop()"]
+    command: ["python", "-c", "import asyncio; from omega_kg.quipu_ollama_heartbeat import run_heartbeat_loop; asyncio.run(run_heartbeat_loop())"]
 
   quipu-heartbeat-dev:
     build: .
@@ -201,6 +201,6 @@ services:
       postgres:
         condition: service_healthy
     entrypoint: [""]
-    command: ["python", "-c", "from omega_kg.quipu_ollama_heartbeat import run_heartbeat_loop; run_heartbeat_loop()"]
+    command: ["python", "-c", "import asyncio; from omega_kg.quipu_ollama_heartbeat import run_heartbeat_loop; asyncio.run(run_heartbeat_loop())"]
     profiles:
       - dev
