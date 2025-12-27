@@ -4,7 +4,8 @@ Creates constraints and indexes with connection recovery
 """
 
 from neo4j import GraphDatabase
-from neo4j.exceptions import ServiceUnavailable, AuthError
+from neo4j.exceptions import AuthError, ServiceUnavailable
+
 from omega_kg.settings import settings
 
 
@@ -92,6 +93,15 @@ class KnowledgeGraphSchema:
         - Index: Task.status
         - Index: Task.created
 
+        TNP-High Velocity Sprint Raw Data Lake Schema Extensions:
+        - Constraint: CodeBlock.hash IS UNIQUE
+        - Constraint: ErrorLog (error_type, timestamp) NODE KEY
+        - Constraint: Concept.normalized_name IS UNIQUE
+        - Constraint: File.path IS UNIQUE
+        - Constraint: LinearIssue.id IS UNIQUE
+        - Relationship: LinearIssue-[:TRIGGERS]->ErrorLog
+        - Relationship: CodeBlock-[:BELONGS_TO]->File
+
         If running in mock mode or no driver is available, the method makes no changes.
         """
         if self.mock_mode:
@@ -118,7 +128,7 @@ class KnowledgeGraphSchema:
                         FOR (n:{label}) REQUIRE n.id IS UNIQUE
                     """
                     )
-                
+
                 # Intelligence Layer constraints
                 session.run(
                     """
@@ -126,20 +136,105 @@ class KnowledgeGraphSchema:
                     FOR (n:Constraint) REQUIRE n.id IS UNIQUE
                 """
                 )
-                
+
                 session.run(
                     """
                     CREATE CONSTRAINT context_name IF NOT EXISTS
                     FOR (n:Context) REQUIRE n.name IS UNIQUE
                 """
                 )
-                
+
                 session.run(
                     """
                     CREATE CONSTRAINT incident_id IF NOT EXISTS
                     FOR (n:Incident) REQUIRE n.id IS UNIQUE
                 """
                 )
+
+                # ===== TNP-High Velocity Sprint Raw Data Lake Schema =====
+                #
+                # Node Types for High-Fidelity Context Extraction:
+                # - CodeBlock: Source code blocks with content hash for deduplication
+                # - ErrorLog: Structured error entries with composite key (error_type, timestamp)
+                # - Concept: Normalized concept names for semantic linking
+                # - File: Source files with path as unique identifier
+                # - LinearIssue: Issue tracker nodes (already exists, adding constraint)
+
+                # CodeBlock: Unique constraint on content hash
+                session.run(
+                    """
+                    CREATE CONSTRAINT codeblock_hash IF NOT EXISTS
+                    FOR (n:CodeBlock) REQUIRE n.hash IS UNIQUE
+                """
+                )
+
+                # ErrorLog: Composite unique constraint using composite_id (error_type + timestamp hash)
+                # Note: NODE KEY requires Enterprise Edition. Using composite string key as workaround.
+                session.run(
+                    """
+                    CREATE CONSTRAINT errorlog_composite IF NOT EXISTS
+                    FOR (n:ErrorLog) REQUIRE n.composite_id IS UNIQUE
+                """
+                )
+
+                # Concept: Unique constraint on normalized name
+                session.run(
+                    """
+                    CREATE CONSTRAINT concept_name IF NOT EXISTS
+                    FOR (n:Concept) REQUIRE n.normalized_name IS UNIQUE
+                """
+                )
+
+                # File: Unique constraint on file path
+                session.run(
+                    """
+                    CREATE CONSTRAINT file_path IF NOT EXISTS
+                    FOR (n:File) REQUIRE n.path IS UNIQUE
+                """
+                )
+
+                # LinearIssue: Unique constraint on id (already referenced in task)
+                session.run(
+                    """
+                    CREATE CONSTRAINT linearissue_id IF NOT EXISTS
+                    FOR (n:LinearIssue) REQUIRE n.id IS UNIQUE
+                """
+                )
+
+                # Indexes for common query patterns
+                session.run(
+                    """
+                    CREATE INDEX errorlog_type IF NOT EXISTS
+                    FOR (e:ErrorLog) ON (e.error_type)
+                """
+                )
+
+                session.run(
+                    """
+                    CREATE INDEX errorlog_timestamp IF NOT EXISTS
+                    FOR (e:ErrorLog) ON (e.timestamp)
+                """
+                )
+
+                session.run(
+                    """
+                    CREATE INDEX concept_category IF NOT EXISTS
+                    FOR (c:Concept) ON (c.category)
+                """
+                )
+
+                session.run(
+                    """
+                    CREATE INDEX codeblock_language IF NOT EXISTS
+                    FOR (c:CodeBlock) ON (c.language)
+                """
+                )
+
+                # ===== Relationship Type Definitions =====
+                # Note: Relationship type indexes are not supported in Neo4j Community Edition
+                # The following relationship types are defined for semantic integrity:
+                # - TRIGGERS: LinearIssue -> ErrorLog (error causation tracking)
+                # - BELONGS_TO: CodeBlock -> File (code location tracking)
 
                 # Indexes - keep commonly used indexes for Task
                 session.run(
@@ -164,7 +259,7 @@ class KnowledgeGraphSchema:
                 """
                 )
 
-                print("✓ Schema initialized successfully")
+                print("✓ Schema initialized successfully (TNP-High Velocity Sprint extensions included)")
 
         except ServiceUnavailable as e:
             print(f"✗ Database connection lost: {e}")

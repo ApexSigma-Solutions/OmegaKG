@@ -248,4 +248,37 @@ async def health_check():
     return health_status
 
 
+@router.get("/health/installation")
+async def get_installation_status() -> Dict[str, Any]:
+    """
+    Get real-time status of Python environment and package installation.
+
+    Returns:
+        JSON with installation status, version, and troubleshooting links
+    """
+    try:
+        import omega_kg
+        version = getattr(omega_kg, "__version__", "unknown")
+        installed = True
+    except ImportError:
+        installed = False
+        version = None
+
+    status = {
+        "status": "healthy" if installed else "unhealthy",
+        "omega_kg_installed": installed,
+        "version": version,
+        "timestamp": datetime.now().isoformat()
+    }
+
+    if not installed:
+        status["details"] = {
+            "error": "Package not installed",
+            "troubleshooting": "Run scripts/setup_omega_kg.ps1 or pip install -e .",
+            "documentation": "docs/INSTALLATION_TROUBLESHOOTING.md"
+        }
+
+    return status
+
+
 __all__ = ["router", "set_percolate_function"]

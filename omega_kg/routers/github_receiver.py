@@ -47,7 +47,14 @@ async def verify_github_signature(request: Request) -> bytes:
         )
 
     body_bytes = await request.body()
-
+    
+    # DIAGNOSTIC: Check if webhook secret is configured
+    if not settings.github_webhook_secret:
+        logger.error(
+            "[HOOKDECK_DEBUG] GITHUB_WEBHOOK_SECRET is not set! "
+            "Webhook signature verification will fail."
+        )
+    
     expected_signature = hmac.new(
         settings.github_webhook_secret.encode("utf-8"),
         body_bytes,
@@ -55,6 +62,12 @@ async def verify_github_signature(request: Request) -> bytes:
     ).hexdigest()
 
     expected_header = f"sha256={expected_signature}"
+    
+    # DIAGNOSTIC: Log signature details (without exposing secret)
+    logger.info(
+        f"[HOOKDECK_DEBUG] Signature verification - "
+        f"Received: {signature[:20]}... | Expected: {expected_header[:20]}..."
+    )
 
     if not hmac.compare_digest(signature, expected_header):
         logger.warning("GitHub webhook signature verification failed")
@@ -88,6 +101,13 @@ async def receive_github_event(
     Returns:
         Dict with event status and ID
     """
+    # DIAGNOSTIC: Log incoming request details
+    client_ip = request.client.host if request.client else "unknown"
+    logger.info(
+        f"[HOOKDECK_DEBUG] Incoming GitHub webhook from {client_ip} - "
+        f"Headers: {list(request.headers.keys())[:5]}... "
+        f"Content-Type: {request.headers.get('content-type', 'missing')}"
+    )
     # Parse JSON payload
     import json
 

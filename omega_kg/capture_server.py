@@ -41,7 +41,7 @@ from omega_kg.models.capture import (
     ObsidianUpdateResponse,
 )
 from omega_kg.percolation import PercolationEngine
-from omega_kg.routers import linear_receiver
+from omega_kg.routers import github_receiver, linear_receiver
 from omega_kg.routers.capture import router as capture_router
 from omega_kg.routers.capture import set_percolate_function
 from omega_kg.settings import settings
@@ -482,6 +482,15 @@ async def _run_heartbeat_loop():
 async def lifespan(app: FastAPI):
     """Lifespan event handler to initialize Ollama, vector store, start worker, and schedule batch percolation."""
     global _heartbeat_task
+
+    # 0. Pre-flight checks - fail fast if environment is broken
+    logger.info("[SYSTEM] Starting Pre-Flight Checks...")
+    pre_flight_checks_passed = pre_flight_checks()
+    if not pre_flight_checks_passed:
+        logger.critical("[CRITICAL] Pre-flight checks failed. Server will not start.")
+        raise RuntimeError("Pre-flight checks failed")
+    logger.info("[OK] Pre-flight checks passed")
+
     logger.info("Starting Omega_KG Capture Server...")
 
     # Initialize scheduler variable to ensure it's available in shutdown
@@ -596,6 +605,7 @@ set_percolate_function(percolate_to_neo4j_with_embedding)
 # Register routers
 app.include_router(capture_router)
 app.include_router(linear_receiver.router, tags=["Linear Ingest"])
+app.include_router(github_receiver.router, tags=["GitHub Ingest"])
 
 # CORS middleware
 cors_origins = []
@@ -625,6 +635,7 @@ async def root():
             "health": "GET /health",
             "obsidian_update": "POST /obsidian-update",
             "linear_webhook": "POST /webhook/linear",
+            "github_webhook": "POST /webhooks/github",
         },
         "docs": "/docs",
         "openapi": "/openapi.json",
@@ -759,7 +770,7 @@ def main():
 
     uvicorn.run(
         "omega_kg.capture_server:app",
-        host="127.0.0.1",
+        host=settings.app_host,
         port=settings.app_port,
         log_level="info",
         reload=False,
@@ -768,4 +779,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

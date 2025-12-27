@@ -7,6 +7,7 @@
 Ever had a brilliant conversation with ChatGPT, Claude, or Gemini — only to forget what you discussed a week later? Omega_KG solves this by automatically capturing your AI conversations and turning them into a searchable knowledge base.
 
 **Think of it as a "second brain" that:**
+
 - 🎯 **Captures** every AI conversation automatically (no copy-paste needed)
 - 🔗 **Connects** ideas across different conversations and projects
 - ✅ **Tracks** decisions that turn into tasks
@@ -157,6 +158,7 @@ stateDiagram-v2
 ```
 
 **What this means:**
+
 - 📝 **Draft** → You captured an idea but haven't fleshed it out
 - ✅ **Ready** → Clear enough to start working on
 - 🔨 **Active** → You're currently working on it
@@ -332,13 +334,20 @@ APP_PORT=8765
 
 ## Troubleshooting
 
+### "Package not installed" Error
+
+If you encounter "Package not installed" errors, see the [Installation Troubleshooting Guide](docs/INSTALLATION_TROUBLESHOOTING.md) for detailed resolution steps.
+
 ### Extension says "Failed to fetch"
+
 → Is the capture server running? Check `http://localhost:8765/health`
 
 ### Conversations not appearing
+
 → Reload the extension in `chrome://extensions`
 
 ### Neo4j connection failed
+
 → Make sure Neo4j Desktop is running
 
 ---
@@ -357,6 +366,7 @@ See [SECURITY.md](./SECURITY.md) for security best practices and vulnerability r
 ## Security
 
 We take security seriously. Please review our [Security Policy](./SECURITY.md) for:
+
 - Reporting security vulnerabilities
 - Security best practices
 - Secret management guidelines

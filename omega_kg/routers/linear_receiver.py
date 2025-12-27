@@ -1,5 +1,6 @@
 import hmac
 import hashlib
+import json
 import logging
 from fastapi import APIRouter, Request, HTTPException, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -44,21 +45,29 @@ async def receive_linear_event(
 ):
     """
     Dumb and fast webhook endpoint.
-    
+
     Workflow:
     1. Verify signature (via dependency)
-    2. Persist raw payload to RawWebhookEvent
-    3. Return 200 OK immediately
-    
+    2. Parse JSON payload
+    3. Persist raw payload to RawWebhookEvent
+    4. Return 200 OK immediately
+
     No business logic in hot path - processing happens in background.
     """
     payload_bytes, signature = verification
+
+    # Parse JSON payload
+    try:
+        payload = json.loads(payload_bytes.decode("utf-8"))
+    except (json.JSONDecodeError, UnicodeDecodeError) as e:
+        logger.error(f"Failed to parse Linear webhook payload: {e}")
+        raise HTTPException(status_code=400, detail="Invalid JSON payload")
 
     # Create RawWebhookEvent (dumb and fast)
     db_event = RawWebhookEvent(
         source="linear",
         headers=dict(request.headers),
-        payload=payload_bytes,  # Store raw bytes, not parsed JSON
+        payload=payload,  # Store parsed JSON dict
         processed_status=False,
     )
 
