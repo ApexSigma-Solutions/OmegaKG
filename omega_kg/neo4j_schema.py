@@ -140,6 +140,47 @@ class KnowledgeGraphSchema:
                     FOR (n:Incident) REQUIRE n.id IS UNIQUE
                 """
                 )
+                
+                # High-Fidelity Context Extraction constraints (TN-301)
+                # CodeBlock: unique by hash for deduplication
+                session.run(
+                    """
+                    CREATE CONSTRAINT codeblock_hash IF NOT EXISTS
+                    FOR (n:CodeBlock) REQUIRE n.hash IS UNIQUE
+                """
+                )
+                
+                # ErrorLog: composite constraint for error_type + timestamp
+                session.run(
+                    """
+                    CREATE CONSTRAINT errorlog_id IF NOT EXISTS
+                    FOR (n:ErrorLog) REQUIRE n.id IS UNIQUE
+                """
+                )
+                
+                # Concept: unique by normalized name
+                session.run(
+                    """
+                    CREATE CONSTRAINT concept_name IF NOT EXISTS
+                    FOR (n:Concept) REQUIRE n.name IS UNIQUE
+                """
+                )
+                
+                # File: unique by path
+                session.run(
+                    """
+                    CREATE CONSTRAINT file_path IF NOT EXISTS
+                    FOR (n:File) REQUIRE n.path IS UNIQUE
+                """
+                )
+                
+                # LinearIssue: unique by id
+                session.run(
+                    """
+                    CREATE CONSTRAINT linearissue_id IF NOT EXISTS
+                    FOR (n:LinearIssue) REQUIRE n.id IS UNIQUE
+                """
+                )
 
                 # Indexes - keep commonly used indexes for Task
                 session.run(
@@ -163,6 +204,21 @@ class KnowledgeGraphSchema:
                     FOR (t:Task) ON (t.created_at)
                 """
                 )
+                
+                # Indexes for new high-fidelity nodes (TN-301)
+                session.run(
+                    """
+                    CREATE INDEX errorlog_error_type IF NOT EXISTS
+                    FOR (e:ErrorLog) ON (e.error_type)
+                """
+                )
+                
+                session.run(
+                    """
+                    CREATE INDEX errorlog_timestamp IF NOT EXISTS
+                    FOR (e:ErrorLog) ON (e.timestamp)
+                """
+                )
 
                 print("✓ Schema initialized successfully")
 
@@ -178,6 +234,10 @@ class KnowledgeGraphSchema:
 
         This is intentionally lightweight: if running in mock mode the method is
         a no-op; if a live driver is available we create a minimal sample graph.
+        
+        Includes examples of new high-fidelity relationships (TN-301):
+        - (:LinearIssue)-[:TRIGGERS]->(:ErrorLog)
+        - (:CodeBlock)-[:BELONGS_TO]->(:File)
         """
         if self.mock_mode or not self.driver:
             print("⚠ create_sample_relationships skipped (mock mode or no driver)")
@@ -195,9 +255,114 @@ class KnowledgeGraphSchema:
                     MERGE (t)-[:RELATED_TO]->(a)
                 """
                 )
+                
+                # TN-301: Example high-fidelity context relationships
+                session.run(
+                    """
+                    MERGE (li:LinearIssue {id: 'SAMPLE-ISSUE-1'})
+                    SET li.title = 'Sample Linear Issue', li.description = 'Example issue'
+                    MERGE (el:ErrorLog {id: 'ERROR-001'})
+                    SET el.error_type = 'RuntimeError', 
+                        el.timestamp = datetime(),
+                        el.message = 'Sample error message'
+                    MERGE (li)-[:TRIGGERS]->(el)
+                """
+                )
+                
+                session.run(
+                    """
+                    MERGE (f:File {path: '/src/example.py'})
+                    SET f.name = 'example.py', f.extension = 'py'
+                    MERGE (cb:CodeBlock {hash: 'abc123def456'})
+                    SET cb.content = 'def example(): pass',
+                        cb.language = 'python',
+                        cb.start_line = 1,
+                        cb.end_line = 1
+                    MERGE (cb)-[:BELONGS_TO]->(f)
+                """
+                )
             print("✓ Sample relationships created (demo data)")
         except Exception as e:
             print(f"✗ Failed to create sample relationships: {e}")
+
+    def visualize_schema(self) -> str:
+        """
+        Generate a text-based visualization of the Neo4j schema.
+        
+        Returns:
+            str: A formatted string representation of the schema including
+                 node labels with their constraints and key relationships.
+        """
+        if self.mock_mode or not self.driver:
+            return "⚠ Schema visualization unavailable (mock mode or no driver)"
+        
+        try:
+            with self.driver.session() as session:
+                # Get all constraints
+                constraints_result = session.run("SHOW CONSTRAINTS")
+                constraints = list(constraints_result)
+                
+                # Get all indexes
+                indexes_result = session.run("SHOW INDEXES")
+                indexes = list(indexes_result)
+                
+                # Build visualization
+                viz = ["=" * 80]
+                viz.append("Neo4j Schema Visualization")
+                viz.append("=" * 80)
+                viz.append("")
+                
+                # Group constraints by label
+                constraint_map = {}
+                for c in constraints:
+                    # Extract label from constraint details
+                    name = c.get("name", "")
+                    label = name.split("_")[0].title() if "_" in name else "Unknown"
+                    if label not in constraint_map:
+                        constraint_map[label] = []
+                    constraint_map[label].append(c)
+                
+                # Display nodes with constraints
+                viz.append("NODE LABELS WITH CONSTRAINTS:")
+                viz.append("-" * 80)
+                for label in sorted(constraint_map.keys()):
+                    viz.append(f"\n({label})")
+                    for constraint in constraint_map[label]:
+                        constraint_name = constraint.get("name", "N/A")
+                        viz.append(f"  ├─ CONSTRAINT: {constraint_name}")
+                
+                viz.append("")
+                viz.append("-" * 80)
+                viz.append("KEY RELATIONSHIPS:")
+                viz.append("-" * 80)
+                
+                # Document the key relationships
+                relationships = [
+                    "(:Task)-[:RELATED_TO]->(:ADR)",
+                    "(:LinearIssue)-[:TRIGGERS]->(:ErrorLog)  [TN-301]",
+                    "(:CodeBlock)-[:BELONGS_TO]->(:File)  [TN-301]",
+                ]
+                
+                for rel in relationships:
+                    viz.append(f"  • {rel}")
+                
+                viz.append("")
+                viz.append("-" * 80)
+                viz.append("INDEXES:")
+                viz.append("-" * 80)
+                
+                # Display indexes
+                for idx in indexes:
+                    idx_name = idx.get("name", "N/A")
+                    viz.append(f"  • {idx_name}")
+                
+                viz.append("")
+                viz.append("=" * 80)
+                
+                return "\n".join(viz)
+                
+        except Exception as e:
+            return f"✗ Failed to generate schema visualization: {e}"
 
     def close(self) -> None:
         """
