@@ -150,7 +150,7 @@ class KnowledgeGraphSchema:
                 """
                 )
                 
-                # ErrorLog: composite constraint for error_type + timestamp
+                # ErrorLog: unique by id (id should be constructed from error_type + timestamp)
                 session.run(
                     """
                     CREATE CONSTRAINT errorlog_id IF NOT EXISTS
@@ -313,6 +313,8 @@ class KnowledgeGraphSchema:
                 viz.append("")
                 
                 # Group constraints by label
+                # Note: This assumes constraint names follow the pattern "{label}_{property}"
+                # where label is lowercase. This matches the naming convention used in initialize_schema()
                 constraint_map = {}
                 for c in constraints:
                     # Extract label from constraint details

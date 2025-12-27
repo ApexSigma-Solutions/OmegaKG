@@ -17,7 +17,6 @@ def main():
     print("Generating Neo4j Schema Visualization...")
     print()
     
-    # Import after env check to avoid settings validation errors
     from omega_kg.neo4j_schema import KnowledgeGraphSchema
     
     schema = KnowledgeGraphSchema()

@@ -53,10 +53,11 @@ This document describes the Neo4j schema for the Omega Knowledge Graph, includin
   - `errorlog_error_type` - on `error_type` property
   - `errorlog_timestamp` - on `timestamp` property
 - **Properties**:
-  - `id`: Unique identifier (composite of error_type + timestamp)
+  - `id`: Unique identifier (application should construct from error_type + timestamp combination)
   - `error_type`: Type/category of error (e.g., "RuntimeError", "SyntaxError")
   - `timestamp`: When the error occurred
   - `message`: Error message content
+- **Note**: The `id` constraint enforces uniqueness but does not automatically composite error_type and timestamp. Applications creating ErrorLog nodes should construct the `id` property from these fields (e.g., `f"{error_type}-{timestamp}"`) to ensure proper deduplication.
 
 #### Concept
 - **Constraint**: `concept_name` - `name` property must be unique
