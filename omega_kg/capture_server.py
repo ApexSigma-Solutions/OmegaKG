@@ -634,7 +634,7 @@ async def root():
             "capture": "POST /capture",
             "health": "GET /health",
             "obsidian_update": "POST /obsidian-update",
-            "linear_webhook": "POST /webhook/linear",
+            "linear_webhook": "POST /webhooks/linear",
             "github_webhook": "POST /webhooks/github",
         },
         "docs": "/docs",
@@ -703,16 +703,9 @@ async def obsidian_update_endpoint(
             status_code=500, detail=f"Internal server error: {str(e)}"
         )
 
-
-# --- Linear Webhook Endpoint ---
-@app.post("/webhook/linear")
-async def linear_webhook_endpoint(request: Request):
-    """
-    Receives and validates webhooks from Linear.
-    This endpoint just passes the raw request to the sync_engine.
-    """
-    return await sync_engine.handle_linear_webhook_request(request)
-
+# NOTE: Linear webhook endpoint moved to omega_kg/routers/linear_receiver.py
+# This uses the newer "dumb and fast" pattern at /webhooks/linear (plural)
+# The old /webhook/linear (singular) endpoint has been removed to avoid conflicts
 
 # --- Main Entry Point ---
 def main():

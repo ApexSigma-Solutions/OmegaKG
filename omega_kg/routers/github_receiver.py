@@ -27,6 +27,10 @@ async def verify_github_signature(request: Request) -> bytes:
     """
     Verify GitHub webhook signature (X-Hub-Signature-256).
 
+    For local development with Hookdeck CLI, signature verification is skipped
+    when the request comes from localhost (127.0.0.1), since Hookdeck validates
+    the original signature but doesn't forward the X-Hub-Signature-256 header.
+
     Args:
         request: FastAPI request object
 
@@ -34,9 +38,29 @@ async def verify_github_signature(request: Request) -> bytes:
         Raw request body bytes
 
     Raises:
-        HTTPException: If signature is missing or invalid
+        HTTPException: If signature is missing or invalid (and not from localhost)
     """
     signature = request.headers.get("X-Hub-Signature-256")
+    client_host = request.client.host if request.client else "unknown"
+
+    # DIAGNOSTIC: Log the client host for debugging
+    logger.info(f"[HOOKDECK_DEBUG] Client host: {client_host}, Signature present: {bool(signature)}")
+
+    # Skip signature verification for localhost (Hookdeck CLI local development)
+    # Check multiple variations of localhost
+    is_localhost = (
+        client_host in ("127.0.0.1", "::1", "localhost") or
+        client_host.startswith("127.0.0.") or
+        client_host.startswith("192.168.") or  # local network
+        client_host == "::ffff:127.0.0.1"  # IPv4-mapped IPv6
+    )
+
+    if is_localhost:
+        logger.info(
+            f"[HOOKDECK_DEBUG] Skipping signature verification for local request "
+            f"(client={client_host}, Hookdeck CLI mode)"
+        )
+        return await request.body()
 
     if not signature:
         logger.warning(
@@ -47,14 +71,14 @@ async def verify_github_signature(request: Request) -> bytes:
         )
 
     body_bytes = await request.body()
-    
+
     # DIAGNOSTIC: Check if webhook secret is configured
     if not settings.github_webhook_secret:
         logger.error(
             "[HOOKDECK_DEBUG] GITHUB_WEBHOOK_SECRET is not set! "
             "Webhook signature verification will fail."
         )
-    
+
     expected_signature = hmac.new(
         settings.github_webhook_secret.encode("utf-8"),
         body_bytes,
@@ -62,7 +86,7 @@ async def verify_github_signature(request: Request) -> bytes:
     ).hexdigest()
 
     expected_header = f"sha256={expected_signature}"
-    
+
     # DIAGNOSTIC: Log signature details (without exposing secret)
     logger.info(
         f"[HOOKDECK_DEBUG] Signature verification - "
