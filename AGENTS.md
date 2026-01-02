@@ -262,6 +262,27 @@ class AsyncGraphDriver:
 - **Session scheduler**: Batch percolation runs every 5 minutes via APScheduler (capture_server.py:84-88)
 - **APScheduler fallback**: Dummy class provided when APScheduler not available (capture_server.py:71-82)
 
+### Percolation Scan Folders
+The batch percolation scheduler scans configured Obsidian vault folders for new sessions to percolate into Neo4j. Configure scan folders via environment variable:
+
+```bash
+# Scan only the default Sessions folder (default behavior)
+OBSIDIAN_VAULT_SCAN_FOLDERS="Sessions"
+
+# Scan multiple folders
+OBSIDIAN_VAULT_SCAN_FOLDERS="Sessions,AI_Conversations,Archive"
+
+# Use colon separator (alternative)
+OBSIDIAN_VAULT_SCAN_FOLDERS="Sessions:AI_Conversations:Archive"
+```
+
+**Configuration precedence**: Environment variable → `.env` file → Defaults to `["Sessions"]`
+
+**Scheduler behavior**:
+- Logs scanned folders on each run (e.g., `[OK] Scheduler completed in 155ms: 2 tasks, 0 commits, 0 decision links (folders: 2)`)
+- Validates folder existence and logs warnings for missing folders
+- Maintains backward compatibility - empty/missing setting defaults to `["Sessions"]`
+
 ### Zero-Trust Security Pattern
 - **Bitwarden hybrid secrets**: Zero-trust configuration using Bitwarden SDK for environment variable injection with fallback (settings.py:15-67)
 - **Priority order**: Bitwarden SDK → Environment variables (.env) → Defaults (in settings.py)

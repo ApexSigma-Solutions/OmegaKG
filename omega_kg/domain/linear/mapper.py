@@ -114,8 +114,21 @@ class LinearToObsidianMapper:
         """
         Generate sanitized filename for TNP file.
 
-        Format: [IDENTIFIER] Title.tnp.md
+        Format: TNP-XXX-000-Title.tnp.md or [IDENTIFIER] Title.tnp.md (legacy)
         """
+        # Check if using TNP prefix naming convention (from uid)
+        if issue.identifier and "-" in issue.identifier:
+            # Use TNP prefix format from identifier
+            parts = issue.identifier.split("-")
+            if len(parts) >= 2:
+                # Extract prefix and number from identifier like APX-123
+                prefix = parts[0]
+                num = "-".join(parts[1:]) if len(parts) > 2 else parts[1]
+                sanitized_title = self._sanitize_filename(issue.title)
+                filename = f"TNP-{prefix}-{num}-{sanitized_title}.tnp.md"
+                return self.vault_path / "TNP" / filename
+
+        # Fallback to legacy format
         sanitized_title = self._sanitize_filename(issue.title)
         filename = f"[{issue.identifier}] {sanitized_title}.tnp.md"
         return self.vault_path / "Linear" / filename

@@ -29,7 +29,7 @@ from typing import Optional
 
 import httpx
 import neo4j
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from neo4j import GraphDatabase
 
@@ -54,6 +54,7 @@ from omega_kg.pre_flight import pre_flight_checks
 # Ngrok tunnel integration
 try:
     from omega_kg.ngrok_tunnel import ngrok_tunnel
+
     _ngrok_available = True
 except ImportError:
     _ngrok_available = False
@@ -320,8 +321,10 @@ def percolate_to_neo4j(
 
 def batch_percolate_sessions():
     """
-    Batch percolates all session logs from the Obsidian vault to Neo4j.
+    Batch percolates all session logs from Obsidian vault to Neo4j.
     Intended to run periodically via scheduler.
+
+    Scans configurable folders defined by OBSIDIAN_VAULT_SCAN_FOLDERS setting.
     """
     driver = None
     try:
@@ -330,9 +333,27 @@ def batch_percolate_sessions():
         start_time = time.time()
         logger.info("→ Scheduler execution started: batch_percolate_sessions")
 
-        sessions_path = Path(settings.obsidian_vault_path) / "Sessions"
-        if not sessions_path.exists():
-            logger.warning(f"Sessions path does not exist: {sessions_path}")
+        # Parse scan folders from settings
+        scan_folders_str = settings.obsidian_vault_scan_folders
+        scan_folders = [f.strip() for f in scan_folders_str.split(",") if f.strip()]
+
+        logger.info(f"Scanning folders: {', '.join(scan_folders)}")
+
+        # Validate each folder exists
+        valid_folders = []
+        vault_base = Path(settings.obsidian_vault_path)
+        for folder_name in scan_folders:
+            folder_path = vault_base / folder_name
+            if folder_path.exists():
+                valid_folders.append(folder_path)
+                logger.debug(f"Validated folder: {folder_path}")
+            else:
+                logger.warning(f"Percolation folder does not exist: {folder_path}")
+
+        if not valid_folders:
+            logger.warning(
+                "No valid percolation folders found - skipping batch percolation"
+            )
             return
 
         driver = GraphDatabase.driver(
@@ -340,16 +361,24 @@ def batch_percolate_sessions():
         )
         engine = PercolationEngine(driver)
 
-        logger.debug(f"Initiating percolation from: {sessions_path}")
-        stats = engine.percolate_from_vault(sessions_path)
+        # Percolate each valid folder
+        total_stats = {"tasks": 0, "commits": 0, "links": 0}
+        for folder_path in valid_folders:
+            logger.debug(f"Initiating percolation from: {folder_path}")
+            folder_stats = engine.percolate_from_vault(folder_path)
+            total_stats["tasks"] += folder_stats["tasks"]
+            total_stats["commits"] += folder_stats["commits"]
+            total_stats["links"] += folder_stats["links"]
 
         elapsed_ms = (time.time() - start_time) * 1000
         logger.info(
             f"[OK] Scheduler completed in {elapsed_ms:.0f}ms: "
-            f"{stats['tasks']} tasks, "
-            f"{stats['commits']} commits, {stats['links']} decision links"
+            f"{len(valid_folders)} folder(s), "
+            f"{total_stats['tasks']} tasks, "
+            f"{total_stats['commits']} commits, "
+            f"{total_stats['links']} decision links"
         )
-        logger.debug(f"Stats detail: {stats}")
+        logger.debug(f"Stats detail: {total_stats}")
     except Exception as e:
         logger.error(f"Batch session percolation failed: {e}", exc_info=True)
     finally:
@@ -699,13 +728,13 @@ async def obsidian_update_endpoint(
         raise
     except Exception as e:
         logger.error(f"Error syncing note to Linear: {e}", exc_info=True)
-        raise HTTPException(
-            status_code=500, detail=f"Internal server error: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
 
 # NOTE: Linear webhook endpoint moved to omega_kg/routers/linear_receiver.py
 # This uses the newer "dumb and fast" pattern at /webhooks/linear (plural)
 # The old /webhook/linear (singular) endpoint has been removed to avoid conflicts
+
 
 # --- Main Entry Point ---
 def main():
@@ -739,13 +768,19 @@ def main():
                             )
                             if tunnel_url:
                                 logger.info(f"[OK] Ngrok tunnel active: {tunnel_url}")
-                                logger.info(f"📡 Linear webhook URL: {tunnel_url}/webhook/linear")
-                                logger.info("💡 Update your Linear webhook to use this URL")
+                                logger.info(
+                                    f"📡 Linear webhook URL: {tunnel_url}/webhook/linear"
+                                )
+                                logger.info(
+                                    "💡 Update your Linear webhook to use this URL"
+                                )
                             else:
                                 logger.warning("⚠️ Failed to start ngrok tunnel")
                         except Exception as e:
                             logger.error(f"[ERROR] Error starting ngrok tunnel: {e}")
-                            logger.info("Continuing without ngrok (webhook testing will not work)")
+                            logger.info(
+                                "Continuing without ngrok (webhook testing will not work)"
+                            )
 
                     # Start ngrok in background thread so it doesn't block server startup
                     tunnel_thread = threading.Thread(target=start_tunnel, daemon=True)

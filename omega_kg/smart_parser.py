@@ -8,19 +8,25 @@ It imports and uses:
 1.  VaultUtils: To read/write frontmatter from/to Obsidian notes.
 2.  linear_client: To create the issue in Linear.
 3.  settings: To get the API keys, default Team ID, and the new JSON maps.
+4.  graph_driver: To store code blocks and other entities in Neo4j.
+
+Phase 7: TN-CODE-01 - Code Block Extraction
 """
 
+import hashlib
 import logging
 import re
 import json
-import frontmatter
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List, Optional
 
-# Import our "adapters" and "config"
+import frontmatter
+
+from omega_kg.database.graph import graph_driver
+from omega_kg.linear_client import linear_client
 from omega_kg.settings import settings
 from omega_kg.vault_utils import VaultUtils
-from omega_kg.linear_client import linear_client
 
 # Set up logger
 logger = logging.getLogger(__name__)
@@ -36,7 +42,27 @@ HASHTAG_REGEX = re.compile(r"(?<=^|(?<=[^a-zA-Z0-9-_.]))#([a-zA-Z0-9-_]+)")
 PRIORITY_REGEX = re.compile(r"@priority/([0-4])")
 # Finds the first H1
 TITLE_REGEX = re.compile(r"^#\s+(.*)", re.MULTILINE)
+# Finds Markdown code blocks with optional language: ```python ... ```
+CODE_BLOCK_REGEX = re.compile(r"```(\w*)\n([\s\S]*?)\n```")
 # -------------------------------------
+
+
+@dataclass
+class CodeBlock:
+    """Represents a parsed code block from markdown content."""
+    language: str
+    content: str
+    content_hash: str = field(init=False)
+    block_index: int = 0
+
+    def __post_init__(self) -> None:
+        """Generate content hash after initialization."""
+        self.content_hash = self._generate_hash()
+
+    def _generate_hash(self) -> str:
+        """Generate SHA256 hash of the code block content for deduplication."""
+        content_to_hash = f"{self.language}:{self.content}"
+        return hashlib.sha256(content_to_hash.encode("utf-8")).hexdigest()[:16]
 
 
 class SmartParser:
@@ -185,6 +211,100 @@ class SmartParser:
                 pass
         return 0  # Default: No Priority
 
+    def _compute_content_hash(self, content: str) -> str:
+        """
+        Compute SHA256 hash of content for deduplication.
+
+        Args:
+            content: The content to hash.
+
+        Returns:
+            Hex string of first 16 characters of the hash.
+        """
+        return hashlib.sha256(content.encode("utf-8")).hexdigest()[:16]
+
+    def _extract_code_blocks(self, content: str) -> List[CodeBlock]:
+        """
+        Extract all Markdown code blocks from content.
+
+        Args:
+            content: Markdown content to parse.
+
+        Returns:
+            List of CodeBlock objects with language, content, and hash.
+        """
+        code_blocks: List[CodeBlock] = []
+
+        for idx, match in enumerate(CODE_BLOCK_REGEX.finditer(content)):
+            language = match.group(1).strip() or "text"
+            block_content = match.group(2).rstrip("\n")
+
+            code_block = CodeBlock(
+                language=language,
+                content=block_content,
+                block_index=idx,
+            )
+            code_blocks.append(code_block)
+            logger.debug(
+                f"Extracted code block #{idx}: language='{language}', "
+                f"hash={code_block.content_hash}, lines={len(block_content.splitlines())}"
+            )
+
+        if code_blocks:
+            logger.info(f"Found {len(code_blocks)} code block(s) in note")
+
+        return code_blocks
+
+    async def _store_code_blocks_to_graph(
+        self,
+        file_path: Path,
+        code_blocks: List[CodeBlock],
+    ) -> None:
+        """
+        Store extracted code blocks as CodeBlock nodes in Neo4j.
+
+        Creates (:File)-[:CONTAINS]->(:CodeBlock) relationships.
+
+        Args:
+            file_path: Path to the source file for linking.
+            code_blocks: List of extracted CodeBlock objects.
+        """
+        if not code_blocks:
+            return
+
+        try:
+            async with graph_driver.session() as session:
+                for block in code_blocks:
+                    # Cypher query to merge CodeBlock node and link to File
+                    cypher_query = """
+                    MERGE (f:File {path: $file_path})
+                    MERGE (cb:CodeBlock {content_hash: $hash})
+                    SET cb.language = $language,
+                        cb.content = $content,
+                        cb.block_index = $block_index,
+                        cb.updated_at = datetime()
+                    MERGE (f)-[:CONTAINS]->(cb)
+                    RETURN cb
+                    """
+
+                    await session.run(
+                        cypher_query,
+                        file_path=str(file_path),
+                        hash=block.content_hash,
+                        language=block.language,
+                        content=block.content,
+                        block_index=block.block_index,
+                    )
+
+                    logger.info(
+                        f"Stored CodeBlock (hash={block.content_hash}, lang={block.language}) "
+                        f"for file {file_path}"
+                    )
+
+        except Exception as e:
+            logger.error(f"Failed to store code blocks to Neo4j: {e}")
+            # Non-fatal: continue with other operations
+
     async def sync_note_to_linear(self, note_path: str | Path) -> dict | None:
         """
         Main orchestration method.
@@ -224,6 +344,11 @@ class SmartParser:
         except Exception as e:
             logger.error(f"Failed to read note {note_path}: {e}")
             return None
+
+        # 1.5 Extract and store code blocks to Neo4j graph
+        code_blocks = self._extract_code_blocks(content)
+        if code_blocks:
+            await self._store_code_blocks_to_graph(full_path, code_blocks)
 
         # 2. Parse all tags
         title = self._parse_title(content, metadata)

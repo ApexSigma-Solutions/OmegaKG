@@ -355,7 +355,11 @@ class TaskLifecycle:
         """
 
         # Find task file
+        # Support both TN-XXX-000 format and legacy TASK-XXX format
         task_files = list(self.vault_path.glob(f"Tasks/**/{uid}*.md"))
+        if not task_files:
+            # Try alternative pattern for TN prefix
+            task_files = list(self.vault_path.glob(f"TN/**/{uid}*.md"))
         if not task_files:
             logger.warning("Task file not found for %s", uid)
             return

@@ -8,6 +8,7 @@ from Obsidian notes into the Neo4j knowledge graph through commit and task extra
 """
 
 import re
+import logging
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -15,6 +16,8 @@ from typing import Dict, List, Optional
 from neo4j import Driver, GraphDatabase
 
 from omega_kg.settings import settings
+
+logger = logging.getLogger(__name__)
 
 
 class PercolationEngine:
@@ -29,42 +32,86 @@ class PercolationEngine:
         """
         self.driver = driver
 
-    def percolate_from_vault(self, vault_path: Path) -> Dict[str, int]:
+    def percolate_from_vault(
+        self, vault_path: Path, scan_folders: Optional[List[str]] = None
+    ) -> Dict[str, int]:
         """
-        Percolates tasks, commits, and session/decision links from all Markdown files in an Obsidian vault.
+        Percolates tasks, commits, and session/decision links from markdown files in specified folders.
 
-        Scans the given vault directory recursively for `.md` files, extracts frontmatter and content, and delegates per-file processing to the engine's task, commit, and session percolation routines. Errors reading or processing individual files are caught and do not halt the overall run.
+        Scans the given vault directory recursively for `.md` files in configured folders,
+        extracts frontmatter and content, and delegates per-file processing to the engine's task,
+        commit, and session percolation routines. Errors reading or processing individual files
+        are caught and do not halt the overall run.
 
         Parameters:
             vault_path (Path): Root directory of the Obsidian vault to scan.
+            scan_folders (Optional[List[str]]): List of folder names to scan within the vault.
+                If None, uses default from settings.obsidian_vault_scan_folders.
 
         Returns:
-            dict: Counts of processed items with keys `"tasks"`, `"commits"`, and `"links"`.
+            dict: Counts of processed items with keys "tasks", "commits", and "links".
         """
+        # Parse scan folders from settings if not provided
+        if scan_folders is None:
+            scan_folders_str = settings.obsidian_vault_scan_folders
+            scan_folders = [f.strip() for f in scan_folders_str.split(",") if f.strip()]
+
+        logger.info(f"[DIAGNOSTIC] Percolation scan folders: {scan_folders}")
+        logger.info(f"[DIAGNOSTIC] Vault path: {vault_path}")
+
         stats = {"tasks": 0, "commits": 0, "links": 0}
+        files_scanned = 0
+        files_with_frontmatter = 0
+        files_without_frontmatter = 0
 
-        # Find all markdown files in the vault
-        for md_file in vault_path.rglob("*.md"):
-            try:
-                content = md_file.read_text(encoding="utf-8")
-                metadata = self._extract_frontmatter(content)
+        for folder_name in scan_folders:
+            folder_path = vault_path / folder_name
+            if not folder_path.exists():
+                logger.warning(f"Percolation folder does not exist: {folder_path}")
+                continue
 
-                if metadata:
-                    # Extract and percolate tasks
-                    task_count = self._percolate_task(md_file, metadata, content)
-                    stats["tasks"] += task_count
+            logger.info(f"[DIAGNOSTIC] Scanning percolation folder: {folder_path}")
 
-                    # Extract and percolate commits
-                    commit_count = self._percolate_commits(md_file, metadata, content)
-                    stats["commits"] += commit_count
+            # Find all markdown files in this folder
+            md_files = list(folder_path.rglob("*.md"))
+            logger.info(f"[DIAGNOSTIC] Found {len(md_files)} markdown files in {folder_name}")
 
-                    # Extract and percolate session data
-                    session_count = self._percolate_session(md_file, metadata, content)
-                    stats["links"] += session_count
+            for md_file in md_files:
+                files_scanned += 1
+                try:
+                    content = md_file.read_text(encoding="utf-8")
+                    metadata = self._extract_frontmatter(content)
 
-            except Exception as e:
-                print(f"Error percolating {md_file}: {e}")
+                    if metadata:
+                        files_with_frontmatter += 1
+                        logger.debug(f"[DIAGNOSTIC] File has frontmatter: {md_file.name}")
 
+                        # Extract and percolate tasks
+                        task_count = self._percolate_task(md_file, metadata, content)
+                        stats["tasks"] += task_count
+
+                        # Extract and percolate commits
+                        commit_count = self._percolate_commits(
+                            md_file, metadata, content
+                        )
+                        stats["commits"] += commit_count
+
+                        # Extract and percolate session data
+                        session_count = self._percolate_session(
+                            md_file, metadata, content
+                        )
+                        stats["links"] += session_count
+                    else:
+                        files_without_frontmatter += 1
+                        logger.debug(f"[DIAGNOSTIC] File missing frontmatter: {md_file.name}")
+
+                except Exception as e:
+                    logger.error(f"Error percolating {md_file}: {e}")
+
+        logger.info(
+            f"[DIAGNOSTIC] Scan summary: {files_scanned} files scanned, "
+            f"{files_with_frontmatter} with frontmatter, {files_without_frontmatter} without frontmatter"
+        )
         return stats
 
     def _extract_frontmatter(self, content: str) -> Optional[Dict]:
@@ -107,6 +154,23 @@ class PercolationEngine:
         task_pattern = r"\[\[([A-Z]+-\d+)\]\]"
         tasks = re.findall(task_pattern, content)
 
+        logger.info(
+            f"[DIAGNOSTIC] Task extraction from {path.name}: "
+            f"pattern={task_pattern}, found={len(tasks)} tasks"
+        )
+        if tasks:
+            logger.debug(f"[DIAGNOSTIC] Task UIDs found: {tasks}")
+
+        # Check for checkbox patterns (for diagnostic purposes)
+        checkbox_pattern = r"^\s*-\s*\[[ x]\]"
+        checkboxes = re.findall(checkbox_pattern, content, re.MULTILINE)
+        if checkboxes:
+            logger.warning(
+                f"[DIAGNOSTIC] Found {len(checkboxes)} checkbox items in {path.name} "
+                f"but checkbox parsing is NOT IMPLEMENTED. "
+                f"Only [[UID-123]] format is supported."
+            )
+
         with self.driver.session() as session:
             for task_uid in tasks:
                 # Create or update task node
@@ -123,6 +187,7 @@ class PercolationEngine:
                     created=metadata.get("date", datetime.now().isoformat()),
                 )
                 task_count += 1
+                logger.debug(f"[DIAGNOSTIC] Created/updated Task node: {task_uid}")
 
                 # Link task to decision if in a decision context
                 decision_id = metadata.get("decision_id")

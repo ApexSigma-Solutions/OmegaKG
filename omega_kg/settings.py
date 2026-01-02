@@ -1,11 +1,14 @@
+import json
 import logging
 import os
 import uuid
+from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 
 # CRITICAL: Load .env file BEFORE any Settings class instantiation
 # This ensures environment variables override any shell/system values
 from dotenv import load_dotenv
+
 load_dotenv(override=True)
 
 from bitwarden_sdk import BitwardenClient
@@ -19,6 +22,39 @@ from pydantic_settings import (
 
 logger = logging.getLogger(__name__)
 
+# =============================================================================
+# Omega Ingest Contract
+# =============================================================================
+# Path to the contract JSON (relative to this file's parent directory)
+_CONTRACT_PATH = (
+    Path(__file__).parent.parent.parent
+    / "InGest-LLM.as"
+    / "validators"
+    / "omega_ingest_contract.json"
+)
+
+
+def load_ingest_contract() -> Dict[str, Any]:
+    """Load the Omega ingest contract definition.
+
+    Returns:
+        The contract dict if available, empty dict otherwise.
+    """
+    if _CONTRACT_PATH.exists():
+        try:
+            with open(_CONTRACT_PATH) as f:
+                return json.load(f)
+        except (json.JSONDecodeError, IOError) as e:
+            logger.warning(f"Failed to load Omega ingest contract: {e}")
+    else:
+        logger.debug(f"Omega ingest contract not found at: {_CONTRACT_PATH}")
+    return {}
+
+
+# Load contract at module import time
+OMEGA_INGEST_CONTRACT = load_ingest_contract()
+CONTRACT_VERSION = OMEGA_INGEST_CONTRACT.get("contract_version", "unknown")
+
 
 class BitwardenSettingsSource(PydanticBaseSettingsSource):
     """
@@ -31,8 +67,10 @@ class BitwardenSettingsSource(PydanticBaseSettingsSource):
     def __call__(self) -> Dict[str, Any]:
         bws_token = os.getenv("BWS_ACCESS_TOKEN")
         if not bws_token:
+            logger.debug("BWS_ACCESS_TOKEN not set, skipping Bitwarden secrets")
             return {}
 
+        logger.info("BWS_ACCESS_TOKEN found, attempting Bitwarden authentication")
         fetched_secrets = {}
         try:
             # Standard SDK Pattern
@@ -41,7 +79,8 @@ class BitwardenSettingsSource(PydanticBaseSettingsSource):
                     device_type=DeviceType.SDK, user_agent="OmegaKG/4.4.2"
                 )
             )
-            client.auth().login_access_token(bws_token)
+            auth_result = client.auth().login_access_token(bws_token)
+            logger.info(f"Bitwarden authentication successful: {auth_result}")
 
             # Map internal keys to Env Vars containing UUIDs
             secret_mappings = {
@@ -60,14 +99,47 @@ class BitwardenSettingsSource(PydanticBaseSettingsSource):
             for config_key, env_var_id in secret_mappings.items():
                 secret_uuid = os.getenv(env_var_id)
                 if secret_uuid:
+                    logger.debug(
+                        f"Fetching secret {config_key} from UUID {secret_uuid}"
+                    )
                     try:
                         response = client.secrets().get(uuid.UUID(secret_uuid))
-                        fetched_secrets[config_key] = response.value
-                    except Exception:
-                        logger.warning(
-                            "Failed to fetch secret for key '%s' from Bitwarden",
-                            config_key,
-                        )
+                        # Bitwarden SDK uses response.data.value pattern
+                        if hasattr(response, "data") and hasattr(
+                            response.data, "value"
+                        ):
+                            fetched_secrets[config_key] = response.data.value
+                            logger.debug(f"Successfully fetched {config_key}")
+                        elif hasattr(response, "value"):
+                            fetched_secrets[config_key] = response.value
+                            logger.debug(
+                                f"Successfully fetched {config_key} via response.value"
+                            )
+                        else:
+                            logger.warning(
+                                "Could not find 'value' attribute in response for '%s'. Response type: %s",
+                                config_key,
+                                type(response).__name__,
+                            )
+                    except Exception as e:
+                        if "404" in str(e):
+                            logger.warning(
+                                "Secret not found in Bitwarden for key '%s' (UUID: %s) - will use fallback",
+                                config_key,
+                                secret_uuid,
+                            )
+                        else:
+                            logger.warning(
+                                "Failed to fetch secret for key '%s' from Bitwarden (UUID: %s): %s: %s",
+                                config_key,
+                                secret_uuid,
+                                type(e).__name__,
+                                e,
+                            )
+                else:
+                    logger.debug(
+                        f"Environment variable {env_var_id} not set for {config_key}"
+                    )
         except Exception:
             logger.critical("Bitwarden SDK error", exc_info=True)
             return {}
@@ -89,7 +161,7 @@ class Settings(BaseSettings):
     app_env: str = Field("development", validation_alias="APP_ENV")
     app_host: str = Field("0.0.0.0", validation_alias="APP_HOST")
     app_port: int = Field(8765, validation_alias="APP_PORT")
-    
+
     # --- Ngrok / Tunneling ---
     enable_ngrok: bool = Field(False, validation_alias="ENABLE_NGROK")
     ngrok_api_key: Optional[str] = Field(None, validation_alias="NGROK_API_KEY")
@@ -227,6 +299,11 @@ class Settings(BaseSettings):
     obsidian_vault_path: str = Field("./vault", validation_alias="OBSIDIAN_VAULT_PATH")
     ai_conversations_path: Optional[str] = Field(
         None, validation_alias="AI_CONVERSATIONS_PATH"
+    )
+    obsidian_vault_scan_folders: str = Field(
+        "Sessions",
+        validation_alias="OBSIDIAN_VAULT_SCAN_FOLDERS",
+        description="Comma-separated list of folder names to scan for percolation (default: Sessions)",
     )
 
     model_config = SettingsConfigDict(
