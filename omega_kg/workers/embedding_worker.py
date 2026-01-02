@@ -1,368 +1,219 @@
-"""
-Async Background Worker for Embedding Generation
-
-Polls for pending embeddings from PostgreSQL, generates vectors via Ollama/Gemini,
-and updates records with completion status. Designed for at-least-once processing
-with graceful error handling and crash recovery.
-
-Execution Model:
-- Runs continuously in background via FastAPI lifespan event
-- Polls every VECTOR_WORKER_POLL_INTERVAL_SECONDS for pending records
-- Processes batch_size records per poll cycle
-- Retries on failure up to VECTOR_EMBEDDING_MAX_RETRIES times
-- Logs metrics for monitoring and alerting
-
-Integration:
-- Called by capture_server.py lifespan events (startup/shutdown)
-- Shares connection pool with capture endpoint (no resource contention)
-- Uses FastAPI contextvars for graceful shutdown signaling
-
-Error Recovery:
-- Worker crash: Database records remain pending; worker restarts and continues
-- Ollama offline: Falls back to Gemini or marks FAILED with retry tracking
-- Database connection lost: Retries with exponential backoff; raises error if unrecoverable
-"""
-
+# Dual-Write Saga Weaver
 import asyncio
 import logging
-from typing import Any, Optional
+import re
+import json
+from typing import List, Dict, Any
+from sqlalchemy import select, text
+from sqlalchemy.dialects.postgresql import JSONB
 
-from omega_kg.config import (VECTOR_EMBEDDING_MAX_RETRIES,
-                             VECTOR_WORKER_BATCH_SIZE,
-                             VECTOR_WORKER_POLL_INTERVAL_SECONDS,
-                             VECTOR_WORKER_TIMEOUT_SECONDS)
-from omega_kg.vector_store import VectorStore, get_vector_store
+# Internal Imports
+from omega_kg.database import get_ingest_session, get_vector_session
+from omega_kg.models.terminal import TerminalEvent
+from omega_kg.services.neo4j_adapter import Neo4jAdapter
+from omega_kg.services.openai_service import generate_embedding
 
-logger = logging.getLogger(__name__)
+# Setup Logger
+logger = logging.getLogger("omega.worker.embedding")
+# Ensuring level is set if not configured elsewhere
+logger.setLevel(logging.INFO)
 
-# Global worker state
-_worker_task: Optional[asyncio.Task[Any]] = None
-_worker_stop_event: Optional[asyncio.Event] = None
+# --- CONFIGURATION ---
+BATCH_SIZE = 10
+POLL_INTERVAL = 5  # Seconds
+AGENT_ID = "ghost-monitor" # The persona for these automated memories
 
+# --- REGEX FOR ENTITY EXTRACTION ---
+# Matches LIN-123 or #123
+ISSUE_PATTERN = re.compile(r'\b([A-Z]{2,5}-\d+)\b|\b#(\d+)\b')
 
-class EmbeddingWorker:
+class SagaWeaver:
     """
-    Background worker for processing pending embeddings.
-
-    Lifecycle:
-    - start() -> begins polling loop in background
-    - stop() -> signals loop to exit and waits for pending records
-    - Integrates with FastAPI lifespan via ContextVar for graceful shutdown
-
-    Metrics:
-    - processed_count: Total embeddings successfully generated
-    - error_count: Total embeddings marked as failed
-    - batch_time: Latest batch processing duration (seconds)
+    The Loom that stitches raw events into the Knowledge Graph (Neo4j) 
+    AND the Semantic Memory (PGVector).
     """
-
-    def __init__(self, vector_store: VectorStore):
-        """
-        Initialize worker with vector store.
-
-        Args:
-            vector_store: Initialized VectorStore instance
-        """
-        self.vector_store = vector_store
-        self.processed_count = 0
-        self.error_count = 0
-        self.batch_time = 0.0
-        self.running = False
-
-    async def start(self) -> None:
-        """
-        Start the polling loop (runs indefinitely until stop() called).
-
-        Polls for pending embeddings and processes them in batches.
-        Logs startup message and enters continuous loop.
-
-        Should be called from FastAPI lifespan (startup event).
-        """
+    def __init__(self):
+        self.neo4j = Neo4jAdapter()
         self.running = True
-        logger.info(
-            f"Starting embedding worker: batch_size={VECTOR_WORKER_BATCH_SIZE}, "
-            f"poll_interval={VECTOR_WORKER_POLL_INTERVAL_SECONDS}s, "
-            f"max_retries={VECTOR_EMBEDDING_MAX_RETRIES}"
-        )
 
+    async def start(self):
+        logger.info("🕸️  Saga Weaver (Dual-Write) Started.")
         while self.running:
             try:
-                await self._process_batch()
-                await asyncio.sleep(VECTOR_WORKER_POLL_INTERVAL_SECONDS)
+                await self.process_terminal_queue()
+                await asyncio.sleep(POLL_INTERVAL)
             except Exception as e:
-                logger.exception(f"Worker batch processing failed: {e}")
-                await asyncio.sleep(VECTOR_WORKER_POLL_INTERVAL_SECONDS)
+                logger.error(f"Worker Loop Error: {e}", exc_info=True)
+                await asyncio.sleep(POLL_INTERVAL)
 
-    async def stop(self) -> None:
+    async def process_terminal_queue(self):
         """
-        Signal worker to exit polling loop.
-
-        Allows in-flight batch to complete before shutdown.
-        Logs final metrics (processed, errors).
-
-        Should be called from FastAPI lifespan (shutdown event).
+        Fetches unprocessed terminal events and weaves them into the Graph and Vector Store.
         """
-        self.running = False
-        logger.info(
-            f"Stopping embedding worker: processed={self.processed_count}, "
-            f"errors={self.error_count}"
-        )
+        # We use the Ingest DB to read events
+        # Utilizing async context manager for session
+        async with get_ingest_session() as read_session:
+            # 1. Fetch unprocessed events
+            statement = select(TerminalEvent).where(TerminalEvent.processed == False).limit(BATCH_SIZE)
+            result = await read_session.execute(statement)
+            events = result.scalars().all()
 
-    async def _process_batch(self) -> None:
-        """
-        Fetch pending batch, fetch source text, generate embeddings, update database.
-
-        Steps:
-        1. Fetch up to batch_size pending records with FOR UPDATE SKIP LOCKED
-        2. For each record, fetch source message text from Neo4j
-        3. Generate embedding via Ollama/Gemini
-        4. Update database with embedding (mark READY) or error (mark FAILED + retry)
-
-        Raises:
-            ConnectionError: If vector store fetch fails (worker will retry in loop)
-        """
-        import time
-
-        start_time = time.time()
-
-        try:
-            # Step 1: Fetch pending batch
-            pending = await self.vector_store.fetch_pending_batch(
-                batch_size=VECTOR_WORKER_BATCH_SIZE
-            )
-
-            if not pending:
-                logger.debug("No pending embeddings to process")
+            if not events:
                 return
 
-            logger.debug(f"Processing batch of {len(pending)} pending embeddings")
+            logger.info(f"Processing {len(events)} terminal events...")
 
-            # Step 2-4: Process each record
-            for record in pending:
-                vector_id = record["vector_id"]
-                message_id = record["message_id"]
-                node_label = record["node_label"]
-
-                try:
-                    # Fetch message content from Neo4j
-                    message_text = await self._fetch_message_text(
-                        message_id, node_label
-                    )
-                    if not message_text:
-                        logger.warning(
-                            f"Message not found: message_id={message_id}, "
-                            f"node_label={node_label}"
-                        )
-                        await self.vector_store.mark_failed(
-                            vector_id, increment_retry=True
-                        )
-                        self.error_count += 1
-                        continue
-
-                    # Generate embedding
+            # We use the Vector DB (Memos) to write memories
+            # Using a separate async session context for the write operation
+            async with get_vector_session() as write_session:
+                for event in events:
                     try:
-                        from omega_kg.domain.common.embedding_service import \
-                            generate_embedding
+                        # 2. Extract Entities (The "Saga" Link)
+                        linked_entities = self._extract_references(event.command)
+                        
+                        # 3. Compile Context String (The "Memory")
+                        context_text = self._compile_context(event)
+                        
+                        # 4. Generate Vector (1536d or 1024d)
+                        embedding = await generate_embedding(context_text)
 
-                        embedding = await asyncio.wait_for(
-                            generate_embedding(message_text),
-                            timeout=VECTOR_WORKER_TIMEOUT_SECONDS,
-                        )
+                        # 5. WRITE A: Neo4j (Structure)
+                        self._push_to_neo4j(event, context_text, embedding, linked_entities)
 
-                        # Update database with embedding
-                        await self.vector_store.update_embedding(vector_id, embedding)
-                        self.processed_count += 1
-                        logger.debug(f"Successfully embedded vector_id={vector_id}")
+                        # 6. WRITE B: PGVector (Recall)
+                        await self._push_to_pgvector(write_session, event, context_text, embedding, linked_entities)
 
-                    except asyncio.TimeoutError:
-                        logger.error(
-                            f"Embedding generation timed out: vector_id={vector_id}"
-                        )
-                        await self.vector_store.mark_failed(
-                            vector_id, increment_retry=True
-                        )
-                        self.error_count += 1
+                        # 7. Mark as Processed
+                        event.processed = True
+                        # Commit is handled by the context manager or manual commit? 
+                        # In SQLAlchemy async, we usually commit on the session.
+                        # Committing both sessions.
+                        await read_session.commit() # Commit the 'processed' flag
+                        await write_session.commit() # Commit the new memory
+                        
+                        logger.info(f"Weaved Event {event.id} -> Neo4j & PGVector")
 
-                except Exception as e:
-                    logger.error(f"Failed to process vector_id={vector_id}: {e}")
-                    try:
-                        await self.vector_store.mark_failed(
-                            vector_id, increment_retry=True
-                        )
-                    except Exception as mark_error:
-                        logger.error(f"Failed to mark vector as failed: {mark_error}")
-                    self.error_count += 1
+                    except Exception as e:
+                        logger.error(f"Failed to process event {event.id}: {e}", exc_info=True)
+                        await read_session.rollback()
+                        await write_session.rollback()
 
-            self.batch_time = time.time() - start_time
-            logger.debug(
-                f"Batch processing completed in {self.batch_time:.2f}s: "
-                f"processed={self.processed_count}, errors={self.error_count}"
-            )
+    def _extract_references(self, text: str) -> List[str]:
+        if not text:
+            return []
+        matches = ISSUE_PATTERN.findall(text)
+        refs = []
+        for m in matches:
+            refs.extend([item for item in m if item])
+        return list(set(refs))
 
-        except Exception as e:
-            logger.error(f"Batch fetch failed: {e}")
-            raise
-
-    async def _fetch_message_text(
-        self, message_id: str, node_label: str
-    ) -> Optional[str]:
-        """
-        Fetch message content from Neo4j by node ID and label asynchronously.
-
-        Implements strategic content extraction patterns per node type:
-        - ChatMessage: Simple content field
-        - LinearIssue: Title + Description (compound context)
-        - ChatSession: Platform, date, and message count metadata
-        - Decision: Multi-field coalesce
-
-        Uses AsyncGraphDriver for non-blocking, pooled connections.
-
-        Args:
-            message_id: Neo4j internal node ID (from elementId(n))
-            node_label: Neo4j node type (ChatMessage, LinearIssue, Decision, ChatSession)
-
-        Returns:
-            str or None: Message content to embed, or None if not found
-
-        Raises:
-            No exceptions raised; logs errors and returns None on failure
-        """
-        logger.debug(
-            f"Fetching message: message_id={message_id}, node_label={node_label}"
+    def _compile_context(self, event: TerminalEvent) -> str:
+        status = "Success" if event.exit_code == 0 else "Failed"
+        # Handle cases where timestamps might be None (though schema implies not nullable)
+        ts = event.timestamp.isoformat() if event.timestamp else "UNKNOWN_TIME"
+        return (
+            f"TERMINAL EXECUTION [{ts}]\n"
+            f"Command: {event.command}\n"
+            f"Directory: {event.cwd}\n"
+            f"Result: {status} (Exit Code: {event.exit_code})\n"
+            f"Host: {event.host}"
         )
 
-        try:
-            from omega_kg.database.graph import graph_driver
+    def _push_to_neo4j(self, event, text: str, vector: List[float], references: List[str]):
+        """
+        Cypher logic to create nodes and link them to Issues/Projects.
+        This runs synchronously via the Neo4j driver adapter which abstracts the session.
+        """
+        cypher = """
+        MERGE (t:TerminalExecution {id: $id})
+        SET t.command = $command,
+            t.cwd = $cwd,
+            t.timestamp = $timestamp,
+            t.exit_code = $exit_code,
+            t.embedding = $vector,
+            t.full_text = $text
+        
+        MERGE (s:DevSession {id: $session_id})
+        MERGE (s)-[:CONTAINS]->(t)
+        
+        WITH t
+        UNWIND $refs as ref
+        MATCH (i:LinearIssue {identifier: ref})
+        MERGE (t)-[:RESOLVES_OR_RELATES]->(i)
+        """
+        
+        ts = event.timestamp.isoformat() if event.timestamp else None
+        
+        params = {
+            "id": str(event.id),
+            "command": event.command,
+            "cwd": event.cwd,
+            "timestamp": ts,
+            "exit_code": event.exit_code,
+            "vector": vector,
+            "text": text,
+            "session_id": event.session_id or "unknown_session",
+            "refs": references
+        }
+        self.neo4j.run(cypher, params)
 
-            # Strategic query patterns per node type
-            query_map = {
-                "ChatMessage": """
-                    MATCH (n:ChatMessage)
-                    WHERE elementId(n) = $message_id
-                    RETURN coalesce(n.content, n.message, n.text, '[Empty message]') AS text
-                """,
-                "LinearIssue": """
-                    MATCH (n:LinearIssue)
-                    WHERE elementId(n) = $message_id
-                    RETURN coalesce(n.title, '[Untitled issue]') + '\\n\\n' + coalesce(n.description, '') AS text
-                """,
-                "ChatSession": """
-                    MATCH (n:ChatSession)
-                    WHERE elementId(n) = $message_id
-                    RETURN 'ChatSession on ' + coalesce(n.platform, 'unknown platform') +
-                           ' from ' + coalesce(n.date, 'unknown date') +
-                           ' with ' + coalesce(toString(n.message_count), '0') + ' messages' AS text
-                """,
-                "Decision": """
-                    MATCH (n:Decision)
-                    WHERE elementId(n) = $message_id
-                    RETURN coalesce(n.content, n.text, n.description) AS text
-                """,
-            }
+    async def _push_to_pgvector(self, session, event, text: str, vector: List[float], references: List[str]):
+        """
+        Raw SQL insertion into the memos.memories table.
+        We use raw SQL here to avoid tightly coupling the worker to the memos ORM models.
+        """
+        
+        # Metadata payload for filtering
+        metadata = {
+            "source": "ghost-terminal",
+            "cwd": event.cwd,
+            "session_id": event.session_id,
+            "exit_code": event.exit_code,
+            "references": references
+        }
 
-            # Get appropriate query or fallback to generic
-            query = query_map.get(
-                node_label,
-                f"""
-                    MATCH (n:{node_label})
-                    WHERE elementId(n) = $message_id
-                    RETURN coalesce(n.content, n.message, n.text, n.body) AS text
-                """,
+        # Tags for quick filtering in Memos
+        tags = ["#terminal", "#ghost", "#auto-capture"]
+        if event.exit_code != 0:
+            tags.append("#error")
+        if references:
+            tags.append("#saga")
+
+        sql = text("""
+            INSERT INTO memos.memories (
+                conversation_hash, 
+                agent_id, 
+                content, 
+                embedding, 
+                metadata, 
+                tags, 
+                created_at
+            ) VALUES (
+                :hash, 
+                :agent, 
+                :content, 
+                :vector, 
+                :metadata, 
+                :tags, 
+                :created_at
             )
+        """)
 
-            # Execute query asynchronously using shared async driver
-            async with graph_driver.session() as session:
-                result = await session.run(query, message_id=message_id)
-                record = await result.single()
+        await session.execute(sql, {
+            "hash": str(event.id), # Use Event UUID as the hash
+            "agent": AGENT_ID,
+            "content": text,
+            "vector": str(vector), # pgvector expects string representation often, or list depending on driver. asyncpg tends to handle lists if registered, but using str is safer for generic SQL execution unless type binding is confirmed.
+            "metadata": json.dumps(metadata),
+            "tags": tags, # SQLAlchemy handles list->array conversion typically using Postgres dialects
+            "created_at": event.timestamp
+        })
 
-                if record:
-                    text = record.get("text")
-                    if text and isinstance(text, str):
-                        logger.debug(
-                            f"Fetched text for {node_label}:{message_id} "
-                            f"({len(text)} chars)"
-                        )
-                        return text
-                    else:
-                        logger.warning(
-                            f"Node found but text is empty: {node_label}:{message_id}"
-                        )
-                        return None
-
-                logger.warning(f"Node not found: {node_label}:{message_id}")
-                return None
-
-        except Exception as e:
-            logger.error(
-                f"Failed to fetch message text: message_id={message_id}, "
-                f"node_label={node_label}, error={e}"
-            )
-            return None
-
-
-# Singleton instance
-_worker: Optional[EmbeddingWorker] = None
-
-
-async def get_embedding_worker() -> EmbeddingWorker:
-    """
-    Get or initialize the singleton EmbeddingWorker instance.
-
-    Returns:
-        EmbeddingWorker: Shared instance with initialized vector store
-    """
-    global _worker
-
-    if _worker is None:
-        vector_store = await get_vector_store()
-        _worker = EmbeddingWorker(vector_store)
-
-    return _worker
-
-
-async def start_worker() -> None:
-    """
-    Start the embedding worker background task.
-
-    Called from FastAPI lifespan startup event.
-    Creates background task that runs until stop_worker() called.
-    """
-    global _worker_task, _worker_stop_event
-
-    worker = await get_embedding_worker()
-    _worker_stop_event = asyncio.Event()
-
-    _worker_task = asyncio.create_task(worker.start())
-    logger.info("Embedding worker started")
-
-
-async def stop_worker() -> None:
-    """
-    Stop the embedding worker background task.
-
-    Called from FastAPI lifespan shutdown event.
-    Signals worker to exit and waits for graceful completion.
-    """
-    global _worker_task, _worker_stop_event
-
-    if _worker:
-        await _worker.stop()
-
-    if _worker_stop_event:
-        _worker_stop_event.set()
-
-    if _worker_task:
-        try:
-            await asyncio.wait_for(_worker_task, timeout=5.0)
-        except asyncio.TimeoutError:
-            logger.warning("Embedding worker did not stop gracefully; cancelling")
-            _worker_task.cancel()
-
-    logger.info("Embedding worker stopped")
-
-
-__all__ = [
-    "EmbeddingWorker",
-    "get_embedding_worker",
-    "start_worker",
-    "stop_worker",
-]
+if __name__ == "__main__":
+    # Configure root logger to see output
+    logging.basicConfig(level=logging.INFO)
+    weaver = SagaWeaver()
+    try:
+        asyncio.run(weaver.start())
+    except KeyboardInterrupt:
+        logger.info("Worker stopped.")

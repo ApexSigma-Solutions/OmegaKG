@@ -257,6 +257,10 @@ class Settings(BaseSettings):
     ollama_base_url: str = Field(
         "http://0.0.0.0:11434", validation_alias="OLLAMA_BASE_URL"
     )
+    ollama_embedding_model: str = Field(
+        "bge-m3", validation_alias="OLLAMA_EMBEDDING_MODEL"
+    )
+    openai_api_key: Optional[str] = Field(None, validation_alias="OPENAI_API_KEY")
 
     # --- Hookdeck Configuration ---
     hookdeck_api_key: Optional[str] = Field(None, validation_alias="HOOKDECK_API_KEY")
@@ -301,10 +305,24 @@ class Settings(BaseSettings):
         None, validation_alias="AI_CONVERSATIONS_PATH"
     )
     obsidian_vault_scan_folders: str = Field(
-        "Sessions",
+        "TN,TNP,Tasks,Workflow,Linear",
         validation_alias="OBSIDIAN_VAULT_SCAN_FOLDERS",
-        description="Comma-separated list of folder names to scan for percolation (default: Sessions)",
+        description="Comma-separated list of folder names to scan for percolation",
     )
+
+    # --- Terminal Capture Configuration ---
+    terminal_noise_patterns: str = Field(
+        r"^cd\s?,^ls,^dir,^cls,^clear,^echo\s?,^exit,^wsl,^powershell,^ipconfig,^whoami,^Get-Location,^Get-ChildItem",
+        validation_alias="TERMINAL_NOISE_PATTERNS",
+        description="Comma-separated list of regex patterns to ignore in terminal capture",
+    )
+    
+    # --- Ingest Database Configuration ---
+    ingest_postgres_user: Optional[str] = Field(None, validation_alias="INGEST_POSTGRES_USER")
+    ingest_postgres_password: Optional[str] = Field(None, validation_alias="INGEST_POSTGRES_PASSWORD")
+    ingest_postgres_server: Optional[str] = Field(None, validation_alias="INGEST_POSTGRES_SERVER")
+    ingest_postgres_port: Optional[int] = Field(None, validation_alias="INGEST_POSTGRES_PORT")
+    ingest_postgres_db: str = Field("ingest_db", validation_alias="INGEST_POSTGRES_DB")
 
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -361,6 +379,16 @@ class Settings(BaseSettings):
         if self.omega_pg_conn:
             return self.omega_pg_conn
         return f"postgresql://{self.postgres_user}:{self.postgres_password}@{self.postgres_server}:{self.postgres_port}/{self.postgres_db}"
+
+    @property
+    def ingest_database_url(self) -> str:
+        """Connection string for Ingest Database (fallback to main if not configured)."""
+        user = self.ingest_postgres_user or self.postgres_user
+        password = self.ingest_postgres_password or self.postgres_password
+        server = self.ingest_postgres_server or self.postgres_server
+        port = self.ingest_postgres_port or self.postgres_port
+        db = self.ingest_postgres_db
+        return f"postgresql+asyncpg://{user}:{password}@{server}:{port}/{db}"
 
     @classmethod
     def settings_customise_sources(

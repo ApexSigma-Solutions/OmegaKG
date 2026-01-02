@@ -202,6 +202,27 @@ class ObsidianNeo4jSync:
         print(f"\n[OK] Synced {count} tasks to Neo4j")
         return count
 
+    def get_all_task_files(self) -> list[Path]:
+        """
+        Retrieve all markdown task files from the configured folders.
+        
+        Returns:
+            list[Path]: List of paths to markdown files in configured scan folders.
+        """
+        from omega_kg.settings import settings
+        
+        task_files = []
+        scan_folders_str = settings.obsidian_vault_scan_folders
+        # Parse comma or colon separated list
+        separator = "," if "," in scan_folders_str else ":"
+        scan_folders = [f.strip() for f in scan_folders_str.split(separator) if f.strip()]
+        
+        for folder in scan_folders:
+            folder_path = self.vault_path / folder
+            if folder_path.exists() and folder_path.is_dir():
+                task_files.extend(list(folder_path.rglob("*.md")))
+        return task_files
+
     def get_stale_tasks(self, days_idle: int = 7) -> list[dict[str, object]]:
         """
         Return a list of draft Task records from Neo4j.

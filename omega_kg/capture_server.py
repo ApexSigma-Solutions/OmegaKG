@@ -40,10 +40,13 @@ from omega_kg.models.capture import (
     ObsidianUpdateRequest,
     ObsidianUpdateResponse,
 )
+from omega_kg.obsidian_sync import ObsidianNeo4jSync
+from omega_kg.lifecycle import TaskLifecycle
 from omega_kg.percolation import PercolationEngine
 from omega_kg.routers import github_receiver, linear_receiver
 from omega_kg.routers.capture import router as capture_router
 from omega_kg.routers.capture import set_percolate_function
+from omega_kg.routers.terminal import router as terminal_router
 from omega_kg.settings import settings
 from omega_kg.smart_parser import SmartParser
 from omega_kg.utils.capture_utils import generate_conversation_hash
@@ -319,25 +322,77 @@ def percolate_to_neo4j(
             driver.close()
 
 
-def batch_percolate_sessions():
+async def batch_percolate_sessions():
     """
-    Batch percolates all session logs from Obsidian vault to Neo4j.
+    Batch percolates all session logs from Obsidian vault to Neo4j AND syncs tasks.
     Intended to run periodically via scheduler.
 
-    Scans configurable folders defined by OBSIDIAN_VAULT_SCAN_FOLDERS setting.
+    Operations:
+    1. Scan Tasks/Workflow/Linear folders:
+       - Sync to Linear (if new/missing ID) via SmartParser
+       - Sync to Neo4j via ObsidianNeo4jSync
+    2. Scan Sessions (and configured folders):
+       - Percolate commit/task references via PercolationEngine
     """
     driver = None
     try:
+        import frontmatter
         import time
 
         start_time = time.time()
         logger.info("→ Scheduler execution started: batch_percolate_sessions")
 
+        # --- Phase 1: Task Sync (Linear + Neo4j) ---
+        sync_stats = {"linear_created": 0, "neo4j_synced": 0, "errors": 0}
+        
+        try:
+            obsidian_sync = ObsidianNeo4jSync()
+            # Initialize SmartParser (only if linear sync is configured)
+            smart_parser = None
+            if settings.linear_team_id:
+                smart_parser = SmartParser()
+            
+            task_files = obsidian_sync.get_all_task_files()
+            logger.info(f"Found {len(task_files)} task files to process")
+
+            for task_file in task_files:
+                try:
+                    # 1. Sync to Linear if needed (missing linear_id)
+                    if smart_parser:
+                        meta = {}
+                        try:
+                            # lightweight check before full parse
+                            with open(task_file, "r", encoding="utf-8") as f:
+                                meta = frontmatter.load(f).metadata
+                        except Exception:
+                            pass
+                        
+                        if not meta.get("linear_id"):
+                            logger.info(f"Syncing new task to Linear: {task_file.name}")
+                            await smart_parser.sync_note_to_linear(task_file)
+                            sync_stats["linear_created"] += 1
+
+                    # 2. Sync to Neo4j
+                    obsidian_sync.sync_task_note(task_file)
+                    sync_stats["neo4j_synced"] += 1
+
+                except Exception as e:
+                    logger.error(f"Failed to sync task {task_file.name}: {e}")
+                    sync_stats["errors"] += 1
+
+            obsidian_sync.close()
+            logger.info(f"[OK] Task Sync phase complete: {sync_stats}")
+
+        except Exception as e:
+            logger.error(f"Task Sync phase failed: {e}", exc_info=True)
+
+
+        # --- Phase 2: Session/Reference Percolation ---
         # Parse scan folders from settings
         scan_folders_str = settings.obsidian_vault_scan_folders
         scan_folders = [f.strip() for f in scan_folders_str.split(",") if f.strip()]
 
-        logger.info(f"Scanning folders: {', '.join(scan_folders)}")
+        logger.info(f"Scanning folders for percolation: {', '.join(scan_folders)}")
 
         # Validate each folder exists
         valid_folders = []
@@ -352,7 +407,7 @@ def batch_percolate_sessions():
 
         if not valid_folders:
             logger.warning(
-                "No valid percolation folders found - skipping batch percolation"
+                "No valid percolation folders found - skipping percolation phase"
             )
             return
 
@@ -373,10 +428,8 @@ def batch_percolate_sessions():
         elapsed_ms = (time.time() - start_time) * 1000
         logger.info(
             f"[OK] Scheduler completed in {elapsed_ms:.0f}ms: "
-            f"{len(valid_folders)} folder(s), "
-            f"{total_stats['tasks']} tasks, "
-            f"{total_stats['commits']} commits, "
-            f"{total_stats['links']} decision links"
+            f"Synced {sync_stats['neo4j_synced']} tasks ({sync_stats['linear_created']} new to Linear). "
+            f"Percolated {total_stats['tasks']} refs, {total_stats['links']} links."
         )
         logger.debug(f"Stats detail: {total_stats}")
     except Exception as e:
@@ -384,6 +437,34 @@ def batch_percolate_sessions():
     finally:
         if driver is not None:
             driver.close()
+
+
+async def run_lifecycle_check():
+    """
+    Run lifecycle enforcement periodically.
+    """
+    import asyncio
+    
+    logger.info("→ Scheduler execution started: run_lifecycle_check")
+    lifecycle = None
+    try:
+        lifecycle = TaskLifecycle()
+        # Run enforcement in executor to avoid blocking the loop
+        loop = asyncio.get_running_loop()
+        results = await loop.run_in_executor(None, lambda: lifecycle.enforce_lifecycle(dry_run=False))
+        
+        report = lifecycle.generate_report(results)
+        logger.info(f"[OK] Lifecycle check complete:\n{report}")
+        
+        # Send email if configured
+        if settings.email_to:
+             await loop.run_in_executor(None, lambda: lifecycle.send_email_report(report))
+
+    except Exception as e:
+        logger.error(f"Lifecycle check failed: {e}", exc_info=True)
+    finally:
+        if lifecycle:
+            lifecycle.close()
 
 
 # --- Ollama Service Management ---
@@ -566,6 +647,12 @@ async def lifespan(app: FastAPI):
                 minutes=5,
                 id="session_percolation",
             )
+            scheduler.add_job(
+                run_lifecycle_check,
+                "interval",
+                hours=1,
+                id="task_lifecycle",
+            )
             scheduler.start()
             logger.info("[OK] Session percolation scheduled (every 5 minutes)")
     except Exception as e:
@@ -633,6 +720,7 @@ set_percolate_function(percolate_to_neo4j_with_embedding)
 
 # Register routers
 app.include_router(capture_router)
+app.include_router(terminal_router)
 app.include_router(linear_receiver.router, tags=["Linear Ingest"])
 app.include_router(github_receiver.router, tags=["GitHub Ingest"])
 

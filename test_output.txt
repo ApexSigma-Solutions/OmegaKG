@@ -1,0 +1,37 @@
+============================= test session starts =============================
+collecting ... 
+----------------------------- live log collection -----------------------------
+INFO     omega_kg.settings:settings.py:73 BWS_ACCESS_TOKEN found, attempting Bitwarden authentication
+INFO     omega_kg.settings:settings.py:83 Bitwarden authentication successful: ResponseForAccessTokenLoginResponse(success=True, data=AccessTokenLoginResponse(authenticated=True, force_password_reset=False, reset_master_password=False, two_factor=None), error_message=None)
+WARNING  omega_kg.settings:settings.py:126 Secret not found in Bitwarden for key 'linear_webhook_secret' (UUID: c4e28fe5-a690-47c1-bf2a-b3a40115fc5f) - will use fallback
+WARNING  omega_kg.settings:settings.py:126 Secret not found in Bitwarden for key 'neo4j_password' (UUID: 2e56f3bd-5019-48c0-a778-b3a40116727b) - will use fallback
+WARNING  omega_kg.settings:settings.py:126 Secret not found in Bitwarden for key 'gemini_api_key' (UUID: fee6a433-1a72-424c-b58d-b3a40111feb1) - will use fallback
+INFO     omega_kg.settings:settings.py:148 Bitwarden secrets loaded for keys: extension_api_key, jwt_secret_key, linear_api_key, perplexity_api_key, postgres_password
+collected 0 items / 1 error
+
+=================================== ERRORS ====================================
+_________________ ERROR collecting tests/test_terminal_e2e.py _________________
+ImportError while importing test module 'D:\projects\OmegaKG\Omega_KG_stable\tests\test_terminal_e2e.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+C:\Program Files\Python312\Lib\importlib\__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\test_terminal_e2e.py:4: in <module>
+    from omega_kg.capture_server import app
+omega_kg\capture_server.py:52: in <module>
+    from omega_kg.workers.embedding_worker import start_worker, stop_worker
+omega_kg\workers\embedding_worker.py:39: in <module>
+    from omega_kg.utils.ai_utils import generate_embedding
+E   ModuleNotFoundError: No module named 'omega_kg.utils.ai_utils'
+------------------------------- Captured stderr -------------------------------
+INFO:omega_kg.settings:BWS_ACCESS_TOKEN found, attempting Bitwarden authentication
+INFO:omega_kg.settings:Bitwarden authentication successful: ResponseForAccessTokenLoginResponse(success=True, data=AccessTokenLoginResponse(authenticated=True, force_password_reset=False, reset_master_password=False, two_factor=None), error_message=None)
+WARNING:omega_kg.settings:Secret not found in Bitwarden for key 'linear_webhook_secret' (UUID: c4e28fe5-a690-47c1-bf2a-b3a40115fc5f) - will use fallback
+WARNING:omega_kg.settings:Secret not found in Bitwarden for key 'neo4j_password' (UUID: 2e56f3bd-5019-48c0-a778-b3a40116727b) - will use fallback
+WARNING:omega_kg.settings:Secret not found in Bitwarden for key 'gemini_api_key' (UUID: fee6a433-1a72-424c-b58d-b3a40111feb1) - will use fallback
+INFO:omega_kg.settings:Bitwarden secrets loaded for keys: extension_api_key, jwt_secret_key, linear_api_key, perplexity_api_key, postgres_password
+=========================== short test summary info ===========================
+ERROR tests/test_terminal_e2e.py
+!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!
+============================== 1 error in 5.94s ===============================
