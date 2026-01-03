@@ -305,6 +305,36 @@ class SmartParser:
             logger.error(f"Failed to store code blocks to Neo4j: {e}")
             # Non-fatal: continue with other operations
 
+    async def _resolve_team_id(self) -> Optional[str]:
+        """
+        Resolves the team ID. If it's a name/key (e.g. 'ALPHA'), looks it up via Linear API.
+        """
+        tid = self.default_team_id
+        if not tid:
+            return None
+
+        # Simple UUID check (8-4-4-4-12 hex digits)
+        # If it doesn't match this pattern, we assume it's a name/key
+        uuid_pattern = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", re.IGNORECASE)
+        
+        if uuid_pattern.match(tid):
+            return tid
+
+        logger.info(f"Team ID '{tid}' is not a UUID. Attempting to resolve via Linear API...")
+        try:
+            teams = await linear_client.get_teams()
+            for team in teams:
+                if team["key"] == tid or team["name"] == tid:
+                    logger.info(f"Resolved Team '{tid}' to ID: {team['id']}")
+                    self.default_team_id = team["id"]  # Cache the resolved ID
+                    return team["id"]
+            
+            logger.error(f"Could not find Linear Team with key or name: '{tid}'")
+            return None
+        except Exception as e:
+            logger.error(f"Failed to resolve team ID: {e}")
+            return None
+
     async def sync_note_to_linear(self, note_path: str | Path) -> dict | None:
         """
         Main orchestration method.
@@ -322,6 +352,9 @@ class SmartParser:
             A dict with the Linear issue info, or None if skipped/failed.
         """
         logger.info(f"--- SmartParser syncing: {note_path} ---")
+
+        # Resolve Team ID if needed (e.g. if it's "ALPHA" instead of UUID)
+        await self._resolve_team_id()
 
         if not self.default_team_id:
             logger.error("Cannot sync task: LINEAR_TEAM_ID is not set.")

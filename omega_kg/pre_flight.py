@@ -48,7 +48,7 @@ def pre_flight_checks() -> bool:
         logger.error(f"Unexpected error checking package: {e}")
 
     # Check 2: Verify critical dependencies
-    critical_deps = ["fastapi", "neo4j", "pydantic"]
+    critical_deps = ["fastapi", "neo4j", "pydantic", "openai"]
     missing_deps = []
     for dep in critical_deps:
         try:

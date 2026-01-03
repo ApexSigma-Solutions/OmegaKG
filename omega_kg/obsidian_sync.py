@@ -10,6 +10,8 @@ from neo4j import GraphDatabase
 from neo4j.exceptions import ServiceUnavailable, AuthError
 import frontmatter
 from omega_kg.settings import settings
+import psycopg2
+from omega_kg.config import VECTOR_TABLE_NAME, VectorStatus
 
 
 class ConnectionError(Exception):
@@ -45,7 +47,7 @@ class ObsidianNeo4jSync:
                 )
                 # Test the connection
                 self._check_connection()
-                print("✓ Neo4j connection established")
+                print("[OK] Neo4j connection established")
             except (
                 ServiceUnavailable,
                 AuthError,
@@ -162,6 +164,9 @@ class ObsidianNeo4jSync:
                 )
                 # Consume result to execute the query
                 _ = result.single()
+                
+                # Queue for embedding
+                self._queue_embedding(uid)
         except ServiceUnavailable:
             print(f"[SKIP] Connection lost: {task_file.name}")
         except Exception as e:
@@ -184,11 +189,7 @@ class ObsidianNeo4jSync:
             print("[WARN] Sync skipped (no database connection)")
             return 0
 
-        task_files = []
-        for folder in ["Tasks", "Workflow", "Linear"]:
-            folder_path = self.vault_path / folder
-            if folder_path.exists() and folder_path.is_dir():
-                task_files.extend(list(folder_path.rglob("*.md")))
+        task_files = self.get_all_task_files()
 
         count = 0
         for task_file in task_files:
@@ -212,7 +213,7 @@ class ObsidianNeo4jSync:
         from omega_kg.settings import settings
         
         task_files = []
-        scan_folders_str = settings.obsidian_vault_scan_folders
+        scan_folders_str = settings.obsidian_task_scan_folders
         # Parse comma or colon separated list
         separator = "," if "," in scan_folders_str else ":"
         scan_folders = [f.strip() for f in scan_folders_str.split(separator) if f.strip()]
@@ -267,6 +268,31 @@ class ObsidianNeo4jSync:
         """
         if self.driver:
             self.driver.close()
+
+    def _queue_embedding(self, uid: str) -> None:
+        """Queue task for embedding generation (idempotent)."""
+        print(f"DEBUG: Attempting to queue embedding for {uid}")
+        if self.mock_mode:
+            print("DEBUG: Mock mode, skipping queue.")
+            return
+
+        try:
+            print(f"DEBUG: Connecting to {settings.sync_database_url}")
+            # Connect using sync driver
+            with psycopg2.connect(settings.sync_database_url) as conn:
+                with conn.cursor() as cur:
+                    cur.execute(
+                        f"""
+                        INSERT INTO {VECTOR_TABLE_NAME} (message_id, node_label, status)
+                        VALUES (%s, 'Task', %s)
+                        ON CONFLICT (message_id, node_label) DO NOTHING
+                        """,
+                        (uid, VectorStatus.PENDING_EMBEDDING.value)
+                    )
+                conn.commit()
+                print(f"DEBUG: Successfully queued {uid}")
+        except Exception as e:
+            print(f"[WARN] Failed to queue embedding for {uid}: {e}")
 
 
 def main() -> None:

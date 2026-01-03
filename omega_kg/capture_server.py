@@ -389,8 +389,10 @@ async def batch_percolate_sessions():
 
         # --- Phase 2: Session/Reference Percolation ---
         # Parse scan folders from settings
-        scan_folders_str = settings.obsidian_vault_scan_folders
-        scan_folders = [f.strip() for f in scan_folders_str.split(",") if f.strip()]
+        # Use explicit session scan folders setting (TN-103/TN-301)
+        scan_folders_str = settings.obsidian_session_scan_folders
+        separator = "," if "," in scan_folders_str else ":"
+        scan_folders = [f.strip() for f in scan_folders_str.split(separator) if f.strip()]
 
         logger.info(f"Scanning folders for percolation: {', '.join(scan_folders)}")
 
@@ -416,14 +418,11 @@ async def batch_percolate_sessions():
         )
         engine = PercolationEngine(driver)
 
-        # Percolate each valid folder
-        total_stats = {"tasks": 0, "commits": 0, "links": 0}
-        for folder_path in valid_folders:
-            logger.debug(f"Initiating percolation from: {folder_path}")
-            folder_stats = engine.percolate_from_vault(folder_path)
-            total_stats["tasks"] += folder_stats["tasks"]
-            total_stats["commits"] += folder_stats["commits"]
-            total_stats["links"] += folder_stats["links"]
+        # Percolate from vault root with filtered folder list
+        valid_folder_names = [p.name for p in valid_folders]
+        logger.debug(f"Initiating percolation from: {vault_base} for folders: {valid_folder_names}")
+        
+        total_stats = engine.percolate_from_vault(vault_base, scan_folders=valid_folder_names)
 
         elapsed_ms = (time.time() - start_time) * 1000
         logger.info(

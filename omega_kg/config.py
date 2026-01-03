@@ -119,7 +119,7 @@ class VectorStatus(str, Enum):
 # ============================================================================
 # NEO4J NODE TYPE TRACKING (for polymorphic vector storage)
 # ============================================================================
-SUPPORTED_NODE_TYPES = ("ChatMessage", "LinearIssue", "Decision")
+SUPPORTED_NODE_TYPES = ("ChatMessage", "LinearIssue", "Decision", "Task")
 """Supported Neo4j node types for vector storage. Used to populate node_label column."""
 
 DEFAULT_NODE_TYPE = "ChatMessage"

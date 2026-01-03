@@ -3,7 +3,7 @@ import asyncio
 import logging
 import re
 import json
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from sqlalchemy import select, text
 from sqlalchemy.dialects.postgresql import JSONB
 
@@ -217,3 +217,45 @@ if __name__ == "__main__":
         asyncio.run(weaver.start())
     except KeyboardInterrupt:
         logger.info("Worker stopped.")
+
+
+# --- Integration Helpers for Capture Server ---
+_weaver_instance: Any = None
+_weaver_task: Optional[asyncio.Task] = None
+
+async def start_worker() -> None:
+    """Start the Saga Weaver as a background task."""
+    global _weaver_instance, _weaver_task
+    
+    if _weaver_instance is not None:
+        logger.warning("Worker already running")
+        return
+
+    _weaver_instance = SagaWeaver()
+    _weaver_task = asyncio.create_task(_weaver_instance.start())
+    logger.info("Saga Weaver task created")
+
+async def stop_worker() -> None:
+    """Stop the Saga Weaver."""
+    global _weaver_instance, _weaver_task
+    
+    if _weaver_instance:
+        _weaver_instance.running = False
+        logger.info("Stopping Saga Weaver...")
+    
+    if _weaver_task:
+        try:
+            # Wait for graceful shutdown (poll interval is 5s, so this might take a bit)
+            # functionality depends on 'start' loop checking 'self.running'
+            # We can also cancel if needed
+            await asyncio.wait_for(_weaver_task, timeout=10)
+        except (asyncio.TimeoutError, asyncio.CancelledError):
+            logger.warning("Forcing worker shutdown")
+            _weaver_task.cancel()
+            try:
+                await _weaver_task
+            except asyncio.CancelledError:
+                pass
+    
+    _weaver_instance = None
+    _weaver_task = None

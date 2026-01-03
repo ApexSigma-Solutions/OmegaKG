@@ -148,6 +148,24 @@ class LinearClient:
         result = await self._execute_query(query, {"id": issue_id})
         return result.get("issue", {})
 
+    async def get_teams(self) -> List[Dict[str, Any]]:
+        """
+        Retrieves all teams from the workspace.
+        """
+        query = """
+        query {
+          teams {
+            nodes {
+              id
+              name
+              key
+            }
+          }
+        }
+        """
+        result = await self._execute_query(query)
+        return result.get("teams", {}).get("nodes", [])
+
     async def update_issue(
         self, issue_id: str, updates: Dict[str, Any]
     ) -> Dict[str, Any]:

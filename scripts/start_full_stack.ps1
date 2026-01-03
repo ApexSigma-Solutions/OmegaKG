@@ -118,9 +118,6 @@ if ($ExistingPoetry) {
     }
 }
 
-    }
-}
-
 # --- 5. START EMBEDDING WORKER (Saga Weaver) ---
 Write-Output "[$Time] Checking Embedding Worker status..."
 $WorkerProc = Get-Process -Name "python" -ErrorAction SilentlyContinue | Where-Object {

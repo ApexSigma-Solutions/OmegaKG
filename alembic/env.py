@@ -18,11 +18,14 @@ if config.config_file_name is not None:
 # add your model's MetaData object here
 # for 'autogenerate' support
 # from myapp import mymodel
-# target_metadata = mymodel.Base.metadata
-
-target_metadata = None
+# for 'autogenerate' support
+from omega_kg.database.base import Base
+from omega_kg.models import terminal  # noqa: F401
+# Import other models here if they exist and use the shared Base
+target_metadata = Base.metadata
 
 # Set the database URL from settings
+print(f"DEBUG: Alembic using database URL: {settings.database_url}")
 config.set_main_option("sqlalchemy.url", settings.database_url)
 
 

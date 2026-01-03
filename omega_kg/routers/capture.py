@@ -13,19 +13,20 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict
 
-from fastapi import APIRouter, HTTPException, Request, Security
+from fastapi import APIRouter, HTTPException, Request, Security, Depends
 from neo4j import GraphDatabase
 from sqlalchemy import text
 
 from omega_kg.auth_utils import (create_access_token, get_static_api_key,
                                  validate_access_token)
 from omega_kg.database.session import get_db
+# Use Ingest Session for Raw Storage (same as Terminal)
+from omega_kg.database.ingest_session import get_ingest_db 
 from omega_kg.models.capture import CaptureResponse, ConversationData, Token
+from omega_kg.models.raw_storage import RawConversation
 from omega_kg.parsers import parse_html_content
 from omega_kg.settings import settings
-from omega_kg.utils.capture_utils import (format_conversation_markdown,
-                                          generate_conversation_hash,
-                                          write_to_obsidian)
+from omega_kg.utils.capture_utils import generate_conversation_hash
 from omega_kg.vector_store import get_vector_store
 
 logger = logging.getLogger(__name__)
@@ -77,17 +78,20 @@ async def capture_options():
     return {"message": "CORS preflight OK"}
 
 
+from sqlalchemy.exc import IntegrityError
+
 @router.post("/capture", response_model=CaptureResponse)
 async def capture_conversation(
     data: ConversationData,
     request: Request,
     _token_payload: Dict[str, Any] = Security(validate_access_token),
+    db_session: Any = Depends(get_ingest_db),
 ) -> CaptureResponse:
     """
     Capture a conversation from the Chrome extension.
-
-    Processes the conversation data, saves to Obsidian vault,
-    and percolates to Neo4j with embedding generation.
+    
+    NEW: Writes raw JSON to 'raw_conversations' table in Ingest Database.
+    Does NOT write to filesystem or Neo4j directly anymore.
     """
     # --- Security Hardening ---
     # 1. Check Content-Length Header (Fail Fast)
@@ -123,42 +127,45 @@ async def capture_conversation(
             status_code=422, detail="No messages provided and HTML parsing failed."
         )
 
-    # 5. PROCESSING (With Robust Error Handling)
+    # 5. STORAGE (Raw SQL)
     try:
-        markdown_content = format_conversation_markdown(data)
         conv_hash = generate_conversation_hash(data)
-        file_path = write_to_obsidian(data.platform, markdown_content, conv_hash)
-
-        # Percolate to Neo4j WITH embedding generation
-        nodes_created = 0
-        if _percolate_to_neo4j_with_embedding:
-            try:
-                nodes_created = await _percolate_to_neo4j_with_embedding(
-                    file_path, data
-                )
-            except Exception as e:
-                logger.warning(f"Neo4j percolation failed (non-fatal): {e}")
-
-        logger.info(
-            "Capture processed",
-            extra={
-                "platform": data.platform,
-                "file": str(file_path),
-                "nodes": nodes_created,
-            },
+        
+        # Create Raw Record
+        raw_record = RawConversation(
+            source_id=conv_hash,
+            platform=data.platform,
+            raw_payload=data.model_dump(mode="json"),
+            captured_at=datetime.utcnow(),
+            processed=False
         )
+        
+        db_session.add(raw_record)
+        await db_session.commit()
+        
+        logger.info(f"Raw conversation captured: {conv_hash} to DB.")
 
         return CaptureResponse(
             success=True,
-            file_path=str(file_path),
-            nodes_created=nodes_created,
-            message=f"Successfully captured {len(data.messages) if data.messages else 1} items with embedding.",
+            file_path="[DB STORAGE]",
+            nodes_created=0,
+            message=f"Successfully queued conversation {conv_hash} for processing.",
         )
-    except Exception:
+    except IntegrityError:
+        await db_session.rollback()
+        logger.info(f"Duplicate conversation captured: {conv_hash}. Ignoring.")
+        return CaptureResponse(
+            success=True,
+            file_path="[DB STORAGE]",
+            nodes_created=0,
+            message=f"Conversation {conv_hash} already exists. Ignored.",
+        )
+    except Exception as e:
         support_id = str(uuid.uuid4())
-        logger.exception(f"Critical Error {support_id}")
+        logger.exception(f"Critical Error {support_id} during capture: {e}")
+        await db_session.rollback()
         raise HTTPException(
-            status_code=500, detail={"message": "Internal error", "id": support_id}
+            status_code=500, detail={"message": "Internal error storing raw conversation", "id": support_id}
         )
 
 

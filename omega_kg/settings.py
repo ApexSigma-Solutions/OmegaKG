@@ -214,7 +214,10 @@ class Settings(BaseSettings):
     decision_keywords: str = Field(
         "decided to,chose to,agreed to", validation_alias="DECISION_KEYWORDS"
     )
-    linear_status_map_json: str = Field("{}", validation_alias="LINEAR_STATUS_MAP_JSON")
+    linear_status_map_json: str = Field(
+        '{"draft": "c757066a-8d71-4612-be2b-b9cd6c7987c5", "ready": "b2a452c5-bec3-4ebc-a14a-b1d44d87b481", "active": "5c0c5400-2d67-4e64-b7ba-31019ab522f6", "completed": "2ab9b46e-21a3-47f4-8660-ab68093a99b4", "archived": "72d2560d-6de4-49f4-bde7-9a58e0849293"}',
+        validation_alias="LINEAR_STATUS_MAP_JSON",
+    )
     linear_user_map_json: str = Field("{}", validation_alias="LINEAR_USER_MAP_JSON")
     linear_label_map_json: str = Field("{}", validation_alias="LINEAR_LABEL_MAP_JSON")
 
@@ -255,10 +258,10 @@ class Settings(BaseSettings):
     # --- Embedding Service Configuration (CRITICAL) ---
     embedding_provider: str = Field("ollama", validation_alias="EMBEDDING_PROVIDER")
     ollama_base_url: str = Field(
-        "http://0.0.0.0:11434", validation_alias="OLLAMA_BASE_URL"
+        "http://127.0.0.1:11434", validation_alias="OLLAMA_BASE_URL"
     )
     ollama_embedding_model: str = Field(
-        "bge-m3", validation_alias="OLLAMA_EMBEDDING_MODEL"
+        "bge-m3:567m", validation_alias="OLLAMA_EMBEDDING_MODEL"
     )
     openai_api_key: Optional[str] = Field(None, validation_alias="OPENAI_API_KEY")
 
@@ -307,7 +310,17 @@ class Settings(BaseSettings):
     obsidian_vault_scan_folders: str = Field(
         "TN,TNP,Tasks,Workflow,Linear",
         validation_alias="OBSIDIAN_VAULT_SCAN_FOLDERS",
-        description="Comma-separated list of folder names to scan for percolation",
+        description="Deprecated: Use OBSIDIAN_TASK_SCAN_FOLDERS or OBSIDIAN_SESSION_SCAN_FOLDERS",
+    )
+    obsidian_task_scan_folders: str = Field(
+        "TN,TNP,Tasks,Workflow,Linear",
+        validation_alias="OBSIDIAN_TASK_SCAN_FOLDERS",
+        description="Comma-separated list of folder names to scan for Task Sync",
+    )
+    obsidian_session_scan_folders: str = Field(
+        "Sessions",
+        validation_alias="OBSIDIAN_SESSION_SCAN_FOLDERS",
+        description="Comma-separated list of folder names to scan for Session Percolation",
     )
 
     # --- Terminal Capture Configuration ---
@@ -322,7 +335,7 @@ class Settings(BaseSettings):
     ingest_postgres_password: Optional[str] = Field(None, validation_alias="INGEST_POSTGRES_PASSWORD")
     ingest_postgres_server: Optional[str] = Field(None, validation_alias="INGEST_POSTGRES_SERVER")
     ingest_postgres_port: Optional[int] = Field(None, validation_alias="INGEST_POSTGRES_PORT")
-    ingest_postgres_db: str = Field("ingest_db", validation_alias="INGEST_POSTGRES_DB")
+    ingest_postgres_db: Optional[str] = Field(None, validation_alias="INGEST_POSTGRES_DB")
 
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -387,7 +400,7 @@ class Settings(BaseSettings):
         password = self.ingest_postgres_password or self.postgres_password
         server = self.ingest_postgres_server or self.postgres_server
         port = self.ingest_postgres_port or self.postgres_port
-        db = self.ingest_postgres_db
+        db = self.ingest_postgres_db or self.postgres_db
         return f"postgresql+asyncpg://{user}:{password}@{server}:{port}/{db}"
 
     @classmethod

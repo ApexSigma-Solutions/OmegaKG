@@ -22,6 +22,8 @@ Error Handling:
 
 import logging
 from typing import List, Optional, cast
+from typing import List, Optional, cast
+# import json (removed)
 
 import asyncpg
 import numpy as np
@@ -360,6 +362,69 @@ class VectorStore:
         except asyncpg.PostgresError as e:
             logger.error(f"Failed to fetch vector status: vector_id={vector_id}: {e}")
             raise ConnectionError(f"Vector store fetch failed: {e}")
+
+    async def search(
+        self,
+        query_vector: List[float],
+        limit: int = 5,
+        threshold: float = 0.0,
+    ) -> List[dict]:
+        """
+        Perform semantic search using cosine distance.
+
+        Args:
+            query_vector: Embedding vector to search with
+            limit: Maximum number of results to return
+            threshold: Minimum similarity score (0.0 to 1.0)
+
+        Returns:
+            List[Dict]: List of matches (content/metadata will be empty until join logic is added)
+        """
+        if not self.pool:
+            raise ConnectionError("VectorStore pool not initialized")
+
+        try:
+            async with self.pool.acquire() as conn:
+                # Register pgvector type for this connection to handle ndarray
+                await register_vector(conn)
+                
+                # Note: Currently the vector table only stores the index.
+                # A JOIN with the content table (active_context/conversations) would be needed for full RAG.
+                # Returning available index data for now.
+                rows = await conn.fetch(
+                    f"""
+                    SELECT 
+                        id, 
+                        message_id, 
+                        node_label,
+                        1 - (embedding <=> $1) as score
+                    FROM {VECTOR_TABLE_NAME}
+                    WHERE status = 'ready'
+                      AND 1 - (embedding <=> $1) > $2
+                    ORDER BY embedding <=> $1
+                    LIMIT $3
+                    """,
+                    np.array(query_vector, dtype=np.float32), 
+                    threshold,
+                    limit,
+                )
+                
+                return [
+                    {
+                        "id": r["id"],
+                        "message_id": r["message_id"],
+                        "node_label": r["node_label"],
+                        "score": r["score"],
+                        # Placeholders so script doesn't crash
+                        "content": f"Content lookup required for {r['node_label']}:{r['message_id']}",
+                        "metadata": {"source": "vector_index"}
+                    }
+                    for r in rows
+                ]
+
+        except asyncpg.PostgresError as e:
+            logger.error(f"Vector search failed: {e}")
+            raise ConnectionError(f"Database error: {e}")
 
     async def get_stats(self) -> dict:
         """

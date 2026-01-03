@@ -4,9 +4,7 @@ from uuid import UUID, uuid4
 from pydantic import BaseModel, Field
 from sqlalchemy import Column, String, Integer, DateTime, Text, Boolean
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
-from sqlalchemy.ext.declarative import declarative_base
-
-Base = declarative_base()
+from omega_kg.database.base import Base
 
 # --- Pydantic Models ---
 
