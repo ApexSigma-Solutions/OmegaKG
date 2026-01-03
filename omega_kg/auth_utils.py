@@ -5,7 +5,7 @@ from typing import Any, Dict, Optional, Set
 
 from fastapi import Depends, HTTPException, Request, Security, status
 from fastapi.security import APIKeyHeader, OAuth2PasswordBearer
-from jose import JWTError, jwt
+import jwt
 from passlib.context import CryptContext
 from pydantic import BaseModel
 
@@ -26,6 +26,7 @@ SECURE_JWT_ALGORITHMS: Set[str] = {
     "ES256",
     "ES384",
     "ES512",
+    "EdDSA",
 }
 INSECURE_ALGORITHMS: Set[str] = {"none", "None", "NONE", "HS1", "HS224"}
 
@@ -213,7 +214,7 @@ async def validate_access_token(token: str = Depends(oauth2_scheme)) -> TokenDat
 
         return TokenData(username=username)
 
-    except JWTError as e:
+    except jwt.PyJWTError as e:
         # Log failed validation attempt (security monitoring)
         import logging
 

@@ -21,7 +21,7 @@ click = ">=8.0,<9.0"
 fastapi = ">=0.120.0,<0.121.0"
 uvicorn = {version = ">=0.38.0,<0.39.0", extras = ["standard"]}
 apscheduler = ">=3.11.0,<4.0.0"
-python-jose = {version = ">=3.5.0,<4.0.0", extras = ["cryptography"]}
+pyjwt = {version = "^2.10.0", extras = ["crypto"]}
 passlib = {version = ">=1.7.4,<2.0.0", extras = ["bcrypt"]}
 beautifulsoup4 = ">=4.14.2,<5.0.0"
 httpx = ">=0.28.1,<0.29.0"
