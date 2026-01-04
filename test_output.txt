@@ -1,53 +1,37 @@
 ============================= test session starts =============================
-platform win32 -- Python 3.12.11, pytest-8.4.2, pluggy-1.6.0 -- C:\Users\steyn\AppData\Local\pypoetry\Cache\virtualenvs\omega-kg-2bHddizn-py3.12\Scripts\python.exe
-cachedir: .pytest_cache
-rootdir: D:\projects\Omega_KG_dev\tests
-configfile: pytest.ini
-plugins: anyio-4.11.0, langsmith-0.4.43, asyncio-1.3.0, cov-7.0.0, dotenv-0.5.2
-asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
-collecting ... collected 4 items
+collecting ... 
+----------------------------- live log collection -----------------------------
+INFO     omega_kg.settings:settings.py:73 BWS_ACCESS_TOKEN found, attempting Bitwarden authentication
+INFO     omega_kg.settings:settings.py:83 Bitwarden authentication successful: ResponseForAccessTokenLoginResponse(success=True, data=AccessTokenLoginResponse(authenticated=True, force_password_reset=False, reset_master_password=False, two_factor=None), error_message=None)
+WARNING  omega_kg.settings:settings.py:126 Secret not found in Bitwarden for key 'linear_webhook_secret' (UUID: c4e28fe5-a690-47c1-bf2a-b3a40115fc5f) - will use fallback
+WARNING  omega_kg.settings:settings.py:126 Secret not found in Bitwarden for key 'neo4j_password' (UUID: 2e56f3bd-5019-48c0-a778-b3a40116727b) - will use fallback
+WARNING  omega_kg.settings:settings.py:126 Secret not found in Bitwarden for key 'gemini_api_key' (UUID: fee6a433-1a72-424c-b58d-b3a40111feb1) - will use fallback
+INFO     omega_kg.settings:settings.py:148 Bitwarden secrets loaded for keys: extension_api_key, jwt_secret_key, linear_api_key, perplexity_api_key, postgres_password
+collected 0 items / 1 error
 
-tests\test_linear_sync.py::test_create_issue FAILED                      [ 25%]
-tests\test_linear_sync.py::test_update_issue FAILED                      [ 50%]
-tests\test_linear_sync.py::test_sync_note_create PASSED                  [ 75%]
-tests\test_linear_sync.py::test_sync_note_update PASSED                  [100%]
-
-================================== FAILURES ===================================
-______________________________ test_create_issue ______________________________
-tests\test_linear_sync.py:56: in test_create_issue
-    result = await client.create_issue(
-omega_kg\linear_client.py:114: in create_issue
-    result = await self._execute_query(mutation, variables)
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-omega_kg\linear_client.py:56: in _execute_query
-    if "errors" in data:
-       ^^^^^^^^^^^^^^^^
-E   TypeError: argument of type 'coroutine' is not iterable
------------------------------- Captured log call ------------------------------
-ERROR    omega_kg.linear_client:linear_client.py:68 Linear API Query Failed: argument of type 'coroutine' is not iterable
-______________________________ test_update_issue ______________________________
-tests\test_linear_sync.py:90: in test_update_issue
-    result = await client.update_issue("issue_123", {"title": "Updated Title"})
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-omega_kg\linear_client.py:164: in update_issue
-    result = await self._execute_query(mutation, {"id": issue_id, "input": updates})
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-omega_kg\linear_client.py:56: in _execute_query
-    if "errors" in data:
-       ^^^^^^^^^^^^^^^^
-E   TypeError: argument of type 'coroutine' is not iterable
------------------------------- Captured log call ------------------------------
-ERROR    omega_kg.linear_client:linear_client.py:68 Linear API Query Failed: argument of type 'coroutine' is not iterable
-============================== warnings summary ===============================
-test_linear_sync.py::test_create_issue
-test_linear_sync.py::test_update_issue
-  D:\projects\Omega_KG_dev\omega_kg\linear_client.py:52: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
-    response.raise_for_status()
-  Enable tracemalloc to get traceback where the object was allocated.
-  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
-
--- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=================================== ERRORS ====================================
+_________________ ERROR collecting tests/test_terminal_e2e.py _________________
+ImportError while importing test module 'D:\projects\OmegaKG\Omega_KG_stable\tests\test_terminal_e2e.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+C:\Program Files\Python312\Lib\importlib\__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\test_terminal_e2e.py:4: in <module>
+    from omega_kg.capture_server import app
+omega_kg\capture_server.py:52: in <module>
+    from omega_kg.workers.embedding_worker import start_worker, stop_worker
+omega_kg\workers\embedding_worker.py:39: in <module>
+    from omega_kg.utils.ai_utils import generate_embedding
+E   ModuleNotFoundError: No module named 'omega_kg.utils.ai_utils'
+------------------------------- Captured stderr -------------------------------
+INFO:omega_kg.settings:BWS_ACCESS_TOKEN found, attempting Bitwarden authentication
+INFO:omega_kg.settings:Bitwarden authentication successful: ResponseForAccessTokenLoginResponse(success=True, data=AccessTokenLoginResponse(authenticated=True, force_password_reset=False, reset_master_password=False, two_factor=None), error_message=None)
+WARNING:omega_kg.settings:Secret not found in Bitwarden for key 'linear_webhook_secret' (UUID: c4e28fe5-a690-47c1-bf2a-b3a40115fc5f) - will use fallback
+WARNING:omega_kg.settings:Secret not found in Bitwarden for key 'neo4j_password' (UUID: 2e56f3bd-5019-48c0-a778-b3a40116727b) - will use fallback
+WARNING:omega_kg.settings:Secret not found in Bitwarden for key 'gemini_api_key' (UUID: fee6a433-1a72-424c-b58d-b3a40111feb1) - will use fallback
+INFO:omega_kg.settings:Bitwarden secrets loaded for keys: extension_api_key, jwt_secret_key, linear_api_key, perplexity_api_key, postgres_password
 =========================== short test summary info ===========================
-FAILED tests\test_linear_sync.py::test_create_issue - TypeError: argument of ...
-FAILED tests\test_linear_sync.py::test_update_issue - TypeError: argument of ...
-=================== 2 failed, 2 passed, 2 warnings in 0.18s ===================
+ERROR tests/test_terminal_e2e.py
+!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!
+============================== 1 error in 5.94s ===============================

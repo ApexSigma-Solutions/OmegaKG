@@ -16,6 +16,7 @@ from pathlib import Path
 from neo4j import GraphDatabase
 from neo4j.exceptions import ServiceUnavailable, AuthError
 import frontmatter
+from dateutil import parser
 
 from omega_kg.settings import settings
 
@@ -264,32 +265,66 @@ class TaskLifecycle:
     ) -> List[Dict[str, Any]]:
         """
         Find tasks that match a lifecycle rule's status and age criteria.
-
-        Parameters:
-            rule (LifecycleRule): Rule whose from_status, days_threshold, and optional condition determine matching tasks.
-
-        Returns:
-            List[Dict[str, Any]]: List of task records ordered by `days_old` descending. Each dict contains the keys `'t.uid'`, `'t.title'`, `'t.filepath'`, `'t.status'`, and `days_old` (number of days since task creation).
+        
+        Performs date parsing and filtering in Python to handle inconsistent date formats (Strings vs DateTime).
         """
 
-        # Build Cypher query
+        # Build Cypher query - Fetch all candidates matching status and condition
+        # We fetch t.created and filter by age in Python
         query = f"""
             MATCH (t:Task)
             WHERE t.status = $from_status
-              AND duration.between(t.created, datetime()).days > $days_threshold
               {f"AND ({rule.condition})" if rule.condition else ""}
-            RETURN t.uid, t.title, t.filepath, t.status,
-                   duration.between(t.created, datetime()).days as days_old
-            ORDER BY days_old DESC
+            RETURN t.uid, t.title, t.filepath, t.status, t.created
         """
 
         result = session.run(
             query,
             from_status=rule.from_status.value,
-            days_threshold=rule.days_threshold,
         )
 
-        return [dict(record) for record in result]
+        candidates = [dict(record) for record in result]
+        violations = []
+        now = datetime.now()
+
+        for task in candidates:
+            created_val = task.get("t.created")
+            if not created_val:
+                continue
+
+            try:
+                # Parse date (robustly handles "Mon, 27th Oct" and ISO)
+                if isinstance(created_val, str):
+                    # dateutil handles "27th" and various formats better
+                    created_dt = parser.parse(created_val)
+                elif hasattr(created_val, "isoformat"):  # DateTime object
+                    created_dt = created_val
+                else: 
+                    # Attempt to cast or skip
+                    continue
+                
+                # Make naive/aware compatible
+                if created_dt.tzinfo and not now.tzinfo:
+                     # Compare with active timezone or convert to naive
+                     # Simplest: ignore tz for age calc (approximate days)
+                     created_dt = created_dt.replace(tzinfo=None)
+                elif not created_dt.tzinfo and now.tzinfo:
+                     now_naive = now.replace(tzinfo=None)
+                
+                # Use naive comparison for robust "days age"
+                age = (datetime.now() - created_dt.replace(tzinfo=None)).days
+                
+                if age > rule.days_threshold:
+                    task["days_old"] = age
+                    violations.append(task)
+                    
+            except Exception as e:
+                logger.warning(f"Failed to parse date for task {task.get('t.uid')}: {e}")
+                continue
+
+        # Sort by days_old descending
+        violations.sort(key=lambda x: x.get("days_old", 0), reverse=True)
+        return violations
 
     def _transition_task(self, session: Any, uid: str, rule: LifecycleRule) -> None:
         """
@@ -355,7 +390,11 @@ class TaskLifecycle:
         """
 
         # Find task file
+        # Support both TN-XXX-000 format and legacy TASK-XXX format
         task_files = list(self.vault_path.glob(f"Tasks/**/{uid}*.md"))
+        if not task_files:
+            # Try alternative pattern for TN prefix
+            task_files = list(self.vault_path.glob(f"TN/**/{uid}*.md"))
         if not task_files:
             logger.warning("Task file not found for %s", uid)
             return
@@ -381,7 +420,7 @@ class TaskLifecycle:
 
 **🤖 Lifecycle Transition:** {rule.from_status.value} → **{new_status}**
 *Reason:* Automatic transition after {rule.days_threshold} days of inactivity.
-*Date:* {datetime.now().strftime('%Y-%m-%d %H:%M')}
+*Date:* {datetime.now().strftime("%Y-%m-%d %H:%M")}
 
 """
         post.content += notice
@@ -514,7 +553,7 @@ class TaskLifecycle:
         msg["From"] = settings.smtp_user or ""
         msg["To"] = settings.email_to or ""
         msg["Subject"] = (
-            f"Omega_KG Lifecycle Report - " f"{datetime.now().strftime('%Y-%m-%d')}"
+            f"Omega_KG Lifecycle Report - {datetime.now().strftime('%Y-%m-%d')}"
         )
 
         msg.attach(MIMEText(report, "plain"))

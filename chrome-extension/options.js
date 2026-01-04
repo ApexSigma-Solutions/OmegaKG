@@ -5,7 +5,6 @@
 
 const STORAGE_KEYS = {
     API_KEY: 'omega_api_key',
-    SERVER_URL: 'omega_server_url',
     JWT_TOKEN: 'omega_jwt_token',
     JWT_EXPIRY: 'omega_jwt_expiry',
 };
@@ -28,17 +27,21 @@ async function initializeForm() {
         console.debug('[Omega_KG] Loading stored configuration...');
         const data = await chrome.storage.local.get([
             STORAGE_KEYS.API_KEY,
-            STORAGE_KEYS.SERVER_URL,
+            'omega_server_url',
         ]);
 
         if (data[STORAGE_KEYS.API_KEY]) {
             apiKeyInput.value = data[STORAGE_KEYS.API_KEY];
             updateFieldStatus(apiKeyStatus, 'saved', 'API key saved ✓');
+            savedApiKey = data[STORAGE_KEYS.API_KEY];
         }
 
-        if (data[STORAGE_KEYS.SERVER_URL]) {
-            serverUrlInput.value = data[STORAGE_KEYS.SERVER_URL];
-            updateFieldStatus(serverUrlStatus, 'saved', 'Server URL saved ✓');
+        // Get current server URL from storage or use default
+        const currentServerUrl = data['omega_server_url'] || 'http://localhost:8765';
+        serverUrlInput.value = currentServerUrl;
+        savedServerUrl = currentServerUrl;
+        if (data['omega_server_url']) {
+            updateFieldStatus(serverUrlStatus, 'saved', 'Server URL loaded ✓');
         }
 
         console.debug('[Omega_KG] Configuration loaded');
@@ -68,6 +71,13 @@ function showStatus(type, message) {
     statusMessage.className = `status-message ${type}`;
     statusMessage.textContent = message;
     console.debug(`[Omega_KG] Status (${type}): ${message}`);
+
+    // Auto-hide success messages after 3 seconds
+    if (type === 'success') {
+        setTimeout(() => {
+            statusMessage.className = 'status-message';
+        }, 3000);
+    }
 }
 
 /**
@@ -172,11 +182,15 @@ async function saveConfiguration() {
         // Test connection to server
         await testServerConnection(apiKey, serverUrl);
 
-        // Save to chrome.storage.local
+        // Save API key to chrome.storage.local
         await chrome.storage.local.set({
             [STORAGE_KEYS.API_KEY]: apiKey,
-            [STORAGE_KEYS.SERVER_URL]: serverUrl,
+            'omega_server_url': serverUrl,
         });
+
+        // Update saved values for synchronous comparison
+        savedApiKey = apiKey;
+        savedServerUrl = serverUrl;
 
         console.debug('[Omega_KG] Configuration saved successfully');
         updateFieldStatus(apiKeyStatus, 'saved', 'API key saved ✓');
@@ -213,13 +227,15 @@ async function clearConfiguration() {
     try {
         await chrome.storage.local.remove([
             STORAGE_KEYS.API_KEY,
-            STORAGE_KEYS.SERVER_URL,
+            'omega_server_url',
             STORAGE_KEYS.JWT_TOKEN,
             STORAGE_KEYS.JWT_EXPIRY,
         ]);
 
         apiKeyInput.value = '';
-        serverUrlInput.value = 'http://localhost:8002';
+        serverUrlInput.value = 'http://localhost:8765';
+        savedApiKey = '';
+        savedServerUrl = 'http://localhost:8765';
         apiKeyStatus.className = 'field-status';
         apiKeyStatus.textContent = '';
         serverUrlStatus.className = 'field-status';
@@ -233,15 +249,34 @@ async function clearConfiguration() {
     }
 }
 
+// Saved values for synchronous comparison (avoid race conditions)
+let savedApiKey = '';
+let savedServerUrl = 'http://localhost:8765';
+
 /**
  * Mark form as having unsaved changes
+ * Uses strict equality comparison to detect changes, including when saved values are cleared
+ * Synchronous version to avoid race conditions with async storage reads
  */
 function markUnsaved() {
-    if (apiKeyInput.value.trim()) {
+    // Get current input values
+    const currentApiKey = apiKeyInput.value.trim();
+    const currentServerUrl = serverUrlInput.value.trim();
+
+    // Strict equality comparison for API key (detects both changes and clearing)
+    if (currentApiKey !== savedApiKey) {
         updateFieldStatus(apiKeyStatus, 'unsaved', 'Changes not saved');
+    } else {
+        // Reset to saved state if values match
+        updateFieldStatus(apiKeyStatus, 'saved', 'API key saved ✓');
     }
-    if (serverUrlInput.value.trim() !== 'http://localhost:8002') {
+
+    // Strict equality comparison for server URL
+    if (currentServerUrl !== savedServerUrl) {
         updateFieldStatus(serverUrlStatus, 'unsaved', 'Changes not saved');
+    } else {
+        // Reset to saved state if values match
+        updateFieldStatus(serverUrlStatus, 'saved', 'Server URL saved ✓');
     }
 }
 

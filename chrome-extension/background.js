@@ -2,31 +2,47 @@
 // Manifest V3 service workers go inactive - this is NORMAL Chrome behavior
 // The extension will wake up when messages arrive or alarms fire
 
-const DEFAULT_SERVER_URL = "http://localhost:8002";
 const STORAGE_KEYS = {
-    SERVER_URL: 'omega_server_url',
     API_KEY: 'omega_api_key',
     JWT_TOKEN: 'omega_jwt_token',
     JWT_EXPIRY: 'omega_jwt_expiry',
 };
 
+const DEFAULT_SERVER_URL = 'http://localhost:8765';
+
 /**
- * Get the configured server URL or fallback to default
- * @returns {Promise<string>} The server URL
+ * Retrieve the configured server URL from Chrome local storage, falling back to the default if not set.
+ * @returns {Promise<string>} The stored server URL, or DEFAULT_SERVER_URL if none is configured or an error occurs.
  */
 async function getServerUrl() {
-    const result = await chrome.storage.local.get([STORAGE_KEYS.SERVER_URL]);
-    return result[STORAGE_KEYS.SERVER_URL] || DEFAULT_SERVER_URL;
+    try {
+        const data = await chrome.storage.local.get(['omega_server_url']);
+        return data['omega_server_url'] || DEFAULT_SERVER_URL;
+    } catch (error) {
+        console.warn('[Omega_KG] Failed to get server URL:', error);
+        return DEFAULT_SERVER_URL;
+    }
 }
 
 /**
- * Build a full endpoint URL from a path
- * @param {string} path - The endpoint path (e.g., '/capture')
- * @returns {Promise<string>} The full URL
+ * Constructs the full URL for a named API endpoint.
+ * @param {string} endpoint - One of: `AUTH_TOKEN`, `CAPTURE`, `HEALTH`, `LINEAR_WEBHOOK`.
+ * @returns {string} The full URL string for the given endpoint.
  */
-async function getEndpointUrl(path) {
+async function getEndpointUrl(endpoint) {
+    const endpoints = {
+        AUTH_TOKEN: '/auth/token',
+        CAPTURE: '/capture',
+        HEALTH: '/health',
+        LINEAR_WEBHOOK: '/webhook/linear',
+    };
+
     const serverUrl = await getServerUrl();
-    return `${serverUrl}${path}`;
+    const endpointPath = endpoints[endpoint];
+    if (!endpointPath) {
+        throw new Error(`Unknown endpoint: ${endpoint}`);
+    }
+    return new URL(endpointPath, serverUrl).toString();
 }
 
 // Token cache (short-term cache to avoid excessive /auth/token calls)
@@ -34,9 +50,10 @@ let cachedJwtToken = null;
 let cachedJwtExpiry = 0;
 
 /**
- * Retrieve and cache JWT token from storage, refreshing if necessary
- * @async
- * @returns {Promise<string|null>} JWT token or null if not configured/available
+ * Return a valid JWT token, preferring the in-memory cache, then stored token, and refreshing when necessary.
+ *
+ * Updates the in-memory cache (and persists token/expiry when refreshed) as a side effect.
+ * @returns {string|null} `string` JWT token if available, `null` otherwise.
  */
 async function getValidJwtToken() {
   try {
@@ -73,9 +90,10 @@ async function getValidJwtToken() {
 }
 
 /**
- * Refresh JWT token using bootstrap API key
- * @async
- * @returns {Promise<string|null>} New JWT token or null if refresh fails
+ * Refreshes the JWT token using the stored bootstrap API key.
+ *
+ * On success caches the token and its expiry in memory and persists both to chrome.storage.local.
+ * @returns {string|null} The new JWT token if refreshed successfully, `null` otherwise.
  */
 async function refreshJwtToken() {
   try {
@@ -89,7 +107,7 @@ async function refreshJwtToken() {
     }
 
     // Call /auth/token endpoint
-    const authUrl = await getEndpointUrl('/auth/token');
+    const authUrl = await getEndpointUrl('AUTH_TOKEN');
     const response = await fetch(authUrl, {
       method: 'POST',
       headers: {
@@ -170,12 +188,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 /**
- * Saves conversation data to the localhost capture server.
- * Uses JWT Bearer token authentication (exchanges bootstrap key for JWT via /auth/token)
- * @async
- * @param {Object} data - The conversation data to save
- * @returns {Promise<Object>} Promise that resolves to the JSON-decoded response from the server
- * @throws {Error} If the server request fails or returns an error status
+ * Save conversation data to the configured localhost capture endpoint.
+ *
+ * Sends the provided conversation payload to the server using a JWT Bearer token
+ * (the token is fetched or refreshed from the configured bootstrap API key as needed).
+ * @param {Object} data - Conversation payload to send; typically includes fields such as `platform`, `messages`, and `url`.
+ * @returns {Object} The parsed JSON response from the capture server.
+ * @throws {Error} If no JWT is available, the network request fails, or the server responds with a non-OK status.
  */
 async function saveToLocalhost(data) {
   console.log(
@@ -190,14 +209,14 @@ async function saveToLocalhost(data) {
   try {
     // Get valid JWT token (will refresh if necessary)
     const jwtToken = await getValidJwtToken();
-    
+
     if (!jwtToken) {
       throw new Error(
         'No JWT token available. Please configure API key in extension options.'
       );
     }
 
-    const response = await fetch(await getEndpointUrl('/capture'), {
+    const response = await fetch(await getEndpointUrl('CAPTURE'), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -229,15 +248,63 @@ chrome.alarms.create("health-check", { periodInMinutes: 5 });
 chrome.alarms.onAlarm.addListener(async (alarm) => {
   if (alarm.name === "health-check") {
     try {
-      const healthUrl = await getEndpointUrl('/health');
-      const response = await fetch(healthUrl);
+      const healthUrl = await getEndpointUrl('HEALTH');
+      const response = await fetch(healthUrl, {
+        method: 'GET',
+        signal: AbortSignal.timeout(5000), // 5 second timeout
+      });
+
+      // Only access response properties if fetch succeeded
+      // Validate response status before parsing JSON
+      // response.ok is true only for 2xx status codes
+      if (!response.ok) {
+        // Handle client errors (4xx) and server errors (5xx) separately
+        if (response.status >= 400 && response.status < 500) {
+          const errorText = await response.text().catch(() => 'Unknown client error');
+          console.warn(
+            `[Omega_KG] Server health check failed (client error ${response.status}):`,
+            errorText
+          );
+          return;
+        } else if (response.status >= 500) {
+          const errorText = await response.text().catch(() => 'Unknown server error');
+          console.error(
+            `[Omega_KG] Server health check failed (server error ${response.status}):`,
+            errorText
+          );
+          return;
+        } else {
+          // Handle 1xx (informational) and 3xx (redirect) responses
+          // These are unexpected for a health check endpoint
+          console.warn(
+            `[Omega_KG] Server health check returned unexpected status ${response.status} (informational/redirect)`
+          );
+          return;
+        }
+      }
+
+      // Parse JSON only if response is OK (2xx status)
       const data = await response.json();
       console.log(
         "[Omega_KG] Server status:",
         data.status,
       );
     } catch (error) {
-      console.warn("[Omega_KG] Server offline - background.js:100");
+      // Check for timeout/abort errors FIRST (before any response access)
+      // These occur when fetch() throws before a response is received
+      if (error.name === 'AbortError' || error.name === 'TimeoutError') {
+        console.warn("[Omega_KG] Server health check timed out");
+        return;
+      }
+
+      // Check for network errors (no response received)
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        console.warn("[Omega_KG] Server offline - network error:", error.message);
+        return;
+      }
+
+      // Other errors
+      console.warn("[Omega_KG] Server health check error:", error.message);
     }
   }
 });

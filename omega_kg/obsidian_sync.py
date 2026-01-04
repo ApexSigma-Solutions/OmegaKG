@@ -10,6 +10,8 @@ from neo4j import GraphDatabase
 from neo4j.exceptions import ServiceUnavailable, AuthError
 import frontmatter
 from omega_kg.settings import settings
+import psycopg2
+from omega_kg.config import VECTOR_TABLE_NAME, VectorStatus
 
 
 class ConnectionError(Exception):
@@ -45,7 +47,7 @@ class ObsidianNeo4jSync:
                 )
                 # Test the connection
                 self._check_connection()
-                print("✓ Neo4j connection established")
+                print("[OK] Neo4j connection established")
             except (
                 ServiceUnavailable,
                 AuthError,
@@ -144,7 +146,8 @@ class ObsidianNeo4jSync:
                         t.last_modified = $modified,
                         t.filepath = $filepath,
                         t.content = $content,
-                        t.parent_plan = $parent
+                        t.parent_plan = $parent,
+                        t.linear_id = $linear_id
                     RETURN t
                 """,
                     uid=uid,
@@ -157,9 +160,13 @@ class ObsidianNeo4jSync:
                     filepath=str(task_file.relative_to(self.vault_path)),
                     content=content,
                     parent=metadata.get("parent", None),
+                    linear_id=metadata.get("linear_id", None),
                 )
                 # Consume result to execute the query
                 _ = result.single()
+                
+                # Queue for embedding
+                self._queue_embedding(uid)
         except ServiceUnavailable:
             print(f"[SKIP] Connection lost: {task_file.name}")
         except Exception as e:
@@ -182,7 +189,7 @@ class ObsidianNeo4jSync:
             print("[WARN] Sync skipped (no database connection)")
             return 0
 
-        task_files = self.vault_path.glob("Tasks/*.md")
+        task_files = self.get_all_task_files()
 
         count = 0
         for task_file in task_files:
@@ -195,6 +202,27 @@ class ObsidianNeo4jSync:
 
         print(f"\n[OK] Synced {count} tasks to Neo4j")
         return count
+
+    def get_all_task_files(self) -> list[Path]:
+        """
+        Retrieve all markdown task files from the configured folders.
+        
+        Returns:
+            list[Path]: List of paths to markdown files in configured scan folders.
+        """
+        from omega_kg.settings import settings
+        
+        task_files = []
+        scan_folders_str = settings.obsidian_task_scan_folders
+        # Parse comma or colon separated list
+        separator = "," if "," in scan_folders_str else ":"
+        scan_folders = [f.strip() for f in scan_folders_str.split(separator) if f.strip()]
+        
+        for folder in scan_folders:
+            folder_path = self.vault_path / folder
+            if folder_path.exists() and folder_path.is_dir():
+                task_files.extend(list(folder_path.rglob("*.md")))
+        return task_files
 
     def get_stale_tasks(self, days_idle: int = 7) -> list[dict[str, object]]:
         """
@@ -241,6 +269,31 @@ class ObsidianNeo4jSync:
         if self.driver:
             self.driver.close()
 
+    def _queue_embedding(self, uid: str) -> None:
+        """Queue task for embedding generation (idempotent)."""
+        print(f"DEBUG: Attempting to queue embedding for {uid}")
+        if self.mock_mode:
+            print("DEBUG: Mock mode, skipping queue.")
+            return
+
+        try:
+            print(f"DEBUG: Connecting to {settings.sync_database_url}")
+            # Connect using sync driver
+            with psycopg2.connect(settings.sync_database_url) as conn:
+                with conn.cursor() as cur:
+                    cur.execute(
+                        f"""
+                        INSERT INTO {VECTOR_TABLE_NAME} (message_id, node_label, status)
+                        VALUES (%s, 'Task', %s)
+                        ON CONFLICT (message_id, node_label) DO NOTHING
+                        """,
+                        (uid, VectorStatus.PENDING_EMBEDDING.value)
+                    )
+                conn.commit()
+                print(f"DEBUG: Successfully queued {uid}")
+        except Exception as e:
+            print(f"[WARN] Failed to queue embedding for {uid}: {e}")
+
 
 def main() -> None:
     """
@@ -265,8 +318,7 @@ def main() -> None:
         if stale:
             for task in stale:
                 print(
-                    f"{task['t.uid']}: {task['t.title']} "
-                    f"(created: {task['t.created']})"
+                    f"{task['t.uid']}: {task['t.title']} (created: {task['t.created']})"
                 )
         else:
             print("(none)")

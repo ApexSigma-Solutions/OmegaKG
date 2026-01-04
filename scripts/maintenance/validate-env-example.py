@@ -10,6 +10,7 @@ Usage:
 
 Returns non-zero exit code if required env vars are missing.
 """
+
 from __future__ import annotations
 
 import re
@@ -32,7 +33,9 @@ def parse_settings_for_env_vars(settings_file: Path) -> Dict[str, bool]:
 
     # Pattern to find a variable assignment with a Field(...) call
     # Example: neo4j_password: str = Field(..., validation_alias="NEO4J_PASSWORD")
-    field_pattern = re.compile(r"^\s*([A-Za-z0-9_]+)\s*:\s*[^=\n]+=\s*Field\((.*?)\)\s*#?.*$", re.M | re.S)
+    field_pattern = re.compile(
+        r"^\s*([A-Za-z0-9_]+)\s*:\s*[^=\n]+=\s*Field\((.*?)\)\s*#?.*$", re.M | re.S
+    )
 
     # Pattern to find validation_alias inside Field(...)
     alias_pattern = re.compile(r"validation_alias\s*=\s*['\"]([A-Z0-9_]+)['\"]")
@@ -69,7 +72,9 @@ def parse_env_example(env_file: Path) -> Set[str]:
     return keys
 
 
-def compare(settings_map: Dict[str, bool], env_keys: Set[str]) -> Tuple[List[str], List[str]]:
+def compare(
+    settings_map: Dict[str, bool], env_keys: Set[str]
+) -> Tuple[List[str], List[str]]:
     """Compare required env vars with `.env.example` keys.
 
     Returns a tuple (missing_required, extra_keys)

@@ -1,0 +1,31 @@
+============================= test session starts =============================
+collecting ... 
+----------------------------- live log collection -----------------------------
+INFO     omega_kg.settings:settings.py:73 BWS_ACCESS_TOKEN found, attempting Bitwarden authentication
+INFO     omega_kg.settings:settings.py:83 Bitwarden authentication successful: ResponseForAccessTokenLoginResponse(success=True, data=AccessTokenLoginResponse(authenticated=True, force_password_reset=False, reset_master_password=False, two_factor=None), error_message=None)
+WARNING  omega_kg.settings:settings.py:126 Secret not found in Bitwarden for key 'linear_webhook_secret' (UUID: c4e28fe5-a690-47c1-bf2a-b3a40115fc5f) - will use fallback
+WARNING  omega_kg.settings:settings.py:126 Secret not found in Bitwarden for key 'neo4j_password' (UUID: 2e56f3bd-5019-48c0-a778-b3a40116727b) - will use fallback
+WARNING  omega_kg.settings:settings.py:126 Secret not found in Bitwarden for key 'gemini_api_key' (UUID: fee6a433-1a72-424c-b58d-b3a40111feb1) - will use fallback
+INFO     omega_kg.settings:settings.py:148 Bitwarden secrets loaded for keys: extension_api_key, jwt_secret_key, linear_api_key, perplexity_api_key, postgres_password
+INFO     omega_kg.domain.common.embedding_service:embedding_service.py:32 \u2713 Embedding Service initialized with provider: ollama, Ollama base URL: http://localhost:11434\nINFO     omega_kg.vault_utils:vault_utils.py:65 VaultUtils initialized. Vault path: D:\projects\OmegaKG\OmegaVault
+INFO     omega_kg.linear_sync:linear_sync.py:94 LinearSync initialized with vault: D:\projects\OmegaKG\OmegaVault
+collected 2 items
+
+tests/test_terminal_e2e.py::test_terminal_capture_noise FAILED           [ 50%]
+tests/test_terminal_e2e.py::test_terminal_capture_valid FAILED           [100%]
+
+================================== FAILURES ===================================
+_________________________ test_terminal_capture_noise _________________________
+tests\test_terminal_e2e.py:27: in test_terminal_capture_noise
+    async with AsyncClient(app=app, base_url="http://test") as client:
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: AsyncClient.__init__() got an unexpected keyword argument 'app'
+_________________________ test_terminal_capture_valid _________________________
+tests\test_terminal_e2e.py:42: in test_terminal_capture_valid
+    async with AsyncClient(app=app, base_url="http://test") as client:
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: AsyncClient.__init__() got an unexpected keyword argument 'app'
+=========================== short test summary info ===========================
+FAILED tests/test_terminal_e2e.py::test_terminal_capture_noise - TypeError: A...
+FAILED tests/test_terminal_e2e.py::test_terminal_capture_valid - TypeError: A...
+============================== 2 failed in 5.75s ==============================

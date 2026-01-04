@@ -1,6 +1,6 @@
 # CONFIGURATION
 $BaseUrl = "http://localhost:8002"
-$ApiKey = "test-api-key-for-testing-only" 
+$ApiKey = "test-api-key-for-testing-only"
 $UserId = "SigmaDev11"
 
 Write-Host "=== Omega_KG Dev Capture Test (Port 8002) ===" -ForegroundColor Cyan
@@ -35,13 +35,13 @@ $Body = @{
     content  = "Golden Schema Test: Validating Frontmatter ID and Type."
     source   = "powershell_test_script"
     url      = "http://localhost/test-capture"
-    platform = "windows" 
+    platform = "windows"
 } | ConvertTo-Json
 
 try {
     $CaptureResponse = Invoke-RestMethod -Uri "$BaseUrl/capture" `
         -Method Post `
-        -Headers @{ 
+        -Headers @{
             "Authorization" = "Bearer $Token"
             "Content-Type"  = "application/json"
         } `
@@ -53,7 +53,7 @@ try {
 }
 catch {
     Write-Host " [ERROR]" -ForegroundColor Red
-    
+
     # FIXED: PowerShell Core / .NET error reading
     if ($_.Exception.Response -and $_.Exception.Response.Content) {
         $ErrorBody = $_.Exception.Response.Content.ReadAsStringAsync().Result

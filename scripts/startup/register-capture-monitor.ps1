@@ -30,7 +30,7 @@ if (-not $isAdmin) {
 
 if ($Unregister) {
     Write-Status "Unregistering scheduled task '$TaskName'..." "info"
-    
+
     try {
         Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false -ErrorAction Stop
         Write-Status "✅ Task unregistered successfully" "success"
@@ -53,10 +53,10 @@ try {
     $action = New-ScheduledTaskAction `
         -Execute "powershell.exe" `
         -Argument "-NoProfile -ExecutionPolicy Bypass -File `"$ScriptPath`""
-    
+
     # Create trigger (at user logon)
     $trigger = New-ScheduledTaskTrigger -AtLogOn -User $env:USERNAME
-    
+
     # Configure task settings
     $settings = New-ScheduledTaskSettingsSet `
         -AllowStartIfOnBatteries `
@@ -64,7 +64,7 @@ try {
         -ExecutionTimeLimit (New-TimeSpan -Hours 0) `
         -RestartCount 3 `
         -RestartInterval (New-TimeSpan -Minutes 5)
-    
+
     # Register the task
     Register-ScheduledTask `
         -TaskName $TaskName `
@@ -73,25 +73,25 @@ try {
         -Settings $settings `
         -Description "Monitors active AI web apps and starts capture-server in background when needed" `
         -Force -ErrorAction Stop | Out-Null
-    
+
     Write-Status "✅ Task registered successfully!" "success"
     Write-Host "`nTask Details:"
     Write-Host "  Name: $TaskName"
     Write-Host "  Trigger: At user logon"
     Write-Host "  Script: $ScriptPath"
     Write-Host "  Status: Ready to start at next logon"
-    
+
     Write-Host "`nTo verify:"
     Write-Host "  • Open Task Scheduler and look for '$TaskName' in 'Library\Omega_KG' or root"
     Write-Host "  • Or run: Get-ScheduledTask -TaskName '$TaskName' | Format-List"
-    
+
     Write-Host "`nTo start the task manually:"
     Write-Host "  • Open Task Scheduler and right-click the task, select 'Run'"
     Write-Host "  • Or run: Start-ScheduledTask -TaskName '$TaskName'"
-    
+
     Write-Host "`nTo remove the task:"
     Write-Host "  • Run: .\register-capture-monitor.ps1 -Unregister`n"
-    
+
 } catch {
     Write-Status "❌ Failed to register task: $_" "error"
     exit 1

@@ -6,13 +6,13 @@ Imports exported conversations from Claude and ChatGPT into:
 - Neo4j (graph: Session → AIQuery → AIResponse)
 """
 
+import argparse
 import json
 import re
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-import argparse
 from neo4j import GraphDatabase
 
 from omega_kg.settings import settings
@@ -184,7 +184,7 @@ class AIConversationImporter:
             created_at=created_at,
         )
 
-        print(f"✓ Imported {platform} conversation - ai_import.py:181")
+        print(f"[OK] Imported {platform} conversation")
 
     def _format_markdown(
         self,
@@ -209,9 +209,7 @@ tags: [ai, {platform}]
 # {title}
 
 **Platform:** {platform.title()}
-**Created:** {
-    datetime.fromisoformat(created_at).strftime('%Y-%m-%d %H:%M UTC')
-}
+**Created:** {datetime.fromisoformat(created_at).strftime("%Y-%m-%d %H:%M UTC")}
 **ID:** `{conversation_id}`
 
 ---
@@ -319,18 +317,18 @@ def main():
         if args.claude:
             claude_file = importer.find_claude_conversations()
             if claude_file:
-                print(f"📥 Processing Claude export: {claude_file}")
+                print(f"[INFO] Processing Claude export: {claude_file}")
                 importer.import_claude_export(claude_file)
             else:
-                print("❌ Claude conversations.json not found")
+                print("[ERROR] Claude conversations.json not found")
         if args.chatgpt:
             chatgpt_file = importer.find_chatgpt_conversations()
             if chatgpt_file:
-                print(f"📥 Processing ChatGPT export: {chatgpt_file}")
+                print(f"[INFO] Processing ChatGPT export: {chatgpt_file}")
                 importer.import_chatgpt_export(chatgpt_file)
             else:
-                print("❌ ChatGPT conversations.json not found")
-        print("✅ Import complete")
+                print("[ERROR] ChatGPT conversations.json not found")
+        print("[DONE] Import complete")
     finally:
         importer.close()
 

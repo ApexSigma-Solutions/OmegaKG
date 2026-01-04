@@ -4,33 +4,95 @@ Omega_KG Capture Server
 
 FastAPI server that receives AI conversations from chrome extension,
 saves them to Obsidian vault, and percolates to Neo4j.
+
+This module handles:
+- Application initialization and lifespan management
+- Router registration
+- CORS configuration
+- Neo4j percolation logic
+- Scheduler for batch operations
+
+Modular components:
+- omega_kg.models.capture: Pydantic data models
+- omega_kg.utils.capture_utils: Helper functions
+- omega_kg.routers.capture: Endpoint handlers
 """
 
-import hashlib
+import asyncio
 import logging
-import neo4j
+import subprocess
+import sys
+from contextlib import asynccontextmanager
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
-from contextlib import asynccontextmanager
+from typing import Optional
 
-from fastapi import FastAPI, HTTPException, Security, Request
+import httpx
+import neo4j
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from neo4j import GraphDatabase
-from pydantic import BaseModel, Field
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
-# --- Import your settings and logic classes ---
-from omega_kg.settings import settings
-from omega_kg.percolation import PercolationEngine
+from omega_kg.config import log_config_summary
 from omega_kg.linear_sync import LinearSync
-from omega_kg.auth_utils import (
-    get_static_api_key,
-    validate_access_token,
-    create_access_token,
+from omega_kg.models.capture import (
+    ConversationData,
+    ObsidianUpdateRequest,
+    ObsidianUpdateResponse,
 )
-import uuid
-from omega_kg.parsers import parse_html_content
+from omega_kg.obsidian_sync import ObsidianNeo4jSync
+from omega_kg.lifecycle import TaskLifecycle
+from omega_kg.percolation import PercolationEngine
+from omega_kg.routers import github_receiver, linear_receiver
+from omega_kg.routers.capture import router as capture_router
+from omega_kg.routers.capture import set_percolate_function
+from omega_kg.routers.terminal import router as terminal_router
+from omega_kg.settings import settings
+from omega_kg.smart_parser import SmartParser
+from omega_kg.utils.capture_utils import generate_conversation_hash
+from omega_kg.vector_store import VectorStore, get_vector_store
+from omega_kg.workers.embedding_worker import start_worker, stop_worker
+from omega_kg.pre_flight import pre_flight_checks
+
+# Ngrok tunnel integration
+try:
+    from omega_kg.ngrok_tunnel import ngrok_tunnel
+
+    _ngrok_available = True
+except ImportError:
+    _ngrok_available = False
+    logger = logging.getLogger(__name__)
+    logger.warning("ngrok_tunnel module not available. Ngrok integration disabled.")
+
+# Async scheduling with graceful fallback
+_scheduler_available = True
+
+try:
+    from apscheduler.schedulers.asyncio import AsyncIOScheduler
+except ImportError as e:
+    _scheduler_available = False
+
+    # Define a dummy class to prevent runtime errors when APScheduler is not available
+    class AsyncIOScheduler:  # type: ignore[no-redef]
+        def __init__(self) -> None:
+            pass
+
+        def add_job(self, *args: object, **kwargs: object) -> None:
+            pass
+
+        def start(self) -> None:
+            pass
+
+        def shutdown(self, *args: object, **kwargs: object) -> None:
+            pass
+
+    import warnings
+
+    warnings.warn(
+        f"APScheduler not available: {e}. Background tasks will be disabled.",
+        ImportWarning,
+    )
+
 
 # Configure logging
 logging.basicConfig(
@@ -38,245 +100,200 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Security limits
-MAX_HTML_SIZE = 500_000  # 500KB
 
-# --- App and Engine Initialization ---
+# --- Neo4j Percolation Functions ---
+async def _create_decision_nodes_async(
+    session: "neo4j.work.async_.AsyncSession", conv_hash: str, data: ConversationData
+) -> int:
+    """
+    Extract decisions from messages and create Decision nodes in Neo4j (async version).
+
+    Only the first matching sentence per message containing a decision keyword is extracted.
+    """
+    decision_keywords = settings.decision_keywords
+    nodes_created = 0
+    if data.messages:
+        for i, msg in enumerate(data.messages):
+            msg_content = (
+                msg.get("content", "") if isinstance(msg, dict) else msg.content
+            )
+            content_lower = msg_content.lower()
+            for keyword in decision_keywords:
+                if keyword in content_lower:
+                    sentences = msg_content.split(".")
+                    for sentence in sentences:
+                        if keyword in sentence.lower():
+                            decision_content = sentence.strip()
+                            result = await session.run(
+                                """
+                                MATCH (s:ChatSession {conversation_hash: $hash})
+                                CREATE (d:Decision {
+                                    content: $content, decision_id: $dec_id,
+                                    extracted_at: datetime($created_at)
+                                })
+                                CREATE (s)-[:CONTAINS]->(d)
+                                RETURN d
+                                """,
+                                hash=conv_hash,
+                                content=decision_content,
+                                dec_id=f"{conv_hash}-dec-{i}",
+                                created_at=datetime.now().isoformat(),
+                            )
+                            record = await result.single()
+                            if record:
+                                nodes_created += 1
+                            break
+    return nodes_created
 
 
-# Lifespan for scheduler
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    """Lifespan event handler to schedule batch percolation on server startup."""
-    logger.debug("Entering lifespan")
+async def percolate_to_neo4j_with_embedding(
+    file_path: Path,
+    data: ConversationData,
+) -> int:
+    """
+    Percolates a captured conversation to Neo4j WITH pending vector record creation.
+    Creates a ChatSession node and queues embedding generation via vector_store.
+    Captures complete immediately; embeddings are generated asynchronously by worker.
+
+    Uses AsyncGraphDriver for non-blocking Neo4j operations.
+    """
+    from omega_kg.database.graph import graph_driver
+
     try:
-        scheduler = AsyncIOScheduler()
-        scheduler.add_job(
-            batch_percolate_sessions, "interval", minutes=5, id="session_percolation"
+        conv_hash = generate_conversation_hash(data)
+
+        # Create ChatSession in Neo4j (WITHOUT immediate embedding) using async driver
+        async with graph_driver.session() as session:
+            result = await session.run(
+                """
+                MERGE (s:ChatSession {conversation_hash: $hash})
+                ON CREATE SET
+                    s.date = date($date), s.platform = $platform, s.filepath = $filepath,
+                    s.url = $url, s.message_count = $msg_count, s.created_at = datetime($created_at)
+                ON MATCH SET
+                    s.updated_at = datetime($created_at)
+                RETURN elementId(s) AS session_id
+                """,
+                hash=conv_hash,
+                date=datetime.now().strftime("%Y-%m-%d"),
+                platform=data.platform,
+                filepath=str(file_path),
+                url=data.url,
+                msg_count=len(data.messages) if data.messages else 0,
+                created_at=datetime.now().isoformat(),
+            )
+
+            record = await result.single()
+            if not record:
+                logger.warning(f"Failed to create ChatSession node for {conv_hash}")
+                return 0
+
+            session_id = record["session_id"]
+            nodes_created = 1
+
+            # Create Decision nodes (async)
+            nodes_created += await _create_decision_nodes_async(
+                session, conv_hash, data
+            )
+
+        # Queue pending embedding via vector_store (async, non-blocking)
+        try:
+            vector_store = await get_vector_store()
+            vector_id = await vector_store.store_pending(
+                message_id=session_id, node_label="ChatSession"
+            )
+            logger.info(
+                f"[OK] Queued embedding for ChatSession {conv_hash} "
+                f"(neo4j_id={session_id}, vector_id={vector_id})"
+            )
+        except Exception as e:
+            logger.warning(f"Failed to queue embedding for {conv_hash}: {e}")
+            # Non-fatal: Node created successfully, embedding will retry
+
+        logger.info(
+            f"Created {nodes_created} nodes in Neo4j + pending embedding queued"
         )
-        scheduler.start()
-        logger.info("✓ Session percolation scheduled (every 5 minutes)")
-        logger.debug("Scheduler started")
-        yield
-        logger.debug("Yield returned")
-        scheduler.shutdown()
+        return nodes_created
+
     except Exception as e:
-        logger.exception(f"Lifespan error: {e}")
+        logger.error(f"Neo4j percolation failed: {e}")
         raise
 
 
-app = FastAPI(
-    title="Omega_KG Capture Server",
-    description="Receives AI conversations and integrates with Neo4j",
-    version="1.0.0",
-    lifespan=lifespan,
-)
-
-sync_engine = LinearSync()
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
-        f"chrome-extension://{settings.chrome_extension_id}",
-    ],
-    allow_credentials=True,
-    allow_methods=["POST", "GET", "OPTIONS"],
-    allow_headers=["X-API-Key", "Authorization", "Content-Type"],
-)
-
-
-# --- Pydantic Models ---
-class Token(BaseModel):
-    """JWT token response model."""
-
-    access_token: str = Field(..., description="JWT access token")
-    token_type: str = Field(default="bearer", description="Token type")
-
-
-class Message(BaseModel):
-    role: str = Field(..., description="Message role (user/assistant)")
-    content: str = Field(..., description="Message content")
-    timestamp: Optional[str] = Field(None, description="Message timestamp")
-
-
-class ConversationData(BaseModel):
-    user_id: str = "extension_user"
-    source: str = "chrome_extension"
-    platform: str = "obsidian"
-    content: Optional[str] = None
-    url: Optional[str] = None
-    title: Optional[str] = "Untitled Capture"
-    tags: List[str] = []
-    messages: Optional[List[Dict[str, str]]] = []
-    raw_html: Optional[str] = None
-    metadata: Optional[Dict] = None
-
-
-class CaptureResponse(BaseModel):
-    success: bool
-    file_path: str
-    nodes_created: int
-    message: str
-
-
-# --- Helper Functions ---
-def generate_conversation_hash(data: ConversationData) -> str:
-    """
-    Generate a short hash for a conversation using platform, URL, message count, and a limited portion of message content.
-
-    Args:
-        data (ConversationData): The conversation data.
-
-    Returns:
-        str: An 8-character hash string.
-    """
-    # Limit to first 5 messages and first 500 characters for scalability
-    limited_messages = data.messages[:5]
-    # Handle both dict and Message object formats
-    messages_text = "|".join(
-        (msg.get("content", "") if isinstance(msg, dict) else msg.content)[:100] 
-        for msg in limited_messages
+# --- Synchronous Neo4j Percolation (for backward compatibility and tests) ---
+def _create_chat_session(
+    session, conv_hash: str, file_path: Path, data: ConversationData
+) -> int:
+    """Create or update a ChatSession node in Neo4j."""
+    msg_count = len(data.messages) if data.messages else 0
+    result = session.run(
+        """
+        MERGE (s:ChatSession {conversation_hash: $hash})
+        ON CREATE SET
+            s.date = date($date), s.platform = $platform, s.filepath = $filepath,
+            s.url = $url, s.message_count = $msg_count, s.created_at = datetime($created_at)
+        ON MATCH SET
+            s.updated_at = datetime($created_at)
+        RETURN s
+        """,
+        hash=conv_hash,
+        date=datetime.now().strftime("%Y-%m-%d"),
+        platform=data.platform,
+        filepath=str(file_path),
+        url=data.url,
+        msg_count=msg_count,
+        created_at=datetime.now().isoformat(),
     )
-    content = f"{data.platform}-{data.url}-{len(data.messages)}-{messages_text}"
-    hash_obj = hashlib.md5(content.encode())
-    return hash_obj.hexdigest()[:8]
+    return 1 if result.single() else 0
 
 
-def format_conversation_markdown(data: ConversationData) -> str:
+def _create_decision_nodes(
+    session: "neo4j.work.session.Session", conv_hash: str, data: ConversationData
+) -> int:
     """
-    Formats the conversation data into Markdown with Golden Schema Frontmatter.
-    Schema:
-      - id: CAP-{YYYYMMDD}-{HASH} (Standardized ID)
-      - type: Conversation (Standardized Type)
-      - status: new (Default status)
-      - title: ...
-      - created_at: ...
+    Extract decisions from messages and create Decision nodes in Neo4j (synchronous version).
+
+    Only the first matching sentence per message containing a decision keyword is extracted.
     """
-    now = datetime.now()
-    date_str = now.strftime("%Y-%m-%d")
-    timestamp_str = now.isoformat()
-    
-    # Generate a robust Content ID
-    conv_hash = generate_conversation_hash(data)
-    # ID Format: CAP (Capture) - Date - Hash
-    content_id = f"CAP-{now.strftime('%Y%m%d')}-{conv_hash}"
-
-    # --- Golden Schema Frontmatter ---
-    frontmatter_lines = [
-        "---",
-        f"id: {content_id}",
-        "type: Conversation",
-        "status: new",
-        f"title: {data.title or f'{data.platform} Conversation'}",
-        f"created_at: {timestamp_str}",
-        f"date: {date_str}",
-        f"platform: {data.platform}",
-        f"url: {data.url}",
-        f"conversation_hash: {conv_hash}",
-        f"message_count: {len(data.messages)}",
-    ]
-
-    # Add Participants (Roles) - handle both dict and Message object formats
-    roles = list(set(
-        msg.get("role", "unknown") if isinstance(msg, dict) else msg.role 
-        for msg in data.messages
-    ))
-    participants_str = ", ".join(sorted(roles))
-    frontmatter_lines.append(f"participants: {participants_str}")
-
-    # Add any extra metadata
-    if data.metadata:
-        for key, value in data.metadata.items():
-            # Prevent duplicate keys if they overlap with schema
-            if key not in ["id", "type", "status", "title", "created_at"]:
-                frontmatter_lines.append(f"{key}: {value}")
-    
-    frontmatter_lines.append("---")
-
-    # --- Content Body ---
-    title_header = data.title or f"{data.platform} Conversation"
-    content_lines = [
-        f"\n# {title_header}",
-        f"\n**ID**: `{content_id}`",
-        f"**Date**: {date_str}",
-        f"**Platform**: {data.platform}",
-        f"**URL**: [{data.url}]({data.url})",
-        "---\n",
-    ]
-
-    for i, msg in enumerate(data.messages, 1):
-        # Handle both dict and Message object formats
-        if isinstance(msg, dict):
-            role = msg.get("role", "unknown")
-            content = msg.get("content", "")
-            timestamp = msg.get("timestamp")
-        else:
-            role = msg.role
-            content = msg.content
-            timestamp = msg.timestamp
-            
-        role_emoji = "👤" if role.lower() == "user" else "🤖"
-        role_title = role.title()
-        content_lines.append(f"\n## {role_emoji} Message {i} ({role_title})\n")
-        content_lines.append(content)
-        content_lines.append("\n")
-        if timestamp:
-            content_lines.append(f"*Sent: {timestamp}*\n")
-
-    return "\n".join(frontmatter_lines + content_lines)
-
-
-# NOTE: The folder name 'AI_Conversations' is a hardcoded convention for storing captured AI conversations.
-# This convention should be documented in the project README for discoverability and onboarding.
-def write_to_obsidian(platform: str, content: str, conversation_hash: str) -> Path:
-    """
-    Writes the given conversation markdown content to the Obsidian vault under
-    the 'AI_Conversations' folder (hardcoded convention; see project architecture).
-    Creates a subfolder for the platform and names the file using the current date
-    and conversation hash.
-    Creates a subfolder for the platform and names the file using the current date
-    and conversation hash.
-
-    Args:
-        platform (str): The AI platform name (used for subfolder).
-        content (str): The markdown content to write.
-        conversation_hash (str): Unique hash for the conversation.
-
-    Returns:
-        Path: The path to the written markdown file.
-
-    Raises:
-        ValueError: If the Obsidian vault path does not exist.
-        IOError: If writing the file fails.
-    """
-    vault_path = Path(settings.obsidian_vault_path)
-    if not vault_path.exists():
-        logger.warning(
-            f"Obsidian vault not found at: {vault_path} - creating directory for write operations."
-        )
-        vault_path.mkdir(parents=True, exist_ok=True)
-
-    platform_folder = platform.replace(" ", "_")
-    ai_conv_path = vault_path / "AI_Conversations" / platform_folder
-    ai_conv_path.mkdir(parents=True, exist_ok=True)
-
-    date_str = datetime.now().strftime("%Y-%m-%d")
-    filename = f"{date_str}-{conversation_hash}.md"
-    file_path = ai_conv_path / filename
-
-    try:
-        file_path.write_text(content, encoding="utf-8")
-        logger.info(f"Wrote conversation to: {file_path}")
-        return file_path
-    except Exception as e:
-        logger.error(f"Failed to write file: {e}")
-        raise IOError(f"Failed to write markdown file: {e}")
+    decision_keywords = settings.decision_keywords
+    nodes_created = 0
+    if data.messages:
+        for i, msg in enumerate(data.messages):
+            msg_content = (
+                msg.get("content", "") if isinstance(msg, dict) else msg.content
+            )
+            content_lower = msg_content.lower()
+            for keyword in decision_keywords:
+                if keyword in content_lower:
+                    sentences = msg_content.split(".")
+                    for sentence in sentences:
+                        if keyword in sentence.lower():
+                            decision_content = sentence.strip()
+                            result = session.run(
+                                """
+                                MATCH (s:ChatSession {conversation_hash: $hash})
+                                CREATE (d:Decision {
+                                    content: $content, decision_id: $dec_id,
+                                    extracted_at: datetime($created_at)
+                                })
+                                CREATE (s)-[:CONTAINS]->(d)
+                                RETURN d
+                                """,
+                                hash=conv_hash,
+                                content=decision_content,
+                                dec_id=f"{conv_hash}-dec-{i}",
+                                created_at=datetime.now().isoformat(),
+                            )
+                            if result.single():
+                                nodes_created += 1
+                            break
+    return nodes_created
 
 
 def percolate_to_neo4j(
     file_path: Path,
     data: ConversationData,
-    driver: Optional[GraphDatabase.driver] = None,
+    driver=None,
 ) -> int:
     """
     Percolates a captured conversation markdown file and its metadata to Neo4j.
@@ -305,100 +322,424 @@ def percolate_to_neo4j(
             driver.close()
 
 
-def _create_chat_session(
-    session, conv_hash: str, file_path: Path, data: ConversationData
-) -> int:
-    """Create or update a ChatSession node in Neo4j."""
-    result = session.run(
-        """
-        MERGE (s:ChatSession {conversation_hash: $hash})
-        ON CREATE SET
-            s.date = date($date), s.platform = $platform, s.filepath = $filepath,
-            s.url = $url, s.message_count = $msg_count, s.created_at = datetime($created_at)
-        ON MATCH SET
-            s.updated_at = datetime($created_at)
-        RETURN s
-        """,
-        hash=conv_hash,
-        date=datetime.now().strftime("%Y-%m-%d"),
-        platform=data.platform,
-        filepath=str(file_path),
-        url=data.url,
-        msg_count=len(data.messages),
-        created_at=datetime.now().isoformat(),
-    )
-    return 1 if result.single() else 0
-
-
-def _create_decision_nodes(
-    session: "neo4j.work.session.Session", conv_hash: str, data: ConversationData
-) -> int:
+async def batch_percolate_sessions():
     """
-    Extract decisions from messages and create Decision nodes in Neo4j.
-
-    Only the first matching sentence per message containing a decision keyword is extracted.
-    """
-    # Use keywords from settings
-    decision_keywords = settings.decision_keywords
-    nodes_created = 0
-    for i, msg in enumerate(data.messages):
-        # Handle both dict and Message object formats
-        msg_content = msg.get("content", "") if isinstance(msg, dict) else msg.content
-        content_lower = msg_content.lower()
-        for keyword in decision_keywords:
-            if keyword in content_lower:
-                sentences = msg_content.split(".")
-                for sentence in sentences:
-                    if keyword in sentence.lower():
-                        decision_content = sentence.strip()
-                        result = session.run(
-                            """
-                            MATCH (s:ChatSession {conversation_hash: $hash})
-                            CREATE (d:Decision {
-                                content: $content, decision_id: $dec_id,
-                                extracted_at: datetime($created_at)
-                            })
-                            CREATE (s)-[:CONTAINS]->(d)
-                            RETURN d
-                            """,
-                            hash=conv_hash,
-                            content=decision_content,
-                            dec_id=f"{conv_hash}-dec-{i}",
-                            created_at=datetime.now().isoformat(),
-                        )
-                        if result.single():
-                            nodes_created += 1
-                        break
-    return nodes_created
-
-
-def batch_percolate_sessions():
-    """
-    Batch percolates all session logs from the Obsidian vault to Neo4j.
+    Batch percolates all session logs from Obsidian vault to Neo4j AND syncs tasks.
     Intended to run periodically via scheduler.
+
+    Operations:
+    1. Scan Tasks/Workflow/Linear folders:
+       - Sync to Linear (if new/missing ID) via SmartParser
+       - Sync to Neo4j via ObsidianNeo4jSync
+    2. Scan Sessions (and configured folders):
+       - Percolate commit/task references via PercolationEngine
     """
+    driver = None
     try:
-        sessions_path = Path(settings.obsidian_vault_path) / "Sessions"
-        if not sessions_path.exists():
-            logger.warning(f"Sessions path does not exist: {sessions_path}")
+        import frontmatter
+        import time
+
+        start_time = time.time()
+        logger.info("→ Scheduler execution started: batch_percolate_sessions")
+
+        # --- Phase 1: Task Sync (Linear + Neo4j) ---
+        sync_stats = {"linear_created": 0, "neo4j_synced": 0, "errors": 0}
+        
+        try:
+            obsidian_sync = ObsidianNeo4jSync()
+            # Initialize SmartParser (only if linear sync is configured)
+            smart_parser = None
+            if settings.linear_team_id:
+                smart_parser = SmartParser()
+            
+            task_files = obsidian_sync.get_all_task_files()
+            logger.info(f"Found {len(task_files)} task files to process")
+
+            for task_file in task_files:
+                try:
+                    # 1. Sync to Linear if needed (missing linear_id)
+                    if smart_parser:
+                        meta = {}
+                        try:
+                            # lightweight check before full parse
+                            with open(task_file, "r", encoding="utf-8") as f:
+                                meta = frontmatter.load(f).metadata
+                        except Exception:
+                            pass
+                        
+                        if not meta.get("linear_id"):
+                            logger.info(f"Syncing new task to Linear: {task_file.name}")
+                            await smart_parser.sync_note_to_linear(task_file)
+                            sync_stats["linear_created"] += 1
+
+                    # 2. Sync to Neo4j
+                    obsidian_sync.sync_task_note(task_file)
+                    sync_stats["neo4j_synced"] += 1
+
+                except Exception as e:
+                    logger.error(f"Failed to sync task {task_file.name}: {e}")
+                    sync_stats["errors"] += 1
+
+            obsidian_sync.close()
+            logger.info(f"[OK] Task Sync phase complete: {sync_stats}")
+
+        except Exception as e:
+            logger.error(f"Task Sync phase failed: {e}", exc_info=True)
+
+
+        # --- Phase 2: Session/Reference Percolation ---
+        # Parse scan folders from settings
+        # Use explicit session scan folders setting (TN-103/TN-301)
+        scan_folders_str = settings.obsidian_session_scan_folders
+        separator = "," if "," in scan_folders_str else ":"
+        scan_folders = [f.strip() for f in scan_folders_str.split(separator) if f.strip()]
+
+        logger.info(f"Scanning folders for percolation: {', '.join(scan_folders)}")
+
+        # Validate each folder exists
+        valid_folders = []
+        vault_base = Path(settings.obsidian_vault_path)
+        for folder_name in scan_folders:
+            folder_path = vault_base / folder_name
+            if folder_path.exists():
+                valid_folders.append(folder_path)
+                logger.debug(f"Validated folder: {folder_path}")
+            else:
+                logger.warning(f"Percolation folder does not exist: {folder_path}")
+
+        if not valid_folders:
+            logger.warning(
+                "No valid percolation folders found - skipping percolation phase"
+            )
             return
 
         driver = GraphDatabase.driver(
             settings.neo4j_uri, auth=(settings.neo4j_user, settings.neo4j_password)
         )
         engine = PercolationEngine(driver)
-        stats = engine.percolate_from_vault(sessions_path)
+
+        # Percolate from vault root with filtered folder list
+        valid_folder_names = [p.name for p in valid_folders]
+        logger.debug(f"Initiating percolation from: {vault_base} for folders: {valid_folder_names}")
+        
+        total_stats = engine.percolate_from_vault(vault_base, scan_folders=valid_folder_names)
+
+        elapsed_ms = (time.time() - start_time) * 1000
         logger.info(
-            f"Percolated session logs: {stats['tasks']} tasks, "
-            f"{stats['commits']} commits, {stats['links']} decision links"
+            f"[OK] Scheduler completed in {elapsed_ms:.0f}ms: "
+            f"Synced {sync_stats['neo4j_synced']} tasks ({sync_stats['linear_created']} new to Linear). "
+            f"Percolated {total_stats['tasks']} refs, {total_stats['links']} links."
         )
-        driver.close()
+        logger.debug(f"Stats detail: {total_stats}")
     except Exception as e:
-        logger.error(f"Batch session percolation failed: {e}")
+        logger.error(f"Batch session percolation failed: {e}", exc_info=True)
+    finally:
+        if driver is not None:
+            driver.close()
 
 
-# ===================================================================
-# --- ENDPOINTS ---
+async def run_lifecycle_check():
+    """
+    Run lifecycle enforcement periodically.
+    """
+    import asyncio
+    
+    logger.info("→ Scheduler execution started: run_lifecycle_check")
+    lifecycle = None
+    try:
+        lifecycle = TaskLifecycle()
+        # Run enforcement in executor to avoid blocking the loop
+        loop = asyncio.get_running_loop()
+        results = await loop.run_in_executor(None, lambda: lifecycle.enforce_lifecycle(dry_run=False))
+        
+        report = lifecycle.generate_report(results)
+        logger.info(f"[OK] Lifecycle check complete:\n{report}")
+        
+        # Send email if configured
+        if settings.email_to:
+             await loop.run_in_executor(None, lambda: lifecycle.send_email_report(report))
+
+    except Exception as e:
+        logger.error(f"Lifecycle check failed: {e}", exc_info=True)
+    finally:
+        if lifecycle:
+            lifecycle.close()
+
+
+# --- Ollama Service Management ---
+_ollama_process: Optional[subprocess.Popen] = None
+_heartbeat_task: Optional[asyncio.Task] = None
+
+OLLAMA_EXE_PATHS = [
+    Path(sys.prefix) / "Scripts" / "ollama.exe",  # Virtual env
+    Path.home() / "AppData" / "Local" / "Programs" / "Ollama" / "ollama.exe",
+    Path("C:/Program Files/Ollama/ollama.exe"),
+]
+
+
+async def _check_ollama_ready(timeout: int = 30) -> bool:
+    """Check if Ollama is ready to accept requests."""
+    ollama_url = settings.ollama_base_url
+    async with httpx.AsyncClient() as client:
+        for _ in range(timeout):
+            try:
+                resp = await client.get(f"{ollama_url}/api/tags", timeout=2)
+                if resp.status_code == 200:
+                    logger.info(f"[OK] Ollama ready at {ollama_url}")
+                    return True
+            except Exception:
+                pass
+            await asyncio.sleep(1)
+    return False
+
+
+async def _start_ollama() -> bool:
+    """Start Ollama service if not already running."""
+    global _ollama_process
+
+    # First check if already running
+    if await _check_ollama_ready(timeout=2):
+        logger.info("Ollama already running")
+        return True
+
+    # Find Ollama executable
+    ollama_path = None
+    for path in OLLAMA_EXE_PATHS:
+        if path.exists():
+            ollama_path = path
+            break
+
+    if not ollama_path:
+        logger.warning("Ollama executable not found - embeddings will be disabled")
+        return False
+
+    # Start Ollama as subprocess
+    try:
+        logger.info(f"Starting Ollama from {ollama_path}...")
+        _ollama_process = subprocess.Popen(
+            [str(ollama_path), "serve"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0,
+        )
+
+        # Wait for Ollama to be ready
+        if await _check_ollama_ready(timeout=30):
+            logger.info("[OK] Ollama started successfully")
+            return True
+        else:
+            logger.error("Ollama started but not responding")
+            return False
+
+    except Exception as e:
+        logger.error(f"Failed to start Ollama: {e}")
+        return False
+
+
+async def _stop_ollama():
+    """Stop Ollama service if we started it."""
+    global _ollama_process
+    if _ollama_process is not None:
+        try:
+            _ollama_process.terminate()
+            _ollama_process.wait(timeout=5)
+            logger.info("[OK] Ollama stopped")
+        except Exception as e:
+            logger.error(f"Error stopping Ollama: {e}")
+        _ollama_process = None
+
+
+async def _run_heartbeat_loop():
+    """Run Quipu heartbeat monitoring as background task."""
+    from omega_kg.database.quipu import init_heartbeat_table, insert_heartbeat
+    from omega_kg.quipu_ollama_heartbeat import check_ollama_health
+
+    if not await init_heartbeat_table():
+        logger.warning("Quipu heartbeat table init failed - monitoring disabled")
+        return
+
+    logger.info(
+        f"[OK] Quipu heartbeat started (interval: {settings.heartbeat_interval_sec}s)"
+    )
+
+    while True:
+        try:
+            from datetime import timezone
+
+            timestamp = datetime.now(timezone.utc)
+            status, latency, model, meta = check_ollama_health()
+
+            await insert_heartbeat(
+                service_name=settings.quipu_service_name,
+                timestamp=timestamp,
+                status=status,
+                latency_ms=latency,
+                model_loaded=model,
+                meta=meta,
+            )
+
+            await asyncio.sleep(settings.heartbeat_interval_sec)
+        except asyncio.CancelledError:
+            break
+        except Exception as e:
+            logger.error(f"Heartbeat error: {e}")
+            await asyncio.sleep(5)
+
+
+# --- Lifespan Handler ---
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Lifespan event handler to initialize Ollama, vector store, start worker, and schedule batch percolation."""
+    global _heartbeat_task
+
+    # 0. Pre-flight checks - fail fast if environment is broken
+    logger.info("[SYSTEM] Starting Pre-Flight Checks...")
+    pre_flight_checks_passed = pre_flight_checks()
+    if not pre_flight_checks_passed:
+        logger.critical("[CRITICAL] Pre-flight checks failed. Server will not start.")
+        raise RuntimeError("Pre-flight checks failed")
+    logger.info("[OK] Pre-flight checks passed")
+
+    logger.info("Starting Omega_KG Capture Server...")
+
+    # Initialize scheduler variable to ensure it's available in shutdown
+    scheduler = None
+
+    # 1. Start Ollama service (required for embeddings)
+    ollama_started = await _start_ollama()
+    if not ollama_started:
+        logger.warning("Ollama not available - embeddings will fail")
+
+    # 2. Initialize vector store
+    try:
+        await get_vector_store()
+        logger.info("[OK] Vector store initialized")
+    except Exception as e:
+        logger.error(f"Failed to initialize vector store: {e}")
+        raise
+
+    # 3. Start embedding worker
+    try:
+        await start_worker()
+        logger.info("[OK] Embedding worker started (polling every 10s)")
+    except Exception as e:
+        logger.error(f"Failed to start embedding worker: {e}")
+        raise
+
+    # 4. Start Quipu heartbeat as background task
+    try:
+        _heartbeat_task = asyncio.create_task(_run_heartbeat_loop())
+    except Exception as e:
+        logger.warning(f"Failed to start heartbeat: {e}")
+
+    # 5. Start scheduler for batch percolation
+    try:
+        if not _scheduler_available:
+            logger.warning(
+                "Scheduler not available - APScheduler import failed. Background tasks disabled."
+            )
+        else:
+            scheduler = AsyncIOScheduler()
+            scheduler.add_job(
+                batch_percolate_sessions,
+                "interval",
+                minutes=5,
+                id="session_percolation",
+            )
+            scheduler.add_job(
+                run_lifecycle_check,
+                "interval",
+                hours=1,
+                id="task_lifecycle",
+            )
+            scheduler.start()
+            logger.info("[OK] Session percolation scheduled (every 5 minutes)")
+    except Exception as e:
+        logger.error(f"Failed to start scheduler: {e}")
+        scheduler = None
+
+    # Log startup summary
+    logger.info(log_config_summary())
+
+    yield
+
+    # Shutdown sequence
+    logger.info("Shutting down Omega_KG Capture Server...")
+
+    # Stop heartbeat task
+    if _heartbeat_task is not None:
+        try:
+            _heartbeat_task.cancel()
+            await asyncio.sleep(0.1)  # Allow cancellation to propagate
+            logger.info("[OK] Heartbeat task stopped")
+        except Exception as e:
+            logger.error(f"Error stopping heartbeat: {e}")
+
+    # Stop embedding worker gracefully
+    try:
+        await stop_worker()
+        logger.info("[OK] Embedding worker stopped")
+    except Exception as e:
+        logger.error(f"Error stopping embedding worker: {e}")
+
+    # Stop scheduler (only if it was started)
+    if scheduler is not None:
+        try:
+            scheduler.shutdown(wait=False)
+            logger.info("[OK] Scheduler stopped")
+        except Exception as e:
+            logger.error(f"Error stopping scheduler: {e}")
+    else:
+        logger.info("Scheduler was not started - skipping shutdown")
+
+    # Close vector store pool
+    try:
+        await VectorStore.close_pool()
+        logger.info("[OK] Vector store pool closed")
+    except Exception as e:
+        logger.error(f"Error closing vector store: {e}")
+
+    # Stop Ollama if we started it
+    await _stop_ollama()
+
+
+# --- App Initialization ---
+app = FastAPI(
+    title="Omega_KG Capture Server",
+    description="Receives AI conversations and integrates with Neo4j",
+    version="1.0.0",
+    lifespan=lifespan,
+    max_request_size=50 * 1024 * 1024,  # 50MB limit for large conversation captures
+)
+
+sync_engine = LinearSync()
+
+# Inject percolate function into capture router
+set_percolate_function(percolate_to_neo4j_with_embedding)
+
+# Register routers
+app.include_router(capture_router)
+app.include_router(terminal_router)
+app.include_router(linear_receiver.router, tags=["Linear Ingest"])
+app.include_router(github_receiver.router, tags=["GitHub Ingest"])
+
+# CORS middleware
+cors_origins = []
+if settings.chrome_extension_id:
+    cors_origins.append(f"chrome-extension://{settings.chrome_extension_id}")
+# Allow localhost for development
+cors_origins.extend(["http://localhost:8765", "http://127.0.0.1:8765"])
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=cors_origins,
+    allow_credentials=True,
+    allow_methods=["POST", "GET", "OPTIONS"],
+    allow_headers=["X-API-Key", "Authorization", "Content-Type"],
+)
+
+
+# --- Root Endpoint ---
 @app.get("/")
 async def root():
     return {
@@ -408,159 +749,146 @@ async def root():
         "endpoints": {
             "capture": "POST /capture",
             "health": "GET /health",
-            "linear_webhook": "POST /webhook/linear",
+            "obsidian_update": "POST /obsidian-update",
+            "linear_webhook": "POST /webhooks/linear",
+            "github_webhook": "POST /webhooks/github",
         },
         "docs": "/docs",
         "openapi": "/openapi.json",
     }
 
 
-@app.get("/health")
-async def health_check():
-    health_status = {
-        "status": "healthy",
-        "timestamp": datetime.now().isoformat(),
-        "vault_accessible": False,
-        "neo4j_connected": False,
-    }
-    try:
-        vault_path = Path(settings.obsidian_vault_path)
-        health_status["vault_accessible"] = vault_path.exists()
-        health_status["vault_path"] = str(vault_path)
-    except Exception as e:
-        logger.warning(f"Vault check failed: {e}")
-    try:
-        driver = GraphDatabase.driver(
-            settings.neo4j_uri, auth=(settings.neo4j_user, settings.neo4j_password)
-        )
-        with driver.session() as session:
-            session.run("RETURN 1")
-        driver.close()
-        health_status["neo4j_connected"] = True
-    except Exception as e:
-        logger.warning(f"Neo4j check failed: {e}")
-        health_status["neo4j_error"] = str(e)
-
-    return health_status
-
-
-@app.post("/auth/token", response_model=Token)
-async def login_for_access_token(
-    _api_key: str = Security(get_static_api_key),
-) -> Token:
+# --- Obsidian Update Endpoint ---
+@app.post("/obsidian-update")
+async def obsidian_update_endpoint(
+    data: ObsidianUpdateRequest,
+) -> ObsidianUpdateResponse:
     """
-    Exchange static API key for a short-lived JWT Bearer token.
+    Sync an Obsidian note to Linear.
 
-    The Chrome extension calls this endpoint with the bootstrap API key (X-API-Key header)
-    to receive a short-lived JWT token for subsequent API requests.
+    This endpoint is triggered by the Obsidian client to create or update
+    a Linear issue based on the note content. The SmartParser handles parsing
+    tags, assignees, labels, and priority from the note content.
 
     Args:
-        _api_key: Validated static API key from X-API-Key header
+        data: ObsidianUpdateRequest with note_path
 
     Returns:
-        Token model with access_token and token_type
+        ObsidianUpdateResponse with Linear ticket ID and URL
 
     Raises:
-        HTTPException: 403 if API key is invalid
+        HTTPException: 500 if sync fails
     """
-    logger.info("Token request received")
-    access_token = create_access_token(data={"sub": "chrome_extension_user"})
-    return Token(access_token=access_token, token_type="bearer")
+    logger.info(f"Received Obsidian update request for: {data.note_path}")
 
-
-# --- ENDPOINT 1: Chrome Extension Capture (FIXED) ---
-@app.options("/capture")
-async def capture_options():
-    """Handle CORS preflight requests for /capture endpoint"""
-    return {"message": "CORS preflight OK"}
-
-
-@app.post("/capture", response_model=CaptureResponse)
-async def capture_conversation(
-    data: ConversationData,
-    request: Request,
-    _token_payload: Dict[str, Any] = Security(validate_access_token),
-) -> CaptureResponse:
-    
-    # --- FIX #3: Security Hardening ---
-    # 1. Check Content-Length Header (Fail Fast)
-    content_length = int(request.headers.get("content-length", 0))
-    if content_length > MAX_HTML_SIZE:
-        logger.warning(f"Payload too large: {content_length} bytes")
-        raise HTTPException(
-            status_code=413,
-            detail=f"Payload exceeds maximum allowed size of {MAX_HTML_SIZE} bytes"
-        )
-
-    # 2. Check parsed HTML content size (Logic Validation)
-    if hasattr(data, 'raw_html') and data.raw_html:
-        if len(data.raw_html) > MAX_HTML_SIZE:
-            logger.warning("HTML content field exceeds limit")
-            raise HTTPException(
-                status_code=413,
-                detail="HTML content too large"
-            )
-    # --- FIX #3 END ---
-    
-    # 3. PARSING LOGIC
-    if (not data.messages) and data.raw_html:
-        logger.info(f"Detecting Raw HTML. Attempting server-side parsing for: {data.url}")
-        try:
-            data.messages = parse_html_content(data.raw_html, data.url or "unknown")
-            logger.info(f"✓ Successfully parsed {len(data.messages)} messages.")
-        except Exception as e:
-            logger.error(f"HTML Parsing failed: {e}")
-            data.messages = [{"role": "system", "content": f"Parsing failed: {e}"}]
-
-    # 2. VALIDATION
-    if not data.messages and not data.content:
-        raise HTTPException(status_code=422, detail="No messages provided and HTML parsing failed.")
-
-    # 3. PROCESSING (With Robust Error Handling)
     try:
-        markdown_content = format_conversation_markdown(data)
-        conv_hash = generate_conversation_hash(data)
-        file_path = write_to_obsidian(data.platform, markdown_content, conv_hash)
+        # Initialize SmartParser and sync note
+        parser = SmartParser()
+        result = await parser.sync_note_to_linear(data.note_path)
 
-        logger.info("Capture processed", extra={"platform": data.platform, "file": str(file_path)})
+        if result is None:
+            logger.error(f"Failed to sync note: {data.note_path}")
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to sync note to Linear - parser returned None (check LINEAR_TEAM_ID configuration and note content)",
+            )
 
-        return CaptureResponse(
-            success=True, file_path=str(file_path), nodes_created=0,
-            message=f"Successfully captured {len(data.messages) if data.messages else 1} items."
+        # Extract Linear issue details from result
+        linear_id = result.get("id")
+        linear_identifier = result.get("identifier")
+        linear_url = result.get("url")
+
+        logger.info(
+            f"Successfully synced {data.note_path} to Linear issue {linear_identifier}"
         )
+
+        return ObsidianUpdateResponse(
+            success=True,
+            linear_id=linear_id,
+            linear_identifier=linear_identifier,
+            linear_url=linear_url,
+            message=f"Successfully synced to Linear issue {linear_identifier}",
+        )
+
+    except HTTPException:
+        # Re-raise HTTPExceptions as-is
+        raise
     except Exception as e:
-        support_id = str(uuid.uuid4())
-        logger.exception(f"Critical Error {support_id}")
-        raise HTTPException(status_code=500, detail={"message": "Internal error", "id": support_id})
+        logger.error(f"Error syncing note to Linear: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 
-# --- ENDPOINT 2: Linear Webhook (NEW) ---
-@app.post("/webhook/linear")
-async def linear_webhook_endpoint(request: Request):
-    """
-    Receives and validates webhooks from Linear.
-    This endpoint just passes the raw request to the sync_engine.
-    """
-    # The sync_engine's method handles all verification and logic
-    return await sync_engine.handle_linear_webhook_request(request)
+# NOTE: Linear webhook endpoint moved to omega_kg/routers/linear_receiver.py
+# This uses the newer "dumb and fast" pattern at /webhooks/linear (plural)
+# The old /webhook/linear (singular) endpoint has been removed to avoid conflicts
 
 
-# --- Main ---
+# --- Main Entry Point ---
 def main():
     """Starts the Omega_KG Capture Server using Uvicorn."""
+    import os
+
     import uvicorn
 
     logger.info("Starting Omega_KG Capture Server...")
+    logger.info(f"Server: {settings.app_host}:{settings.app_port}")
     logger.info(f"Vault path: {settings.obsidian_vault_path}")
     logger.info(f"Neo4j URI: {settings.neo4j_uri}")
+    logger.info(f"Extension ID: {settings.chrome_extension_id}")
 
-    # Use reload only in development mode
+    # Start ngrok tunnel if enabled (optional, won't crash server if fails)
+    if _ngrok_available:
+        try:
+            enable_ngrok = os.getenv("ENABLE_NGROK", "false").lower() == "true"
+            if enable_ngrok:
+                logger.info("🚀 Ngrok tunnel enabled - starting tunnel...")
+                try:
+                    import asyncio
+                    import threading
+
+                    def start_tunnel():
+                        try:
+                            loop = asyncio.new_event_loop()
+                            asyncio.set_event_loop(loop)
+                            tunnel_url = loop.run_until_complete(
+                                ngrok_tunnel.start_tunnel(port=settings.app_port)
+                            )
+                            if tunnel_url:
+                                logger.info(f"[OK] Ngrok tunnel active: {tunnel_url}")
+                                logger.info(
+                                    f"📡 Linear webhook URL: {tunnel_url}/webhook/linear"
+                                )
+                                logger.info(
+                                    "💡 Update your Linear webhook to use this URL"
+                                )
+                            else:
+                                logger.warning("⚠️ Failed to start ngrok tunnel")
+                        except Exception as e:
+                            logger.error(f"[ERROR] Error starting ngrok tunnel: {e}")
+                            logger.info(
+                                "Continuing without ngrok (webhook testing will not work)"
+                            )
+
+                    # Start ngrok in background thread so it doesn't block server startup
+                    tunnel_thread = threading.Thread(target=start_tunnel, daemon=True)
+                    tunnel_thread.start()
+                    logger.info("Ngrok tunnel starting in background...")
+                except Exception as e:
+                    logger.warning(f"Ngrok tunnel error: {e}")
+                    logger.info("Continuing without ngrok...")
+            else:
+                logger.info("Ngrok tunnel disabled (set ENABLE_NGROK=true to enable)")
+        except Exception as e:
+            logger.warning(f"Error checking ngrok configuration: {e}")
+    else:
+        logger.info("Ngrok integration not available (ngrok_tunnel module not found)")
+
     uvicorn.run(
         "omega_kg.capture_server:app",
         host=settings.app_host,
         port=settings.app_port,
         log_level="info",
-        reload=False,  # Disable reload for stability
+        reload=False,
     )
 
 

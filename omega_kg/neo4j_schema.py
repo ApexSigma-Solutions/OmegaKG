@@ -4,7 +4,8 @@ Creates constraints and indexes with connection recovery
 """
 
 from neo4j import GraphDatabase
-from neo4j.exceptions import ServiceUnavailable, AuthError
+from neo4j.exceptions import AuthError, ServiceUnavailable
+
 from omega_kg.settings import settings
 
 
@@ -92,6 +93,15 @@ class KnowledgeGraphSchema:
         - Index: Task.status
         - Index: Task.created
 
+        TNP-High Velocity Sprint Raw Data Lake Schema Extensions:
+        - Constraint: CodeBlock.hash IS UNIQUE
+        - Constraint: ErrorLog (error_type, timestamp) NODE KEY
+        - Constraint: Concept.normalized_name IS UNIQUE
+        - Constraint: File.path IS UNIQUE
+        - Constraint: LinearIssue.id IS UNIQUE
+        - Relationship: LinearIssue-[:TRIGGERS]->ErrorLog
+        - Relationship: CodeBlock-[:BELONGS_TO]->File
+
         If running in mock mode or no driver is available, the method makes no changes.
         """
         if self.mock_mode:
@@ -119,6 +129,154 @@ class KnowledgeGraphSchema:
                     """
                     )
 
+                # Intelligence Layer constraints
+                session.run(
+                    """
+                    CREATE CONSTRAINT constraint_id IF NOT EXISTS
+                    FOR (n:Constraint) REQUIRE n.id IS UNIQUE
+                """
+                )
+
+                session.run(
+                    """
+                    CREATE CONSTRAINT context_name IF NOT EXISTS
+                    FOR (n:Context) REQUIRE n.name IS UNIQUE
+                """
+                )
+
+                session.run(
+                    """
+                    CREATE CONSTRAINT incident_id IF NOT EXISTS
+                    FOR (n:Incident) REQUIRE n.id IS UNIQUE
+                """
+                )
+                
+                # High-Fidelity Context Extraction constraints (TN-301)
+                # CodeBlock: unique by hash for deduplication
+                session.run(
+                    """
+                    CREATE CONSTRAINT codeblock_hash IF NOT EXISTS
+                    FOR (n:CodeBlock) REQUIRE n.hash IS UNIQUE
+                """
+                )
+                
+                # ErrorLog: unique by id (id should be constructed from error_type + timestamp)
+                session.run(
+                    """
+                    CREATE CONSTRAINT errorlog_id IF NOT EXISTS
+                    FOR (n:ErrorLog) REQUIRE n.id IS UNIQUE
+                """
+                )
+                
+                # Concept: unique by normalized name
+                session.run(
+                    """
+                    CREATE CONSTRAINT concept_name IF NOT EXISTS
+                    FOR (n:Concept) REQUIRE n.name IS UNIQUE
+                """
+                )
+                
+                # File: unique by path
+                session.run(
+                    """
+                    CREATE CONSTRAINT file_path IF NOT EXISTS
+                    FOR (n:File) REQUIRE n.path IS UNIQUE
+                """
+                )
+                
+                # LinearIssue: unique by id
+                session.run(
+                    """
+                    CREATE CONSTRAINT linearissue_id IF NOT EXISTS
+                    FOR (n:LinearIssue) REQUIRE n.id IS UNIQUE
+                """
+                )
+
+                # ===== TNP-High Velocity Sprint Raw Data Lake Schema =====
+                #
+                # Node Types for High-Fidelity Context Extraction:
+                # - CodeBlock: Source code blocks with content hash for deduplication
+                # - ErrorLog: Structured error entries with composite key (error_type, timestamp)
+                # - Concept: Normalized concept names for semantic linking
+                # - File: Source files with path as unique identifier
+                # - LinearIssue: Issue tracker nodes (already exists, adding constraint)
+
+                # CodeBlock: Unique constraint on content hash
+                session.run(
+                    """
+                    CREATE CONSTRAINT codeblock_hash IF NOT EXISTS
+                    FOR (n:CodeBlock) REQUIRE n.hash IS UNIQUE
+                """
+                )
+
+                # ErrorLog: Composite unique constraint using composite_id (error_type + timestamp hash)
+                # Note: NODE KEY requires Enterprise Edition. Using composite string key as workaround.
+                session.run(
+                    """
+                    CREATE CONSTRAINT errorlog_composite IF NOT EXISTS
+                    FOR (n:ErrorLog) REQUIRE n.composite_id IS UNIQUE
+                """
+                )
+
+                # Concept: Unique constraint on normalized name
+                session.run(
+                    """
+                    CREATE CONSTRAINT concept_name IF NOT EXISTS
+                    FOR (n:Concept) REQUIRE n.normalized_name IS UNIQUE
+                """
+                )
+
+                # File: Unique constraint on file path
+                session.run(
+                    """
+                    CREATE CONSTRAINT file_path IF NOT EXISTS
+                    FOR (n:File) REQUIRE n.path IS UNIQUE
+                """
+                )
+
+                # LinearIssue: Unique constraint on id (already referenced in task)
+                session.run(
+                    """
+                    CREATE CONSTRAINT linearissue_id IF NOT EXISTS
+                    FOR (n:LinearIssue) REQUIRE n.id IS UNIQUE
+                """
+                )
+
+                # Indexes for common query patterns
+                session.run(
+                    """
+                    CREATE INDEX errorlog_type IF NOT EXISTS
+                    FOR (e:ErrorLog) ON (e.error_type)
+                """
+                )
+
+                session.run(
+                    """
+                    CREATE INDEX errorlog_timestamp IF NOT EXISTS
+                    FOR (e:ErrorLog) ON (e.timestamp)
+                """
+                )
+
+                session.run(
+                    """
+                    CREATE INDEX concept_category IF NOT EXISTS
+                    FOR (c:Concept) ON (c.category)
+                """
+                )
+
+                session.run(
+                    """
+                    CREATE INDEX codeblock_language IF NOT EXISTS
+                    FOR (c:CodeBlock) ON (c.language)
+                """
+                )
+
+                # ===== Relationship Type Definitions =====
+                # Note: Relationship type indexes are not supported in Neo4j Community Edition
+                # The following relationship types are defined for semantic integrity:
+                # - TRIGGERS: LinearIssue -> ErrorLog (error causation tracking)
+                # - BELONGS_TO: CodeBlock -> File (code location tracking)
+
                 # Indexes - keep commonly used indexes for Task
                 session.run(
                     """
@@ -141,14 +299,167 @@ class KnowledgeGraphSchema:
                     FOR (t:Task) ON (t.created_at)
                 """
                 )
+                
+                # Indexes for new high-fidelity nodes (TN-301)
+                session.run(
+                    """
+                    CREATE INDEX errorlog_error_type IF NOT EXISTS
+                    FOR (e:ErrorLog) ON (e.error_type)
+                """
+                )
+                
+                session.run(
+                    """
+                    CREATE INDEX errorlog_timestamp IF NOT EXISTS
+                    FOR (e:ErrorLog) ON (e.timestamp)
+                """
+                )
 
-                print("✓ Schema initialized successfully")
+                print("✓ Schema initialized successfully (TNP-High Velocity Sprint extensions included)")
 
         except ServiceUnavailable as e:
             print(f"✗ Database connection lost: {e}")
             print(f"💡 Tip: Ensure Neo4j is running on {settings.neo4j_uri}")
         except Exception as e:
             print(f"✗ Schema initialization failed: {e}")
+
+    def create_sample_relationships(self) -> None:
+        """
+        Create a small set of example nodes & relationships for demo / onboarding.
+
+        This is intentionally lightweight: if running in mock mode the method is
+        a no-op; if a live driver is available we create a minimal sample graph.
+        
+        Includes examples of new high-fidelity relationships (TN-301):
+        - (:LinearIssue)-[:TRIGGERS]->(:ErrorLog)
+        - (:CodeBlock)-[:BELONGS_TO]->(:File)
+        """
+        if self.mock_mode or not self.driver:
+            print("⚠ create_sample_relationships skipped (mock mode or no driver)")
+            return
+
+        try:
+            with self.driver.session() as session:
+                # Create example Task and ADR nodes with a relationship for demos
+                session.run(
+                    """
+                    MERGE (t:Task {id: 'SAMPLE-TASK-1'})
+                    SET t.title = 'Sample Task', t.status = 'active'
+                    MERGE (a:ADR {id: 'SAMPLE-ADR-1'})
+                    SET a.title = 'Sample ADR'
+                    MERGE (t)-[:RELATED_TO]->(a)
+                """
+                )
+                
+                # TN-301: Example high-fidelity context relationships
+                session.run(
+                    """
+                    MERGE (li:LinearIssue {id: 'SAMPLE-ISSUE-1'})
+                    SET li.title = 'Sample Linear Issue', li.description = 'Example issue'
+                    MERGE (el:ErrorLog {id: 'ERROR-001'})
+                    SET el.error_type = 'RuntimeError', 
+                        el.timestamp = datetime(),
+                        el.message = 'Sample error message'
+                    MERGE (li)-[:TRIGGERS]->(el)
+                """
+                )
+                
+                session.run(
+                    """
+                    MERGE (f:File {path: '/src/example.py'})
+                    SET f.name = 'example.py', f.extension = 'py'
+                    MERGE (cb:CodeBlock {hash: 'abc123def456'})
+                    SET cb.content = 'def example(): pass',
+                        cb.language = 'python',
+                        cb.start_line = 1,
+                        cb.end_line = 1
+                    MERGE (cb)-[:BELONGS_TO]->(f)
+                """
+                )
+            print("✓ Sample relationships created (demo data)")
+        except Exception as e:
+            print(f"✗ Failed to create sample relationships: {e}")
+
+    def visualize_schema(self) -> str:
+        """
+        Generate a text-based visualization of the Neo4j schema.
+        
+        Returns:
+            str: A formatted string representation of the schema including
+                 node labels with their constraints and key relationships.
+        """
+        if self.mock_mode or not self.driver:
+            return "⚠ Schema visualization unavailable (mock mode or no driver)"
+        
+        try:
+            with self.driver.session() as session:
+                # Get all constraints
+                constraints_result = session.run("SHOW CONSTRAINTS")
+                constraints = list(constraints_result)
+                
+                # Get all indexes
+                indexes_result = session.run("SHOW INDEXES")
+                indexes = list(indexes_result)
+                
+                # Build visualization
+                viz = ["=" * 80]
+                viz.append("Neo4j Schema Visualization")
+                viz.append("=" * 80)
+                viz.append("")
+                
+                # Group constraints by label
+                # Note: This assumes constraint names follow the pattern "{label}_{property}"
+                # where label is lowercase. This matches the naming convention used in initialize_schema()
+                constraint_map = {}
+                for c in constraints:
+                    # Extract label from constraint details
+                    name = c.get("name", "")
+                    label = name.split("_")[0].title() if "_" in name else "Unknown"
+                    if label not in constraint_map:
+                        constraint_map[label] = []
+                    constraint_map[label].append(c)
+                
+                # Display nodes with constraints
+                viz.append("NODE LABELS WITH CONSTRAINTS:")
+                viz.append("-" * 80)
+                for label in sorted(constraint_map.keys()):
+                    viz.append(f"\n({label})")
+                    for constraint in constraint_map[label]:
+                        constraint_name = constraint.get("name", "N/A")
+                        viz.append(f"  ├─ CONSTRAINT: {constraint_name}")
+                
+                viz.append("")
+                viz.append("-" * 80)
+                viz.append("KEY RELATIONSHIPS:")
+                viz.append("-" * 80)
+                
+                # Document the key relationships
+                relationships = [
+                    "(:Task)-[:RELATED_TO]->(:ADR)",
+                    "(:LinearIssue)-[:TRIGGERS]->(:ErrorLog)  [TN-301]",
+                    "(:CodeBlock)-[:BELONGS_TO]->(:File)  [TN-301]",
+                ]
+                
+                for rel in relationships:
+                    viz.append(f"  • {rel}")
+                
+                viz.append("")
+                viz.append("-" * 80)
+                viz.append("INDEXES:")
+                viz.append("-" * 80)
+                
+                # Display indexes
+                for idx in indexes:
+                    idx_name = idx.get("name", "N/A")
+                    viz.append(f"  • {idx_name}")
+                
+                viz.append("")
+                viz.append("=" * 80)
+                
+                return "\n".join(viz)
+                
+        except Exception as e:
+            return f"✗ Failed to generate schema visualization: {e}"
 
     def close(self) -> None:
         """

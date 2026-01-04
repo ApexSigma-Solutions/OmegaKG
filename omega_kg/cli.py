@@ -145,7 +145,7 @@ def stale():
         click.echo("\n--- Stale Tasks (>7 days) ---")
         for task in stale:
             click.echo(
-                f"{task['t.uid']}: {task['t.title']} " f"(created: {task['t.created']})"
+                f"{task['t.uid']}: {task['t.title']} (created: {task['t.created']})"
             )
     else:
         click.echo("(none)")
