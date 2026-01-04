@@ -73,10 +73,14 @@ Omega_KG enables intelligent knowledge capture and task lifecycle management by:
 # Run lifecycle enforcement (dry-run mode)
 poetry run python -m omega_kg.lifecycle --dry-run
 
-# Start capture server
+# Start capture server (entry point)
 poetry run capture-server
 
-# Run tests
+# Reorganized Scripts (db-ops, maintenance, troubleshooting, testing, startup)
+# Example: Run smoke test
+poetry run python scripts/testing/test-smoke.py
+
+# Run all tests
 poetry run pytest
 
 # Check code quality
@@ -161,5 +165,5 @@ MIT License - see LICENSE file for details
 
 For issues, feature requests, or questions:
 - Open an [issue](https://github.com/ApexSigma-Solutions/omega_kg/issues)
-- Check [documentation](./docs/index.md)
-- Review [API reference](./docs/reference.md)
+- Centralized Documentation: [OmegaVault/ApexSigma/Development/Projects/OmegaKG](../OmegaVault/ApexSigma/Development/Projects/OmegaKG)
+- Review [IMPLEMENTATION_SUMMARY.md](../OmegaVault/ApexSigma/Development/Projects/OmegaKG/00_History/IMPLEMENTATION_SUMMARY.md)

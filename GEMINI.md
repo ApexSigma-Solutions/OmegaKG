@@ -12,7 +12,10 @@ This is a general-purpose Python project managed with Poetry. The main applicati
   - For development: `poetry install --with dev`
   - For documentation: `poetry install --with docs`
 - **Testing**: Tests are located under `tests/`. Use `pytest` for all testing.
-- **Documentation**: Built with MkDocs Material (`mkdocs.yml`, `docs/`). API docs are auto-generated from code docstrings via `mkdocstrings`.
+- **Documentation**: Core documentation has been migrated to `OmegaVault`.
+  - Vault Root: `OmegaVault/ApexSigma/Development/Projects/OmegaKG`
+  - History/Reports: `00_History/`
+  - Implementation: `Implementation/`
 
 ## Workflows & Tooling
 
@@ -32,11 +35,13 @@ This is a general-purpose Python project managed with Poetry. The main applicati
 ## Patterns & Examples
 
 - **Settings pattern**: All config must extend `omega_kg/settings.py:Settings` (Pydantic). Example usage:
-  ```python
-  from omega_kg.settings import Settings
-  settings = Settings()
-  print(settings.database_url)
-  ```
+
+```python
+from omega_kg.settings import Settings
+settings = Settings()
+print(settings.database_url)
+```
+
 - **Adding dependencies**: Use `poetry add <package>` and update `pyproject.toml`.
 - **Adding environment variables**: Update both `omega_kg/settings.py` and `.env.example`.
 - **Adding Tests**: Add new tests to the `tests/` directory.

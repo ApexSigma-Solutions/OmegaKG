@@ -48,10 +48,16 @@ This file provides guidance to agents when working with code in this repository.
 - **Active → Blocked**: 30 days without commits (lifecycle.py:79-85)
 - **Completed → Archived**: 90 days (lifecycle.py:87-92)
 
-### Entry Points
+### Scripts & Entry Points
 - **CLI**: `omega` command via `omega_kg.cli:cli`
 - **Capture server**: `capture-server` command via `omega_kg.capture_server:main` (runs on port 8765)
 - **Lifecycle enforcement**: `python -m omega_kg.lifecycle --dry-run`
+- **Functional Scripts**: Reorganized into `scripts/` subdirectories:
+  - `db-ops/`: Database sync and percolation (e.g., `sync-linear.py`)
+  - `maintenance/`: Environment and hook management (e.g., `setup-venv.ps1`)
+  - `troubleshooting/`: Diagnostic tools (e.g., `diagnose-capture.ps1`)
+  - `testing/`: Smoke and integration tests (e.g., `test-smoke.py`)
+  - `startup/`: Development and service startup (e.g., `start-dev.ps1`)
 
 ## Code Style Guidelines
 
