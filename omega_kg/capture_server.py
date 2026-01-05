@@ -723,19 +723,25 @@ app.include_router(terminal_router)
 app.include_router(linear_receiver.router, tags=["Linear Ingest"])
 app.include_router(github_receiver.router, tags=["GitHub Ingest"])
 
+# Service Control (Subprocess Management)
+from omega_kg.routers.service_control import router as service_control_router
+app.include_router(service_control_router)
+
 # CORS middleware
 cors_origins = []
 if settings.chrome_extension_id:
     cors_origins.append(f"chrome-extension://{settings.chrome_extension_id}")
-# Allow localhost for development
+# Allow localhost for development (Backend)
 cors_origins.extend(["http://localhost:8765", "http://127.0.0.1:8765"])
+# Allow CortexBridge Frontend (Vite Dev & Preview)
+cors_origins.extend(["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:4173", "http://127.0.0.1:4173"])
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
     allow_credentials=True,
-    allow_methods=["POST", "GET", "OPTIONS"],
-    allow_headers=["X-API-Key", "Authorization", "Content-Type"],
+    allow_methods=["*"],  # Allow all methods (GET, POST, OPTIONS, PUT, DELETE)
+    allow_headers=["*"],  # Allow all headers
 )
 
 

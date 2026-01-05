@@ -11,11 +11,11 @@ import logging
 import uuid
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 from fastapi import APIRouter, HTTPException, Request, Security, Depends
 from neo4j import GraphDatabase
-from sqlalchemy import text
+from sqlalchemy import text, select, desc
 
 from omega_kg.auth_utils import (create_access_token, get_static_api_key,
                                  validate_access_token)
@@ -167,6 +167,36 @@ async def capture_conversation(
         raise HTTPException(
             status_code=500, detail={"message": "Internal error storing raw conversation", "id": support_id}
         )
+
+
+@router.get("/capture/recent", response_model=List[CaptureResponse])
+async def get_recent_captures(
+    limit: int = 10,
+    db_session: Any = Depends(get_ingest_db),
+    _token_payload: Dict[str, Any] = Security(validate_access_token),
+) -> List[CaptureResponse]:
+    """
+    Get the most recent captured conversations.
+    """
+    try:
+        stmt = select(RawConversation).order_by(desc(RawConversation.captured_at)).limit(limit)
+        result = await db_session.execute(stmt)
+        raw_conversations = result.scalars().all()
+        
+        response = []
+        for conv in raw_conversations:
+             # Basic adaptation to CaptureResponse model for UI display
+            response.append(CaptureResponse(
+                success=True,
+                file_path=f"db://{conv.source_id}",
+                nodes_created=0,
+                message=f"Captured via {conv.platform} at {conv.captured_at}",
+            ))
+            
+        return response
+    except Exception as e:
+        logger.error(f"Failed to fetch recent captures: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/health/vectors")
