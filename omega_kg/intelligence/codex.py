@@ -11,7 +11,11 @@ from neo4j import GraphDatabase
 from omega_kg.settings import settings
 
 from .models import Constraint, Context
-from .exceptions import CodexConnectionError, ConstraintNotFoundError, ContextNotFoundError
+from .exceptions import (
+    CodexConnectionError,
+    ConstraintNotFoundError,
+    ContextNotFoundError,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -48,8 +52,7 @@ class Codex:
         """
         try:
             self._driver = GraphDatabase.driver(
-                self._uri,
-                auth=(self._username, self._password)
+                self._uri, auth=(self._username, self._password)
             )
             # Verify connection
             self._driver.verify_connectivity()
@@ -92,10 +95,13 @@ class Codex:
             with self._driver.session() as session:
                 if context:
                     # Get constraints for a specific context
-                    result = session.run("""
+                    result = session.run(
+                        """
                         MATCH (c:Constraint)-[:GOVERNS]->(ctx:Context {name: $context})
                         RETURN c
-                    """, context=context)
+                    """,
+                        context=context,
+                    )
                 else:
                     # Get all constraints
                     result = session.run("MATCH (c:Constraint) RETURN c")
@@ -106,12 +112,14 @@ class Codex:
                         id=node["id"],
                         description=node.get("description", ""),
                         severity=node.get("severity", "WARNING"),
-                        created_at=node.get("created_at")
+                        created_at=node.get("created_at"),
                     )
                     constraints.append(constraint)
 
-                logger.info(f"Retrieved {len(constraints)} constraints" +
-                           (f" for context '{context}'" if context else ""))
+                logger.info(
+                    f"Retrieved {len(constraints)} constraints"
+                    + (f" for context '{context}'" if context else "")
+                )
 
         except Exception as e:
             logger.error(f"Failed to retrieve constraints: {e}")
@@ -138,21 +146,26 @@ class Codex:
 
         try:
             with self._driver.session() as session:
-                result = session.run("""
+                result = session.run(
+                    """
                     MATCH (c:Constraint {id: $id})
                     RETURN c
-                """, id=constraint_id)
+                """,
+                    id=constraint_id,
+                )
 
                 record = result.single()
                 if not record:
-                    raise ConstraintNotFoundError(f"Constraint '{constraint_id}' not found")
+                    raise ConstraintNotFoundError(
+                        f"Constraint '{constraint_id}' not found"
+                    )
 
                 node = record["c"]
                 return Constraint(
                     id=node["id"],
                     description=node.get("description", ""),
                     severity=node.get("severity", "WARNING"),
-                    created_at=node.get("created_at")
+                    created_at=node.get("created_at"),
                 )
 
         except ConstraintNotFoundError:
@@ -183,8 +196,7 @@ class Codex:
                 for record in result:
                     node = record["c"]
                     context = Context(
-                        name=node["name"],
-                        description=node.get("description")
+                        name=node["name"], description=node.get("description")
                     )
                     contexts.append(context)
 
@@ -215,20 +227,20 @@ class Codex:
 
         try:
             with self._driver.session() as session:
-                result = session.run("""
+                result = session.run(
+                    """
                     MATCH (c:Context {name: $name})
                     RETURN c
-                """, name=name)
+                """,
+                    name=name,
+                )
 
                 record = result.single()
                 if not record:
                     raise ContextNotFoundError(f"Context '{name}' not found")
 
                 node = record["c"]
-                return Context(
-                    name=node["name"],
-                    description=node.get("description")
-                )
+                return Context(name=node["name"], description=node.get("description"))
 
         except ContextNotFoundError:
             raise
@@ -250,21 +262,28 @@ class Codex:
         from .models import Constraint, SeverityLevel
         from datetime import datetime
 
+        import hashlib
+
         # Extract key information from incident report
         # Simple heuristic: look for patterns like "missing", "failed", "error"
         description = incident_report.strip()
 
         # Generate constraint ID
-        constraint_id = f"ENV_{hash(description)[:8].upper()}"
+        digest = hashlib.md5(description.encode("utf-8")).hexdigest()
+        constraint_id = f"ENV_{digest[:8].upper()}"
 
         # Determine severity based on keywords
-        severity = SeverityLevel.CRITICAL if "critical" in description.lower() else SeverityLevel.WARNING
+        severity = (
+            SeverityLevel.CRITICAL
+            if "critical" in description.lower()
+            else SeverityLevel.WARNING
+        )
 
         constraint = Constraint(
             id=constraint_id,
             description=description,
             severity=severity,
-            created_at=datetime.now()
+            created_at=datetime.now(),
         )
 
         logger.info(f"Metabolized failure into constraint: {constraint_id}")

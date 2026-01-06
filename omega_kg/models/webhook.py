@@ -2,7 +2,7 @@ from typing import Any, Dict, Optional
 from datetime import datetime
 
 from pydantic import BaseModel, Field
-from sqlalchemy import Column, Integer, String, DateTime, Boolean, text
+from sqlalchemy import Column, Integer, String, DateTime, Boolean, text, LargeBinary
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.sql import func
 from omega_kg.database.base import Base
@@ -32,7 +32,7 @@ class RawWebhookEvent(Base):
     )
 
     headers = Column(JSONB, nullable=False, comment="HTTP headers from webhook")
-    payload = Column(JSONB, nullable=False, comment="Raw JSON payload")
+    payload = Column(LargeBinary, nullable=False, comment="Raw JSON payload (bytes)")
 
     event_type = Column(
         String, index=True, nullable=True, comment="Event type (issue.created, etc.)"
@@ -47,7 +47,7 @@ class RawWebhookEventPydantic(BaseModel):
     received_at: Optional[datetime] = None
     processed_status: bool = False
     headers: Dict[str, Any] = Field(default_factory=dict)
-    payload: Dict[str, Any] = Field(default_factory=dict)
+    payload: bytes = Field(default_factory=bytes)
     event_type: Optional[str] = None
     error_log: Optional[str] = None
 

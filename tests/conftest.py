@@ -21,12 +21,13 @@ from typing import AsyncGenerator
 from unittest.mock import MagicMock
 
 import pytest
+
 # CRITICAL FIX: Neo4j Driver 6.x requires explicit Auth object or helper
 from neo4j import GraphDatabase, basic_auth
 from sqlalchemy import create_engine, text
-from sqlalchemy.ext.asyncio import (AsyncSession, async_sessionmaker,
-                                    create_async_engine)
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from testcontainers.neo4j import Neo4jContainer
+
 # --- Infrastructure Imports ---
 from testcontainers.postgres import PostgresContainer
 
@@ -284,8 +285,8 @@ def graph_session(graph_driver):
         yield session
 
 
-@pytest.fixture(scope="session")
-def async_db_engine(postgres_container):
+@pytest.fixture(scope="function")
+async def async_db_engine(postgres_container):
     """
     Async SQLAlchemy AsyncEngine for integration tests.
     Manually constructs asyncpg URL from postgres_container details.
@@ -305,25 +306,13 @@ def async_db_engine(postgres_container):
 
     engine = create_async_engine(async_url, echo=False)
 
-    # Create tables once at session setup (synchronously)
-    def setup_tables():
-        import asyncio
+    # Create tables
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
 
-        async def async_setup():
-            async with engine.begin() as conn:
-                await conn.run_sync(Base.metadata.create_all)
-
-        try:
-            asyncio.run(async_setup())
-        except RuntimeError:
-            # If event loop already exists, create a new one
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            loop.run_until_complete(async_setup())
-
-    setup_tables()
     yield engine
-    # Note: actual disposal happens when session ends
+
+    await engine.dispose()
 
 
 @pytest.fixture

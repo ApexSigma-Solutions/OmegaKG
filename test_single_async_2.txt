@@ -1,0 +1,293 @@
+============================= test session starts =============================
+collecting ... 
+----------------------------- live log collection -----------------------------
+INFO     omega_kg.settings:settings.py:73 BWS_ACCESS_TOKEN found, attempting Bitwarden authentication
+INFO     omega_kg.settings:settings.py:83 Bitwarden authentication successful: ResponseForAccessTokenLoginResponse(success=True, data=AccessTokenLoginResponse(authenticated=True, force_password_reset=False, reset_master_password=False, two_factor=None), error_message=None)
+WARNING  omega_kg.settings:settings.py:126 Secret not found in Bitwarden for key 'linear_webhook_secret' (UUID: c4e28fe5-a690-47c1-bf2a-b3a40115fc5f) - will use fallback
+WARNING  omega_kg.settings:settings.py:126 Secret not found in Bitwarden for key 'neo4j_password' (UUID: 2e56f3bd-5019-48c0-a778-b3a40116727b) - will use fallback
+WARNING  omega_kg.settings:settings.py:126 Secret not found in Bitwarden for key 'gemini_api_key' (UUID: fee6a433-1a72-424c-b58d-b3a40111feb1) - will use fallback
+INFO     omega_kg.settings:settings.py:148 Bitwarden secrets loaded for keys: extension_api_key, jwt_secret_key, linear_api_key, perplexity_api_key, postgres_password
+INFO     omega_kg.vault_utils:vault_utils.py:65 VaultUtils initialized. Vault path: D:\projects\OmegaKG\OmegaVault
+INFO     omega_kg.linear_sync:linear_sync.py:94 LinearSync initialized with vault: D:\projects\OmegaKG\OmegaVault
+collected 1 item
+
+tests/test_capture_server.py::TestCaptureServerEndpoints::test_capture_endpoint_success 
+------------------------------- live log setup --------------------------------
+INFO     conftest:conftest.py:153 \U0001f433 Starting Postgres: pgvector/pgvector:pg16\nINFO     testcontainers.core.container:container.py:177 Pulling image testcontainers/ryuk:0.8.1
+INFO     testcontainers.core.container:container.py:206 Container started: 8c621a4b189f
+INFO     testcontainers.core.container:container.py:177 Pulling image pgvector/pgvector:pg16
+INFO     testcontainers.core.container:container.py:206 Container started: e60ef5c28bc8
+-------------------------------- live log call --------------------------------
+ERROR    omega_kg.routers.capture:capture.py:165 Critical Error fa9f6ec7-c296-4f0b-abb1-3b49984d59cc during capture: Task <Task pending name='Task-5' coro=<TestCaptureServerEndpoints.test_capture_endpoint_success() running at D:\projects\OmegaKG\Omega_KG_stable\tests\test_capture_server.py:752> cb=[_run_until_complete_cb() at C:\Program Files\Python312\Lib\asyncio\base_events.py:181, WorkerThread.stop()]> got Future <Future pending cb=[BaseProtocol._on_waiter_completed()]> attached to a different loop
+Traceback (most recent call last):
+  File "D:\projects\OmegaKG\Omega_KG_stable\omega_kg\routers\capture.py", line 144, in capture_conversation
+    await db_session.commit()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\ext\asyncio\session.py", line 1000, in commit
+    await greenlet_spawn(self.sync_session.commit)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 201, in greenlet_spawn
+    result = context.throw(*sys.exc_info())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2030, in commit
+    trans.commit(_to_root=True)
+  File "<string>", line 2, in commit
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1311, in commit
+    self._prepare_impl()
+  File "<string>", line 2, in _prepare_impl
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1286, in _prepare_impl
+    self.session.flush()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4331, in flush
+    self._flush(objects)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4466, in _flush
+    with util.safe_reraise():
+         ^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\langhelpers.py", line 224, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4427, in _flush
+    flush_context.execute()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\unitofwork.py", line 466, in execute
+    rec.execute(self)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\unitofwork.py", line 642, in execute
+    util.preloaded.orm_persistence.save_obj(
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\persistence.py", line 93, in save_obj
+    _emit_insert_statements(
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\persistence.py", line 1233, in _emit_insert_statements
+    result = connection.execute(
+             ^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1419, in execute
+    return meth(
+           ^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\sql\elements.py", line 526, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1641, in _execute_clauseelement
+    ret = self._execute_context(
+          ^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1846, in _execute_context
+    return self._exec_single_context(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1986, in _exec_single_context
+    self._handle_dbapi_exception(
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 2358, in _handle_dbapi_exception
+    raise exc_info[1].with_traceback(exc_info[2])
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\engine\default.py", line 951, in do_execute
+    cursor.execute(statement, parameters)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 585, in execute
+    self._adapt_connection.await_(
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 132, in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 196, in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 520, in _prepare_and_execute
+    await adapt_connection._start_transaction()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 850, in _start_transaction
+    self._handle_exception(error)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 799, in _handle_exception
+    raise error
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 848, in _start_transaction
+    await self._transaction.start()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\asyncpg\transaction.py", line 146, in start
+    await self._connection.execute(query)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\asyncpg\connection.py", line 354, in execute
+    result = await self._protocol.query(query, timeout)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "asyncpg/protocol/protocol.pyx", line 369, in query
+RuntimeError: Task <Task pending name='Task-5' coro=<TestCaptureServerEndpoints.test_capture_endpoint_success() running at D:\projects\OmegaKG\Omega_KG_stable\tests\test_capture_server.py:752> cb=[_run_until_complete_cb() at C:\Program Files\Python312\Lib\asyncio\base_events.py:181, WorkerThread.stop()]> got Future <Future pending cb=[BaseProtocol._on_waiter_completed()]> attached to a different loop
+INFO     httpx:_client.py:1740 HTTP Request: POST http://testserver/capture "HTTP/1.1 500 Internal Server Error"
+FAILED                                                                   [100%]
+
+================================== FAILURES ===================================
+__________ TestCaptureServerEndpoints.test_capture_endpoint_success ___________
+tests\test_capture_server.py:758: in test_capture_endpoint_success
+    assert response.status_code == 200
+E   assert 500 == 200
+E    +  where 500 = <Response [500 Internal Server Error]>.status_code
+---------------------------- Captured stderr setup ----------------------------
+INFO:conftest:\U0001f433 Starting Postgres: pgvector/pgvector:pg16\nINFO:testcontainers.core.container:Pulling image testcontainers/ryuk:0.8.1\nINFO:testcontainers.core.container:Container started: 8c621a4b189f\nINFO:testcontainers.core.container:Pulling image pgvector/pgvector:pg16\nINFO:testcontainers.core.container:Container started: e60ef5c28bc8
+----------------------------- Captured log setup ------------------------------
+INFO     conftest:conftest.py:153 \U0001f433 Starting Postgres: pgvector/pgvector:pg16\nINFO     testcontainers.core.container:container.py:177 Pulling image testcontainers/ryuk:0.8.1\nINFO     testcontainers.core.container:container.py:206 Container started: 8c621a4b189f\nINFO     testcontainers.core.container:container.py:177 Pulling image pgvector/pgvector:pg16\nINFO     testcontainers.core.container:container.py:206 Container started: e60ef5c28bc8
+---------------------------- Captured stderr call -----------------------------
+ERROR:omega_kg.routers.capture:Critical Error fa9f6ec7-c296-4f0b-abb1-3b49984d59cc during capture: Task <Task pending name='Task-5' coro=<TestCaptureServerEndpoints.test_capture_endpoint_success() running at D:\projects\OmegaKG\Omega_KG_stable\tests\test_capture_server.py:752> cb=[_run_until_complete_cb() at C:\Program Files\Python312\Lib\asyncio\base_events.py:181, WorkerThread.stop()]> got Future <Future pending cb=[BaseProtocol._on_waiter_completed()]> attached to a different loop
+Traceback (most recent call last):
+  File "D:\projects\OmegaKG\Omega_KG_stable\omega_kg\routers\capture.py", line 144, in capture_conversation
+    await db_session.commit()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\ext\asyncio\session.py", line 1000, in commit
+    await greenlet_spawn(self.sync_session.commit)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 201, in greenlet_spawn
+    result = context.throw(*sys.exc_info())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2030, in commit
+    trans.commit(_to_root=True)
+  File "<string>", line 2, in commit
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1311, in commit
+    self._prepare_impl()
+  File "<string>", line 2, in _prepare_impl
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1286, in _prepare_impl
+    self.session.flush()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4331, in flush
+    self._flush(objects)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4466, in _flush
+    with util.safe_reraise():
+         ^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\langhelpers.py", line 224, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4427, in _flush
+    flush_context.execute()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\unitofwork.py", line 466, in execute
+    rec.execute(self)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\unitofwork.py", line 642, in execute
+    util.preloaded.orm_persistence.save_obj(
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\persistence.py", line 93, in save_obj
+    _emit_insert_statements(
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\persistence.py", line 1233, in _emit_insert_statements
+    result = connection.execute(
+             ^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1419, in execute
+    return meth(
+           ^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\sql\elements.py", line 526, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1641, in _execute_clauseelement
+    ret = self._execute_context(
+          ^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1846, in _execute_context
+    return self._exec_single_context(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1986, in _exec_single_context
+    self._handle_dbapi_exception(
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 2358, in _handle_dbapi_exception
+    raise exc_info[1].with_traceback(exc_info[2])
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\engine\default.py", line 951, in do_execute
+    cursor.execute(statement, parameters)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 585, in execute
+    self._adapt_connection.await_(
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 132, in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 196, in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 520, in _prepare_and_execute
+    await adapt_connection._start_transaction()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 850, in _start_transaction
+    self._handle_exception(error)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 799, in _handle_exception
+    raise error
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 848, in _start_transaction
+    await self._transaction.start()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\asyncpg\transaction.py", line 146, in start
+    await self._connection.execute(query)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\asyncpg\connection.py", line 354, in execute
+    result = await self._protocol.query(query, timeout)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "asyncpg/protocol/protocol.pyx", line 369, in query
+RuntimeError: Task <Task pending name='Task-5' coro=<TestCaptureServerEndpoints.test_capture_endpoint_success() running at D:\projects\OmegaKG\Omega_KG_stable\tests\test_capture_server.py:752> cb=[_run_until_complete_cb() at C:\Program Files\Python312\Lib\asyncio\base_events.py:181, WorkerThread.stop()]> got Future <Future pending cb=[BaseProtocol._on_waiter_completed()]> attached to a different loop
+INFO:httpx:HTTP Request: POST http://testserver/capture "HTTP/1.1 500 Internal Server Error"
+------------------------------ Captured log call ------------------------------
+ERROR    omega_kg.routers.capture:capture.py:165 Critical Error fa9f6ec7-c296-4f0b-abb1-3b49984d59cc during capture: Task <Task pending name='Task-5' coro=<TestCaptureServerEndpoints.test_capture_endpoint_success() running at D:\projects\OmegaKG\Omega_KG_stable\tests\test_capture_server.py:752> cb=[_run_until_complete_cb() at C:\Program Files\Python312\Lib\asyncio\base_events.py:181, WorkerThread.stop()]> got Future <Future pending cb=[BaseProtocol._on_waiter_completed()]> attached to a different loop
+Traceback (most recent call last):
+  File "D:\projects\OmegaKG\Omega_KG_stable\omega_kg\routers\capture.py", line 144, in capture_conversation
+    await db_session.commit()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\ext\asyncio\session.py", line 1000, in commit
+    await greenlet_spawn(self.sync_session.commit)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 201, in greenlet_spawn
+    result = context.throw(*sys.exc_info())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2030, in commit
+    trans.commit(_to_root=True)
+  File "<string>", line 2, in commit
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1311, in commit
+    self._prepare_impl()
+  File "<string>", line 2, in _prepare_impl
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1286, in _prepare_impl
+    self.session.flush()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4331, in flush
+    self._flush(objects)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4466, in _flush
+    with util.safe_reraise():
+         ^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\langhelpers.py", line 224, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4427, in _flush
+    flush_context.execute()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\unitofwork.py", line 466, in execute
+    rec.execute(self)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\unitofwork.py", line 642, in execute
+    util.preloaded.orm_persistence.save_obj(
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\persistence.py", line 93, in save_obj
+    _emit_insert_statements(
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\persistence.py", line 1233, in _emit_insert_statements
+    result = connection.execute(
+             ^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1419, in execute
+    return meth(
+           ^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\sql\elements.py", line 526, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1641, in _execute_clauseelement
+    ret = self._execute_context(
+          ^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1846, in _execute_context
+    return self._exec_single_context(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1986, in _exec_single_context
+    self._handle_dbapi_exception(
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 2358, in _handle_dbapi_exception
+    raise exc_info[1].with_traceback(exc_info[2])
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\engine\default.py", line 951, in do_execute
+    cursor.execute(statement, parameters)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 585, in execute
+    self._adapt_connection.await_(
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 132, in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 196, in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 520, in _prepare_and_execute
+    await adapt_connection._start_transaction()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 850, in _start_transaction
+    self._handle_exception(error)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 799, in _handle_exception
+    raise error
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 848, in _start_transaction
+    await self._transaction.start()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\asyncpg\transaction.py", line 146, in start
+    await self._connection.execute(query)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\asyncpg\connection.py", line 354, in execute
+    result = await self._protocol.query(query, timeout)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "asyncpg/protocol/protocol.pyx", line 369, in query
+RuntimeError: Task <Task pending name='Task-5' coro=<TestCaptureServerEndpoints.test_capture_endpoint_success() running at D:\projects\OmegaKG\Omega_KG_stable\tests\test_capture_server.py:752> cb=[_run_until_complete_cb() at C:\Program Files\Python312\Lib\asyncio\base_events.py:181, WorkerThread.stop()]> got Future <Future pending cb=[BaseProtocol._on_waiter_completed()]> attached to a different loop
+INFO     httpx:_client.py:1740 HTTP Request: POST http://testserver/capture "HTTP/1.1 500 Internal Server Error"
+=========================== short test summary info ===========================
+FAILED tests/test_capture_server.py::TestCaptureServerEndpoints::test_capture_endpoint_success - assert 500 == 200
+ +  where 500 = <Response [500 Internal Server Error]>.status_code
+============================= 1 failed in 21.80s ==============================

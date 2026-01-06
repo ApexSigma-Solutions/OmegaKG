@@ -7,21 +7,33 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
+from httpx import AsyncClient, ASGITransport
 from pydantic import ValidationError
 
 # Import auth utilities for dependency override
 from omega_kg.auth_utils import validate_access_token
+
 # Import remaining items from capture_server
-from omega_kg.capture_server import (_create_chat_session,
-                                     _create_decision_nodes,
-                                     _create_decision_nodes_async, app,
-                                     percolate_to_neo4j)
+from omega_kg.capture_server import (
+    _create_chat_session,
+    _create_decision_nodes,
+    _create_decision_nodes_async,
+    app,
+    percolate_to_neo4j,
+)
+
 # Import models from new location
 from omega_kg.models.capture import ConversationData, Message
+
 # Import utils from new location
-from omega_kg.utils.capture_utils import (format_conversation_markdown,
-                                          generate_conversation_hash,
-                                          write_to_obsidian)
+from omega_kg.utils.capture_utils import (
+    format_conversation_markdown,
+    generate_conversation_hash,
+    write_to_obsidian,
+)
+from omega_kg.database.ingest_session import get_ingest_db
+from omega_kg.database.session import get_db
+from omega_kg.routers.linear_receiver import verify_signature
 
 
 # --- Helper fixture for authenticated requests ---
@@ -705,7 +717,8 @@ class TestCaptureServerEndpoints:
         data = response.json()
         assert data["message"] == "CORS preflight OK"
 
-    def test_capture_endpoint_success(self):
+    @pytest.mark.asyncio
+    async def test_capture_endpoint_success(self, async_db_session):
         """Test successful conversation capture."""
 
         # Override auth dependency
@@ -713,10 +726,9 @@ class TestCaptureServerEndpoints:
             return {"sub": "test"}
 
         app.dependency_overrides[validate_access_token] = mock_auth
+        app.dependency_overrides[get_ingest_db] = lambda: async_db_session
 
         try:
-            client = TestClient(app)
-
             conversation_data = {
                 "platform": "test",
                 "messages": [
@@ -725,31 +737,37 @@ class TestCaptureServerEndpoints:
                 ],
             }
 
-            with tempfile.TemporaryDirectory() as temp_dir:
-                with patch("omega_kg.routers.capture.settings") as mock_settings:
-                    mock_settings.obsidian_vault_path = temp_dir
-                    mock_settings.decision_keywords = []
+            transport = ASGITransport(app=app)
+            async with AsyncClient(
+                transport=transport, base_url="http://testserver"
+            ) as client:
+                with tempfile.TemporaryDirectory() as temp_dir:
+                    with patch("omega_kg.routers.capture.settings") as mock_settings:
+                        mock_settings.obsidian_vault_path = temp_dir
+                        mock_settings.decision_keywords = []
 
-                    # Mock percolation
-                    with patch(
-                        "omega_kg.routers.capture._percolate_to_neo4j_with_embedding",
-                        return_value=1,
-                    ):
-                        response = client.post(
-                            "/capture",
-                            json=conversation_data,
-                            headers={"Authorization": "Bearer fake_token"},
-                        )
+                        # Mock percolation
+                        with patch(
+                            "omega_kg.routers.capture._percolate_to_neo4j_with_embedding",
+                            return_value=1,
+                        ):
+                            response = await client.post(
+                                "/capture",
+                                json=conversation_data,
+                                headers={"Authorization": "Bearer fake_token"},
+                            )
 
-                        assert response.status_code == 200
-                        data = response.json()
-                        assert data["success"] is True
-                        assert data["nodes_created"] == 1
-                        assert "file_path" in data
+                            assert response.status_code == 200
+                            data = response.json()
+                            assert data["success"] is True
+                            assert data["nodes_created"] == 0
+                            assert "file_path" in data
         finally:
             app.dependency_overrides.pop(validate_access_token, None)
+            app.dependency_overrides.pop(get_ingest_db, None)
 
-    def test_capture_endpoint_too_large(self):
+    @pytest.mark.asyncio
+    async def test_capture_endpoint_too_large(self):
         """Test capture endpoint with payload too large."""
 
         # Override auth dependency
@@ -759,27 +777,30 @@ class TestCaptureServerEndpoints:
         app.dependency_overrides[validate_access_token] = mock_auth
 
         try:
-            client = TestClient(app)
-
             # Create payload larger than MAX_HTML_SIZE (10MB)
             large_content = "x" * (10 * 1024 * 1024 + 1)  # Slightly over 10MB
             conversation_data = {"platform": "test", "raw_html": large_content}
 
-            response = client.post(
-                "/capture",
-                json=conversation_data,
-                headers={"Authorization": "Bearer fake_token"},
-            )
+            transport = ASGITransport(app=app)
+            async with AsyncClient(
+                transport=transport, base_url="http://testserver"
+            ) as client:
+                response = await client.post(
+                    "/capture",
+                    json=conversation_data,
+                    headers={"Authorization": "Bearer fake_token"},
+                )
 
-            assert response.status_code == 413
-            assert (
-                "exceeds maximum" in response.json()["detail"]
-                or "too large" in response.json()["detail"]
-            )
+                assert response.status_code == 413
+                assert (
+                    "exceeds maximum" in response.json()["detail"]
+                    or "too large" in response.json()["detail"]
+                )
         finally:
             app.dependency_overrides.pop(validate_access_token, None)
 
-    def test_capture_endpoint_no_messages(self):
+    @pytest.mark.asyncio
+    async def test_capture_endpoint_no_messages(self, async_db_session):
         """Test capture endpoint with no messages and no content."""
 
         # Override auth dependency
@@ -787,21 +808,26 @@ class TestCaptureServerEndpoints:
             return {"sub": "test"}
 
         app.dependency_overrides[validate_access_token] = mock_auth
+        app.dependency_overrides[get_ingest_db] = lambda: async_db_session
 
         try:
-            client = TestClient(app)
             conversation_data = {"platform": "test", "messages": []}
 
-            response = client.post(
-                "/capture",
-                json=conversation_data,
-                headers={"Authorization": "Bearer fake_token"},
-            )
+            transport = ASGITransport(app=app)
+            async with AsyncClient(
+                transport=transport, base_url="http://testserver"
+            ) as client:
+                response = await client.post(
+                    "/capture",
+                    json=conversation_data,
+                    headers={"Authorization": "Bearer fake_token"},
+                )
 
-            assert response.status_code == 422
-            assert "No messages provided" in response.json()["detail"]
+                assert response.status_code == 422
+                assert "No messages provided" in response.json()["detail"]
         finally:
             app.dependency_overrides.pop(validate_access_token, None)
+            app.dependency_overrides.pop(get_ingest_db, None)
 
     def test_auth_token_endpoint(self):
         """Test the JWT token exchange endpoint."""
@@ -884,37 +910,22 @@ class TestCaptureServerEndpoints:
             assert "error" in data
             assert data["worker_running"] is False
 
-    def test_linear_webhook_endpoint(self):
-        """Test the Linear webhook endpoint."""
-        client = TestClient(app)
-
-        # Mock sync engine
-        mock_sync_engine = AsyncMock()
-        mock_sync_engine.handle_linear_webhook_request.return_value = {"status": "ok"}
-
-        with patch("omega_kg.capture_server.sync_engine", mock_sync_engine):
-            client.post("/webhook/linear", json={"test": "data"})
-
-            # Should pass request to sync engine
-            mock_sync_engine.handle_linear_webhook_request.assert_called_once()
-            # Response depends on sync engine implementation
-
 
 class TestCaptureServerIntegration:
     """Integration tests for the capture server."""
 
-    def test_end_to_end_capture_flow(self):
-        """Test the complete capture flow from API to file storage."""
+    @pytest.mark.asyncio
+    async def test_end_to_end_capture_flow(self, async_db_session):
+        """Test the complete capture flow from API to DB storage."""
 
         # Override auth dependency
         def mock_auth():
             return {"sub": "test"}
 
         app.dependency_overrides[validate_access_token] = mock_auth
+        app.dependency_overrides[get_ingest_db] = lambda: async_db_session
 
         try:
-            client = TestClient(app)
-
             conversation_data = {
                 "platform": "test_integration",
                 "url": "https://example.com/conversation",
@@ -932,39 +943,37 @@ class TestCaptureServerIntegration:
                 "tags": ["test", "integration"],
             }
 
-            with tempfile.TemporaryDirectory() as temp_dir:
-                with patch("omega_kg.routers.capture.settings") as mock_settings:
-                    mock_settings.obsidian_vault_path = temp_dir
-                    mock_settings.decision_keywords = ["decide"]
+            transport = ASGITransport(app=app)
+            async with AsyncClient(
+                transport=transport, base_url="http://testserver"
+            ) as client:
+                with tempfile.TemporaryDirectory() as temp_dir:
+                    with patch("omega_kg.routers.capture.settings") as mock_settings:
+                        mock_settings.obsidian_vault_path = temp_dir
+                        mock_settings.decision_keywords = ["decide"]
 
-                    with patch(
-                        "omega_kg.routers.capture._percolate_to_neo4j_with_embedding",
-                        return_value=2,
-                    ):
-                        response = client.post(
-                            "/capture",
-                            json=conversation_data,
-                            headers={"Authorization": "Bearer fake_token"},
-                        )
+                        # Mock percolation (although not used in new flow, good to have)
+                        with patch(
+                            "omega_kg.routers.capture._percolate_to_neo4j_with_embedding",
+                            return_value=0,
+                        ):
+                            response = await client.post(
+                                "/capture",
+                                json=conversation_data,
+                                headers={"Authorization": "Bearer fake_token"},
+                            )
 
-                        assert response.status_code == 200
-                        data = response.json()
-                        assert data["success"] is True
-                        assert data["nodes_created"] == 2
-
-                        # Verify file was created
-                        file_path = Path(data["file_path"])
-                        assert file_path.exists()
-
-                        # Verify file content
-                        content = file_path.read_text(encoding="utf-8")
-                        assert "Integration Test Conversation" in content
-                        assert "test_integration" in content
-                        assert "https://example.com/conversation" in content
+                            assert response.status_code == 200
+                            data = response.json()
+                            assert data["success"] is True
+                            assert data["nodes_created"] == 0
+                            assert data["file_path"] == "[DB STORAGE]"
         finally:
             app.dependency_overrides.pop(validate_access_token, None)
+            app.dependency_overrides.pop(get_ingest_db, None)
 
-    def test_html_parsing_integration(self):
+    @pytest.mark.asyncio
+    async def test_html_parsing_integration(self, async_db_session):
         """Test HTML parsing integration in capture flow."""
 
         # Override auth dependency
@@ -972,50 +981,55 @@ class TestCaptureServerIntegration:
             return {"sub": "test"}
 
         app.dependency_overrides[validate_access_token] = mock_auth
+        app.dependency_overrides[get_ingest_db] = lambda: async_db_session
 
         try:
-            client = TestClient(app)
-
             conversation_data = {
                 "platform": "test_html",
                 "raw_html": "<div><p>User: Hello there</p><p>Assistant: Hi! How can I help?</p></div>",
                 "url": "https://example.com",
             }
 
-            with tempfile.TemporaryDirectory() as temp_dir:
-                with patch("omega_kg.routers.capture.settings") as mock_settings:
-                    mock_settings.obsidian_vault_path = temp_dir
-                    mock_settings.decision_keywords = []
+            transport = ASGITransport(app=app)
+            async with AsyncClient(
+                transport=transport, base_url="http://testserver"
+            ) as client:
+                with tempfile.TemporaryDirectory() as temp_dir:
+                    with patch("omega_kg.routers.capture.settings") as mock_settings:
+                        mock_settings.obsidian_vault_path = temp_dir
+                        mock_settings.decision_keywords = []
 
-                    # Mock HTML parsing
-                    with patch(
-                        "omega_kg.routers.capture.parse_html_content"
-                    ) as mock_parse:
-                        mock_parse.return_value = [
-                            {"role": "user", "content": "Hello there"},
-                            {"role": "assistant", "content": "Hi! How can I help?"},
-                        ]
-
+                        # Mock HTML parsing
                         with patch(
-                            "omega_kg.routers.capture._percolate_to_neo4j_with_embedding",
-                            return_value=1,
-                        ):
-                            response = client.post(
-                                "/capture",
-                                json=conversation_data,
-                                headers={"Authorization": "Bearer fake_token"},
-                            )
+                            "omega_kg.routers.capture.parse_html_content"
+                        ) as mock_parse:
+                            mock_parse.return_value = [
+                                {"role": "user", "content": "Hello there"},
+                                {"role": "assistant", "content": "Hi! How can I help?"},
+                            ]
 
-                            assert response.status_code == 200
+                            with patch(
+                                "omega_kg.routers.capture._percolate_to_neo4j_with_embedding",
+                                return_value=0,
+                            ):
+                                response = await client.post(
+                                    "/capture",
+                                    json=conversation_data,
+                                    headers={"Authorization": "Bearer fake_token"},
+                                )
 
-                            # Verify HTML parsing was called
-                            mock_parse.assert_called_once_with(
-                                conversation_data["raw_html"], "https://example.com"
-                            )
+                                assert response.status_code == 200
+
+                                # Verify HTML parsing was called
+                                mock_parse.assert_called_once_with(
+                                    conversation_data["raw_html"], "https://example.com"
+                                )
         finally:
             app.dependency_overrides.pop(validate_access_token, None)
+            app.dependency_overrides.pop(get_ingest_db, None)
 
-    def test_error_handling_integration(self):
+    @pytest.mark.asyncio
+    async def test_error_handling_integration(self, async_db_session):
         """Test error handling in capture flow."""
 
         # Override auth dependency
@@ -1023,78 +1037,114 @@ class TestCaptureServerIntegration:
             return {"sub": "test"}
 
         app.dependency_overrides[validate_access_token] = mock_auth
+        app.dependency_overrides[get_ingest_db] = lambda: async_db_session
 
         try:
-            client = TestClient(app)
-
             conversation_data = {
                 "platform": "test_error",
                 "messages": [{"role": "user", "content": "Hello"}],
             }
 
-            # Mock file writing failure
-            with patch(
-                "omega_kg.routers.capture.write_to_obsidian",
-                side_effect=IOError("Disk full"),
+            # Mock DB commit failure
+            with patch.object(
+                async_db_session, "commit", side_effect=Exception("DB Failure")
             ):
-                response = client.post(
-                    "/capture",
-                    json=conversation_data,
-                    headers={"Authorization": "Bearer fake_token"},
-                )
+                transport = ASGITransport(app=app)
+                async with AsyncClient(
+                    transport=transport, base_url="http://testserver"
+                ) as client:
+                    response = await client.post(
+                        "/capture",
+                        json=conversation_data,
+                        headers={"Authorization": "Bearer fake_token"},
+                    )
 
-                assert response.status_code == 500
-                data = response.json()
-                # Error response uses HTTPException detail format
-                assert "Internal error" in str(data["detail"])
-                assert "id" in str(data["detail"])  # Support ID for tracking
+                    assert response.status_code == 500
+                    data = response.json()
+                    # Error response uses HTTPException detail format
+                    assert "Internal error" in str(data["detail"])
+                    assert "id" in str(data["detail"])
         finally:
             app.dependency_overrides.pop(validate_access_token, None)
+            app.dependency_overrides.pop(get_ingest_db, None)
+
+    @pytest.mark.asyncio
+    async def test_linear_webhook_endpoint(self, async_db_session):
+        """Test the Linear webhook endpoint."""
+
+        # Override dependencies
+        app.dependency_overrides[get_db] = lambda: async_db_session
+        app.dependency_overrides[verify_signature] = lambda: (
+            b'{"test": "data"}',
+            "test_signature",
+        )
+
+        try:
+            transport = ASGITransport(app=app)
+            async with AsyncClient(
+                transport=transport, base_url="http://testserver"
+            ) as client:
+                response = await client.post("/webhooks/linear", json={"test": "data"})
+
+                assert response.status_code == 200
+                data = response.json()
+                assert data["status"] == "persisted"
+                assert "id" in data
+        finally:
+            app.dependency_overrides.pop(get_db, None)
+            app.dependency_overrides.pop(verify_signature, None)
 
 
 class TestCaptureServerSecurity:
     """Security tests for the capture server."""
 
-    def test_authentication_required(self):
+    @pytest.mark.asyncio
+    async def test_authentication_required(self):
         """Test that authentication is required for protected endpoints."""
-        client = TestClient(app)
+        transport = ASGITransport(app=app)
+        async with AsyncClient(
+            transport=transport, base_url="http://testserver"
+        ) as client:
+            conversation_data = {
+                "platform": "test",
+                "messages": [{"role": "user", "content": "Hello"}],
+            }
 
-        conversation_data = {
-            "platform": "test",
-            "messages": [{"role": "user", "content": "Hello"}],
-        }
+            # Test without authentication - should return 401 or 403
+            response = await client.post("/capture", json=conversation_data)
+            assert response.status_code in [401, 403]
 
-        # Test without authentication - should return 401 or 403
-        response = client.post("/capture", json=conversation_data)
-        assert response.status_code in [401, 403]  # Should require authentication
+            # Test with invalid authentication
+            response = await client.post(
+                "/capture",
+                json=conversation_data,
+                headers={"Authorization": "Bearer invalid_token"},
+            )
+            assert response.status_code in [401, 403]
 
-        # Test with invalid authentication
-        response = client.post(
-            "/capture",
-            json=conversation_data,
-            headers={"Authorization": "Bearer invalid_token"},
-        )
-        assert response.status_code in [401, 403]  # Should reject invalid token
-
-    def test_cors_headers(self):
+    @pytest.mark.asyncio
+    async def test_cors_headers(self):
         """Test CORS headers are properly set."""
-        client = TestClient(app)
+        transport = ASGITransport(app=app)
+        async with AsyncClient(
+            transport=transport, base_url="http://testserver"
+        ) as client:
+            # Test OPTIONS request
+            response = await client.options("/capture")
+            assert response.status_code == 200
 
-        # Test OPTIONS request
-        response = client.options("/capture")
-        assert response.status_code == 200
+            # Test actual request with Origin header
+            response = await client.post(
+                "/capture",
+                json={"platform": "test", "messages": []},
+                headers={"Origin": "chrome-extension://test_extension_id"},
+            )
 
-        # Test actual request with Origin header
-        response = client.post(
-            "/capture",
-            json={"platform": "test", "messages": []},
-            headers={"Origin": "chrome-extension://test_extension_id"},
-        )
+            # Should handle CORS (may succeed or fail based on auth, but CORS headers should be present)
+            assert response.status_code in [200, 401, 403, 422]
 
-        # Should handle CORS (may succeed or fail based on auth, but CORS headers should be present)
-        assert response.status_code in [200, 401, 403, 422]
-
-    def test_input_validation(self):
+    @pytest.mark.asyncio
+    async def test_input_validation(self, async_db_session):
         """Test input validation for security."""
 
         # Override auth dependency
@@ -1102,33 +1152,47 @@ class TestCaptureServerSecurity:
             return {"sub": "test"}
 
         app.dependency_overrides[validate_access_token] = mock_auth
+        app.dependency_overrides[get_ingest_db] = lambda: async_db_session
 
         try:
-            client = TestClient(app)
+            transport = ASGITransport(app=app)
+            async with AsyncClient(
+                transport=transport, base_url="http://testserver"
+            ) as client:
+                # Test malicious platform name (path traversal attempt)
+                malicious_data = {
+                    "platform": "../../../malicious",
+                    "messages": [{"role": "user", "content": "Hello"}],
+                }
 
-            # Test malicious platform name (path traversal attempt)
-            malicious_data = {
-                "platform": "../../../malicious",
-                "messages": [{"role": "user", "content": "Hello"}],
-            }
+                with tempfile.TemporaryDirectory() as temp_dir:
+                    with patch("omega_kg.routers.capture.settings") as mock_settings:
+                        mock_settings.obsidian_vault_path = temp_dir
+                        mock_settings.decision_keywords = []
 
-            with tempfile.TemporaryDirectory() as temp_dir:
-                with patch("omega_kg.routers.capture.settings") as mock_settings:
-                    mock_settings.obsidian_vault_path = temp_dir
-                    mock_settings.decision_keywords = []
+                        # Mock DB operation to succeed (returns 0 nodes)
+                        with patch(
+                            "omega_kg.routers.capture._percolate_to_neo4j_with_embedding",
+                            return_value=0,
+                        ):
+                            response = await client.post(
+                                "/capture",
+                                json=malicious_data,
+                                headers={"Authorization": "Bearer fake_token"},
+                            )
 
-                    response = client.post(
-                        "/capture",
-                        json=malicious_data,
-                        headers={"Authorization": "Bearer fake_token"},
-                    )
-
-                    # Should handle path traversal attempt safely
-                    assert response.status_code in [200, 422, 500]
+                            # Should handle path traversal attempt safely
+                            assert response.status_code in [200, 422, 500]
+                            if response.status_code == 200:
+                                # Ensure file wasn't written to weird place if it succeeded
+                                # But new flow writes to DB, so path traversal is less of an issue for file system
+                                pass
         finally:
             app.dependency_overrides.pop(validate_access_token, None)
+            app.dependency_overrides.pop(get_ingest_db, None)
 
-    def test_content_size_limits(self):
+    @pytest.mark.asyncio
+    async def test_content_size_limits(self, async_db_session):
         """Test content size limits are enforced."""
 
         # Override auth dependency
@@ -1136,52 +1200,19 @@ class TestCaptureServerSecurity:
             return {"sub": "test"}
 
         app.dependency_overrides[validate_access_token] = mock_auth
+        app.dependency_overrides[get_ingest_db] = lambda: async_db_session
 
         try:
-            client = TestClient(app)
-
-            # Test extremely large content
-            large_data = {
-                "platform": "test",
-                "messages": [
-                    {"role": "user", "content": "x" * 1_000_000}
-                ],  # 1MB content
-            }
-
-            response = client.post(
-                "/capture",
-                json=large_data,
-                headers={"Authorization": "Bearer fake_token"},
-            )
-
-            # Should either accept or reject based on size limits, but handle gracefully
-            assert response.status_code in [200, 413, 422]
-        finally:
-            app.dependency_overrides.pop(validate_access_token, None)
-
-
-class TestCaptureServerPerformance:
-    """Performance tests for the capture server."""
-
-    def test_concurrent_requests(self):
-        """Test handling concurrent requests."""
-        import threading
-        import time
-
-        # Override auth dependency for entire test
-        def mock_auth():
-            return {"sub": "test"}
-
-        app.dependency_overrides[validate_access_token] = mock_auth
-
-        try:
-            client = TestClient(app)
-            results = []
-
-            def make_request():
-                conversation_data = {
-                    "platform": "test_concurrent",
-                    "messages": [{"role": "user", "content": f"Message {time.time()}"}],
+            transport = ASGITransport(app=app)
+            async with AsyncClient(
+                transport=transport, base_url="http://testserver"
+            ) as client:
+                # Test extremely large content
+                large_data = {
+                    "platform": "test",
+                    "messages": [
+                        {"role": "user", "content": "x" * 1_000_000}
+                    ],  # 1MB content
                 }
 
                 with tempfile.TemporaryDirectory() as temp_dir:
@@ -1191,33 +1222,92 @@ class TestCaptureServerPerformance:
 
                         with patch(
                             "omega_kg.routers.capture._percolate_to_neo4j_with_embedding",
-                            return_value=1,
+                            return_value=0,
                         ):
-                            response = client.post(
+                            response = await client.post(
                                 "/capture",
-                                json=conversation_data,
+                                json=large_data,
                                 headers={"Authorization": "Bearer fake_token"},
                             )
-                            results.append(response.status_code)
 
-            # Start multiple concurrent requests
-            threads = []
-            for _ in range(5):
-                thread = threading.Thread(target=make_request)
-                threads.append(thread)
-                thread.start()
-
-            # Wait for all threads to complete
-            for thread in threads:
-                thread.join()
-
-            # All requests should succeed
-            assert len(results) == 5
-            assert all(status == 200 for status in results)
+                            # Should either accept or reject based on size limits, but handle gracefully
+                            assert response.status_code in [200, 413, 422]
         finally:
             app.dependency_overrides.pop(validate_access_token, None)
+            app.dependency_overrides.pop(get_ingest_db, None)
 
-    def test_large_message_handling(self):
+
+class TestCaptureServerPerformance:
+    """Performance tests for the capture server."""
+
+    @pytest.mark.asyncio
+    async def test_concurrent_requests(self, async_db_engine):
+        """Test handling concurrent requests using asyncio."""
+        import asyncio
+        from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+
+        # Override auth dependency for entire test
+        def mock_auth():
+            return {"sub": "test"}
+
+        app.dependency_overrides[validate_access_token] = mock_auth
+
+        # Create session factory using the test engine
+        TestSessionLocal = async_sessionmaker(
+            bind=async_db_engine, class_=AsyncSession, expire_on_commit=False
+        )
+
+        async def override_get_db():
+            async with TestSessionLocal() as session:
+                yield session
+
+        app.dependency_overrides[get_ingest_db] = override_get_db
+
+        try:
+            transport = ASGITransport(app=app)
+            async with AsyncClient(
+                transport=transport, base_url="http://testserver"
+            ) as client:
+
+                async def make_request(idx):
+                    conversation_data = {
+                        "platform": "test_concurrent",
+                        "messages": [
+                            {"role": "user", "content": f"Message {time.time()}"}
+                        ],
+                    }
+
+                    with tempfile.TemporaryDirectory() as temp_dir:
+                        with patch(
+                            "omega_kg.routers.capture.settings"
+                        ) as mock_settings:
+                            mock_settings.obsidian_vault_path = temp_dir
+                            mock_settings.decision_keywords = []
+
+                            with patch(
+                                "omega_kg.routers.capture._percolate_to_neo4j_with_embedding",
+                                return_value=0,
+                            ):
+                                response = await client.post(
+                                    "/capture",
+                                    json=conversation_data,
+                                    headers={"Authorization": "Bearer fake_token"},
+                                )
+                                return response.status_code
+
+                # Start multiple concurrent requests
+                tasks = [make_request(i) for i in range(5)]
+                results = await asyncio.gather(*tasks)
+
+                # All requests should succeed
+                assert len(results) == 5
+                assert all(status == 200 for status in results)
+        finally:
+            app.dependency_overrides.pop(validate_access_token, None)
+            app.dependency_overrides.pop(get_ingest_db, None)
+
+    @pytest.mark.asyncio
+    async def test_large_message_handling(self, async_db_session):
         """Test handling of large but valid messages."""
 
         # Override auth dependency
@@ -1225,10 +1315,9 @@ class TestCaptureServerPerformance:
             return {"sub": "test"}
 
         app.dependency_overrides[validate_access_token] = mock_auth
+        app.dependency_overrides[get_ingest_db] = lambda: async_db_session
 
         try:
-            client = TestClient(app)
-
             # Create a large but reasonable message
             large_content = "This is a test message. " * 1000  # ~25KB
             conversation_data = {
@@ -1242,63 +1331,10 @@ class TestCaptureServerPerformance:
                 ],
             }
 
-            with tempfile.TemporaryDirectory() as temp_dir:
-                with patch("omega_kg.routers.capture.settings") as mock_settings:
-                    mock_settings.obsidian_vault_path = temp_dir
-                    mock_settings.decision_keywords = []
-
-                    with patch(
-                        "omega_kg.routers.capture._percolate_to_neo4j_with_embedding",
-                        return_value=1,
-                    ):
-                        start_time = time.time()
-                        response = client.post(
-                            "/capture",
-                            json=conversation_data,
-                            headers={"Authorization": "Bearer fake_token"},
-                        )
-                        end_time = time.time()
-
-                        assert response.status_code == 200
-
-                        # Should complete in reasonable time (adjust threshold as needed)
-                        assert (end_time - start_time) < 5.0  # 5 seconds max
-        finally:
-            app.dependency_overrides.pop(validate_access_token, None)
-
-    def test_memory_usage_stability(self):
-        """Test that memory usage remains stable during processing."""
-        import gc
-
-        import psutil
-
-        # Override auth dependency
-        def mock_auth():
-            return {"sub": "test"}
-
-        app.dependency_overrides[validate_access_token] = mock_auth
-
-        try:
-            client = TestClient(app)
-            process = psutil.Process(os.getpid())
-
-            # Get baseline memory usage
-            gc.collect()
-            baseline_memory = process.memory_info().rss
-
-            # Process multiple requests
-            for i in range(10):
-                conversation_data = {
-                    "platform": f"test_memory_{i}",
-                    "messages": [
-                        {"role": "user", "content": f"Message {i} with some content"},
-                        {
-                            "role": "assistant",
-                            "content": f"Response {i} with more content",
-                        },
-                    ],
-                }
-
+            transport = ASGITransport(app=app)
+            async with AsyncClient(
+                transport=transport, base_url="http://testserver"
+            ) as client:
                 with tempfile.TemporaryDirectory() as temp_dir:
                     with patch("omega_kg.routers.capture.settings") as mock_settings:
                         mock_settings.obsidian_vault_path = temp_dir
@@ -1306,14 +1342,81 @@ class TestCaptureServerPerformance:
 
                         with patch(
                             "omega_kg.routers.capture._percolate_to_neo4j_with_embedding",
-                            return_value=1,
+                            return_value=0,
                         ):
-                            response = client.post(
+                            start_time = time.time()
+                            response = await client.post(
                                 "/capture",
                                 json=conversation_data,
                                 headers={"Authorization": "Bearer fake_token"},
                             )
+                            end_time = time.time()
+
                             assert response.status_code == 200
+
+                            # Should complete in reasonable time (adjust threshold as needed)
+                            assert (end_time - start_time) < 5.0  # 5 seconds max
+        finally:
+            app.dependency_overrides.pop(validate_access_token, None)
+            app.dependency_overrides.pop(get_ingest_db, None)
+
+    @pytest.mark.asyncio
+    async def test_memory_usage_stability(self, async_db_session):
+        """Test that memory usage remains stable during processing."""
+        import gc
+        import psutil
+
+        # Override auth dependency
+        def mock_auth():
+            return {"sub": "test"}
+
+        app.dependency_overrides[validate_access_token] = mock_auth
+        app.dependency_overrides[get_ingest_db] = lambda: async_db_session
+
+        try:
+            transport = ASGITransport(app=app)
+            async with AsyncClient(
+                transport=transport, base_url="http://testserver"
+            ) as client:
+                process = psutil.Process(os.getpid())
+
+                # Get baseline memory usage
+                gc.collect()
+                baseline_memory = process.memory_info().rss
+
+                # Process multiple requests
+                for i in range(10):
+                    conversation_data = {
+                        "platform": f"test_memory_{i}",
+                        "messages": [
+                            {
+                                "role": "user",
+                                "content": f"Message {i} with some content",
+                            },
+                            {
+                                "role": "assistant",
+                                "content": f"Response {i} with more content",
+                            },
+                        ],
+                    }
+
+                    with tempfile.TemporaryDirectory() as temp_dir:
+                        with patch(
+                            "omega_kg.routers.capture.settings"
+                        ) as mock_settings:
+                            mock_settings.obsidian_vault_path = temp_dir
+                            mock_settings.decision_keywords = []
+
+                            with patch(
+                                "omega_kg.routers.capture._percolate_to_neo4j_with_embedding",
+                                return_value=0,
+                            ):
+                                response = await client.post(
+                                    "/capture",
+                                    json=conversation_data,
+                                    headers={"Authorization": "Bearer fake_token"},
+                                )
+                                assert response.status_code == 200
 
             # Check final memory usage
             gc.collect()
@@ -1324,6 +1427,7 @@ class TestCaptureServerPerformance:
             assert memory_increase < 50 * 1024 * 1024  # Less than 50MB increase
         finally:
             app.dependency_overrides.pop(validate_access_token, None)
+            app.dependency_overrides.pop(get_ingest_db, None)
 
 
 class TestObsidianUpdateEndpoint:

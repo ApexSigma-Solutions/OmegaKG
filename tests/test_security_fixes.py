@@ -91,9 +91,9 @@ class TestJWTSecurity:
         invalid_token = "invalid.jwt.token"
 
         with patch("omega_kg.auth_utils.jwt.decode") as mock_decode:
-            from jose import JWTError
+            from jwt import PyJWTError
 
-            mock_decode.side_effect = JWTError("Invalid token")
+            mock_decode.side_effect = PyJWTError("Invalid token")
 
             from fastapi import HTTPException
 

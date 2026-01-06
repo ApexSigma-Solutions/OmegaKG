@@ -36,7 +36,7 @@ async def async_db_session():
 
     # Cleanup
     async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all())
+        await conn.run_sync(Base.metadata.drop_all(bind=engine))
 
 
 @pytest.fixture
@@ -57,6 +57,7 @@ def test_client():
 def linear_webhook_secret():
     """Get Linear webhook secret from settings."""
     from omega_kg.settings import settings
+
     return settings.linear_webhook_secret
 
 
@@ -89,9 +90,8 @@ def sample_linear_payload():
     }
 
 
-def generate_linear_signature(payload: dict, secret: str) -> str:
+def generate_linear_signature(payload_bytes: bytes, secret: str) -> str:
     """Generate HMAC signature for Linear webhook."""
-    payload_bytes = json.dumps(payload).encode("utf-8")
     signature = hmac.new(
         secret.encode("utf-8"), payload_bytes, hashlib.sha256
     ).hexdigest()
@@ -112,13 +112,14 @@ class TestWebhookEndpoint:
         test_vault,
     ):
         """Test: Webhook → DB → Processing flow."""
-        # Generate signature
-        signature = generate_linear_signature(sample_linear_payload, linear_webhook_secret)
+        # Generate payload bytes and signature
+        payload_bytes = json.dumps(sample_linear_payload).encode("utf-8")
+        signature = generate_linear_signature(payload_bytes, linear_webhook_secret)
 
         # Send webhook
         response = test_client.post(
             "/webhooks/linear",
-            json=sample_linear_payload,
+            content=payload_bytes,
             headers={"Linear-Signature": signature},
         )
 
@@ -160,14 +161,15 @@ class TestWebhookEndpoint:
         linear_webhook_secret,
     ):
         """Test: Endpoint responds within 200ms."""
-        # Generate signature
-        signature = generate_linear_signature(sample_linear_payload, linear_webhook_secret)
+        # Generate payload bytes and signature
+        payload_bytes = json.dumps(sample_linear_payload).encode("utf-8")
+        signature = generate_linear_signature(payload_bytes, linear_webhook_secret)
 
         # Measure latency
         start_time = time.time()
         response = test_client.post(
             "/webhooks/linear",
-            json=sample_linear_payload,
+            content=payload_bytes,
             headers={"Linear-Signature": signature},
         )
         end_time = time.time()
@@ -190,13 +192,14 @@ class TestWebhookEndpoint:
         linear_webhook_secret,
     ):
         """Test: Raw payload is saved byte-for-byte."""
-        # Generate signature
-        signature = generate_linear_signature(sample_linear_payload, linear_webhook_secret)
+        # Generate payload bytes and signature
+        payload_bytes = json.dumps(sample_linear_payload).encode("utf-8")
+        signature = generate_linear_signature(payload_bytes, linear_webhook_secret)
 
         # Send webhook
         response = test_client.post(
             "/webhooks/linear",
-            json=sample_linear_payload,
+            content=payload_bytes,
             headers={"Linear-Signature": signature},
         )
 
@@ -249,10 +252,11 @@ class TestWebhookEndpoint:
         # Send multiple webhooks
         event_ids = []
         for payload in payloads:
-            signature = generate_linear_signature(payload, linear_webhook_secret)
+            payload_bytes = json.dumps(payload).encode("utf-8")
+            signature = generate_linear_signature(payload_bytes, linear_webhook_secret)
             response = test_client.post(
                 "/webhooks/linear",
-                json=payload,
+                content=payload_bytes,
                 headers={"Linear-Signature": signature},
             )
             assert response.status_code == 200
@@ -316,6 +320,7 @@ class TestWebhookEndpoint:
                         "id": "state-id",
                         "name": "In Progress",
                         "type": "started",
+                        "color": "#ff0000",
                     },
                     "createdAt": datetime.now(timezone.utc).isoformat(),
                     "updatedAt": datetime.now(timezone.utc).isoformat(),
@@ -396,16 +401,18 @@ class TestWebhookEndpoint:
                     "id": "state-id",
                     "name": "In Progress",
                     "type": "started",
+                    "color": "#ff0000",
                 },
                 "createdAt": datetime.now(timezone.utc).isoformat(),
                 "updatedAt": datetime.now(timezone.utc).isoformat(),
             },
         }
 
-        signature = generate_linear_signature(new_payload, linear_webhook_secret)
+        payload_bytes = json.dumps(new_payload).encode("utf-8")
+        signature = generate_linear_signature(payload_bytes, linear_webhook_secret)
         response = test_client.post(
             "/webhooks/linear",
-            json=new_payload,
+            content=payload_bytes,
             headers={"Linear-Signature": signature},
         )
 

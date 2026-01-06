@@ -1,0 +1,2455 @@
+============================= test session starts =============================
+collecting ... 
+----------------------------- live log collection -----------------------------
+INFO     omega_kg.settings:settings.py:73 BWS_ACCESS_TOKEN found, attempting Bitwarden authentication
+INFO     omega_kg.settings:settings.py:83 Bitwarden authentication successful: ResponseForAccessTokenLoginResponse(success=True, data=AccessTokenLoginResponse(authenticated=True, force_password_reset=False, reset_master_password=False, two_factor=None), error_message=None)
+WARNING  omega_kg.settings:settings.py:126 Secret not found in Bitwarden for key 'linear_webhook_secret' (UUID: c4e28fe5-a690-47c1-bf2a-b3a40115fc5f) - will use fallback
+WARNING  omega_kg.settings:settings.py:126 Secret not found in Bitwarden for key 'neo4j_password' (UUID: 2e56f3bd-5019-48c0-a778-b3a40116727b) - will use fallback
+WARNING  omega_kg.settings:settings.py:126 Secret not found in Bitwarden for key 'gemini_api_key' (UUID: fee6a433-1a72-424c-b58d-b3a40111feb1) - will use fallback
+INFO     omega_kg.settings:settings.py:148 Bitwarden secrets loaded for keys: extension_api_key, jwt_secret_key, linear_api_key, perplexity_api_key, postgres_password
+INFO     omega_kg.vault_utils:vault_utils.py:65 VaultUtils initialized. Vault path: D:\projects\OmegaKG\OmegaVault
+INFO     omega_kg.linear_sync:linear_sync.py:94 LinearSync initialized with vault: D:\projects\OmegaKG\OmegaVault
+collected 73 items
+
+tests/test_capture_server.py::TestConversationDataModel::test_minimal_valid_conversation_data PASSED [  1%]
+tests/test_capture_server.py::TestConversationDataModel::test_conversation_data_with_message_objects PASSED [  2%]
+tests/test_capture_server.py::TestConversationDataModel::test_conversation_data_validation_errors PASSED [  4%]
+tests/test_capture_server.py::TestConversationDataModel::test_conversation_data_with_optional_fields PASSED [  5%]
+tests/test_capture_server.py::TestGenerateConversationHash::test_hash_consistency PASSED [  6%]
+tests/test_capture_server.py::TestGenerateConversationHash::test_hash_uniqueness PASSED [  8%]
+tests/test_capture_server.py::TestGenerateConversationHash::test_hash_with_message_objects PASSED [  9%]
+tests/test_capture_server.py::TestGenerateConversationHash::test_hash_empty_messages PASSED [ 10%]
+tests/test_capture_server.py::TestGenerateConversationHash::test_hash_long_content_truncation PASSED [ 12%]
+tests/test_capture_server.py::TestFormatConversationMarkdown::test_basic_markdown_formatting PASSED [ 13%]
+tests/test_capture_server.py::TestFormatConversationMarkdown::test_markdown_with_message_objects PASSED [ 15%]
+tests/test_capture_server.py::TestFormatConversationMarkdown::test_markdown_with_metadata PASSED [ 16%]
+tests/test_capture_server.py::TestFormatConversationMarkdown::test_markdown_empty_messages PASSED [ 17%]
+tests/test_capture_server.py::TestWriteToObsidian::test_write_to_obsidian_success 
+-------------------------------- live log call --------------------------------
+INFO     omega_kg.utils.capture_utils:capture_utils.py:211 Wrote conversation to: C:\Users\steyn\AppData\Local\Temp\tmptsooapd_\AI_Conversations\test\2026-01-05-abcd1234.md
+PASSED                                                                   [ 19%]
+tests/test_capture_server.py::TestWriteToObsidian::test_write_to_obsidian_creates_directories 
+-------------------------------- live log call --------------------------------
+INFO     omega_kg.utils.capture_utils:capture_utils.py:211 Wrote conversation to: C:\Users\steyn\AppData\Local\Temp\tmp4wf7vrud\AI_Conversations\test\2026-01-05-abcd1234.md
+PASSED                                                                   [ 20%]
+tests/test_capture_server.py::TestWriteToObsidian::test_write_to_obsidian_invalid_platform PASSED [ 21%]
+tests/test_capture_server.py::TestWriteToObsidian::test_write_to_obsidian_platform_sanitization 
+-------------------------------- live log call --------------------------------
+INFO     omega_kg.utils.capture_utils:capture_utils.py:211 Wrote conversation to: C:\Users\steyn\AppData\Local\Temp\tmpqdnlqibi\AI_Conversations\Test_Platform\2026-01-05-abcd1234.md
+PASSED                                                                   [ 23%]
+tests/test_capture_server.py::TestWriteToObsidian::test_write_to_obsidian_filename_format 
+-------------------------------- live log call --------------------------------
+INFO     omega_kg.utils.capture_utils:capture_utils.py:211 Wrote conversation to: C:\Users\steyn\AppData\Local\Temp\tmpgpn3jl65\AI_Conversations\test\2023-12-01-abcd1234.md
+PASSED                                                                   [ 24%]
+tests/test_capture_server.py::TestPercolateToNeo4j::test_percolate_to_neo4j_success 
+-------------------------------- live log call --------------------------------
+INFO     omega_kg.capture_server:capture_server.py:315 Created 3 nodes in Neo4j
+PASSED                                                                   [ 26%]
+tests/test_capture_server.py::TestPercolateToNeo4j::test_percolate_to_neo4j_with_own_driver 
+-------------------------------- live log call --------------------------------
+INFO     omega_kg.capture_server:capture_server.py:315 Created 1 nodes in Neo4j
+PASSED                                                                   [ 27%]
+tests/test_capture_server.py::TestPercolateToNeo4j::test_percolate_to_neo4j_decision_extraction 
+-------------------------------- live log call --------------------------------
+INFO     omega_kg.capture_server:capture_server.py:315 Created 3 nodes in Neo4j
+PASSED                                                                   [ 28%]
+tests/test_capture_server.py::TestCreateChatSession::test_create_chat_session_success PASSED [ 30%]
+tests/test_capture_server.py::TestCreateChatSession::test_create_chat_session_no_result PASSED [ 31%]
+tests/test_capture_server.py::TestCreateDecisionNodes::test_create_decision_nodes_with_keywords PASSED [ 32%]
+tests/test_capture_server.py::TestCreateDecisionNodes::test_create_decision_nodes_no_keywords PASSED [ 34%]
+tests/test_capture_server.py::TestCreateDecisionNodes::test_create_decision_nodes_empty_messages PASSED [ 35%]
+tests/test_capture_server.py::TestCreateDecisionNodesAsync::test_create_decision_nodes_async_with_keywords PASSED [ 36%]
+tests/test_capture_server.py::TestCreateDecisionNodesAsync::test_create_decision_nodes_async_no_keywords PASSED [ 38%]
+tests/test_capture_server.py::TestCaptureServerEndpoints::test_root_endpoint 
+-------------------------------- live log call --------------------------------
+INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/ "HTTP/1.1 200 OK"
+PASSED                                                                   [ 39%]
+tests/test_capture_server.py::TestCaptureServerEndpoints::test_health_endpoint 
+-------------------------------- live log call --------------------------------
+INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/health "HTTP/1.1 200 OK"
+PASSED                                                                   [ 41%]
+tests/test_capture_server.py::TestCaptureServerEndpoints::test_capture_options_endpoint 
+-------------------------------- live log call --------------------------------
+INFO     httpx:_client.py:1025 HTTP Request: OPTIONS http://testserver/capture "HTTP/1.1 200 OK"
+PASSED                                                                   [ 42%]
+tests/test_capture_server.py::TestCaptureServerEndpoints::test_capture_endpoint_success 
+-------------------------------- live log call --------------------------------
+INFO     omega_kg.routers.capture:capture.py:156 Duplicate conversation captured: 7f833da6. Ignoring.
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/capture "HTTP/1.1 200 OK"
+FAILED                                                                   [ 43%]
+tests/test_capture_server.py::TestCaptureServerEndpoints::test_capture_endpoint_too_large 
+-------------------------------- live log call --------------------------------
+WARNING  omega_kg.routers.capture:capture.py:100 Payload too large: 10485794 bytes
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/capture "HTTP/1.1 413 Request Entity Too Large"
+PASSED                                                                   [ 45%]
+tests/test_capture_server.py::TestCaptureServerEndpoints::test_capture_endpoint_no_messages 
+-------------------------------- live log call --------------------------------
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/capture "HTTP/1.1 422 Unprocessable Entity"
+PASSED                                                                   [ 46%]
+tests/test_capture_server.py::TestCaptureServerEndpoints::test_auth_token_endpoint 
+-------------------------------- live log call --------------------------------
+INFO     omega_kg.routers.capture:capture.py:70 Token request received
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/auth/token "HTTP/1.1 200 OK"
+PASSED                                                                   [ 47%]
+tests/test_capture_server.py::TestCaptureServerEndpoints::test_auth_token_invalid_key 
+-------------------------------- live log call --------------------------------
+INFO     omega_kg.rate_limiter:rate_limiter.py:270 No Redis URL configured, using in-memory rate limiting
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/auth/token "HTTP/1.1 403 Forbidden"
+PASSED                                                                   [ 49%]
+tests/test_capture_server.py::TestCaptureServerEndpoints::test_health_vectors_endpoint 
+-------------------------------- live log call --------------------------------
+INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/health/vectors "HTTP/1.1 200 OK"
+PASSED                                                                   [ 50%]
+tests/test_capture_server.py::TestCaptureServerEndpoints::test_health_vectors_endpoint_unhealthy 
+-------------------------------- live log call --------------------------------
+ERROR    omega_kg.routers.capture:capture.py:235 Vector health check failed: Vector store failed
+INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/health/vectors "HTTP/1.1 200 OK"
+PASSED                                                                   [ 52%]
+tests/test_capture_server.py::TestCaptureServerEndpoints::test_linear_webhook_endpoint 
+-------------------------------- live log call --------------------------------
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/webhook/linear "HTTP/1.1 404 Not Found"
+FAILED                                                                   [ 53%]
+tests/test_capture_server.py::TestCaptureServerIntegration::test_end_to_end_capture_flow 
+-------------------------------- live log call --------------------------------
+ERROR    sqlalchemy.pool.impl.AsyncAdaptedQueuePool:base.py:376 Exception terminating connection <AdaptedConnection <asyncpg.connection.Connection object at 0x000001E331C4B2F0>>
+Traceback (most recent call last):
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 372, in _close_connection
+    self._dialect.do_terminate(connection)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 1127, in do_terminate
+    dbapi_connection.terminate()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\connectors\asyncio.py", line 402, in terminate
+    self.await_(asyncio.shield(self._terminate_graceful_close()))  # type: ignore[attr-defined] # noqa: E501
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 132, in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 196, in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 912, in _terminate_graceful_close
+    await self._connection.close(timeout=2)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\asyncpg\connection.py", line 1513, in close
+    await self._protocol.close(timeout)
+  File "asyncpg/protocol/protocol.pyx", line 617, in close
+  File "asyncpg/protocol/protocol.pyx", line 650, in asyncpg.protocol.protocol.BaseProtocol._request_cancel
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\asyncpg\connection.py", line 1682, in _cancel_current_command
+    self._cancellations.add(self._loop.create_task(self._cancel(waiter)))
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Program Files\Python312\Lib\asyncio\base_events.py", line 455, in create_task
+    self._check_closed()
+  File "C:\Program Files\Python312\Lib\asyncio\base_events.py", line 545, in _check_closed
+    raise RuntimeError('Event loop is closed')
+RuntimeError: Event loop is closed
+ERROR    omega_kg.routers.capture:capture.py:165 Critical Error e29c9d8f-fe4e-4728-b433-df20808ab345 during capture: 'NoneType' object has no attribute 'send'
+Traceback (most recent call last):
+  File "C:\Program Files\Python312\Lib\asyncio\base_events.py", line 799, in call_soon
+    self._check_closed()
+  File "C:\Program Files\Python312\Lib\asyncio\base_events.py", line 545, in _check_closed
+    raise RuntimeError('Event loop is closed')
+RuntimeError: Event loop is closed
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\projects\OmegaKG\Omega_KG_stable\omega_kg\routers\capture.py", line 144, in capture_conversation
+    await db_session.commit()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\ext\asyncio\session.py", line 1000, in commit
+    await greenlet_spawn(self.sync_session.commit)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 201, in greenlet_spawn
+    result = context.throw(*sys.exc_info())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2030, in commit
+    trans.commit(_to_root=True)
+  File "<string>", line 2, in commit
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1311, in commit
+    self._prepare_impl()
+  File "<string>", line 2, in _prepare_impl
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1286, in _prepare_impl
+    self.session.flush()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4331, in flush
+    self._flush(objects)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4466, in _flush
+    with util.safe_reraise():
+         ^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\langhelpers.py", line 224, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4427, in _flush
+    flush_context.execute()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\unitofwork.py", line 466, in execute
+    rec.execute(self)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\unitofwork.py", line 642, in execute
+    util.preloaded.orm_persistence.save_obj(
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\persistence.py", line 68, in save_obj
+    ) in _organize_states_for_save(base_mapper, states, uowtransaction):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\persistence.py", line 223, in _organize_states_for_save
+    for state, dict_, mapper, connection in _connections_for_states(
+                                            ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\persistence.py", line 1759, in _connections_for_states
+    connection = uowtransaction.transaction.connection(base_mapper)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<string>", line 2, in connection
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1037, in connection
+    return self._connection_for_bind(bind, execution_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<string>", line 2, in _connection_for_bind
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1173, in _connection_for_bind
+    conn = self._parent._connection_for_bind(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<string>", line 2, in _connection_for_bind
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1187, in _connection_for_bind
+    conn = bind.connect()
+           ^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 3277, in connect
+    return self._connection_cls(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 143, in __init__
+    self._dbapi_connection = engine.raw_connection()
+                             ^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 3301, in raw_connection
+    return self.pool.connect()
+           ^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 447, in connect
+    return _ConnectionFairy._checkout(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 1363, in _checkout
+    with util.safe_reraise():
+         ^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\langhelpers.py", line 224, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 1301, in _checkout
+    result = pool._dialect._do_ping_w_event(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\engine\default.py", line 728, in _do_ping_w_event
+    return self.do_ping(dbapi_connection)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 1160, in do_ping
+    dbapi_connection.ping()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 818, in ping
+    self._handle_exception(error)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 799, in _handle_exception
+    raise error
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 816, in ping
+    _ = self.await_(self._async_ping())
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 132, in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 196, in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 825, in _async_ping
+    await tr.start()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\asyncpg\transaction.py", line 146, in start
+    await self._connection.execute(query)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\asyncpg\connection.py", line 354, in execute
+    result = await self._protocol.query(query, timeout)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "asyncpg/protocol/protocol.pyx", line 369, in query
+  File "asyncpg/protocol/protocol.pyx", line 362, in asyncpg.protocol.protocol.BaseProtocol.query
+  File "asyncpg/protocol/coreproto.pyx", line 1174, in asyncpg.protocol.protocol.CoreProtocol._simple_query
+  File "asyncpg/protocol/protocol.pyx", line 956, in asyncpg.protocol.protocol.BaseProtocol._write
+  File "C:\Program Files\Python312\Lib\asyncio\proactor_events.py", line 366, in write
+    self._loop_writing(data=bytes(data))
+  File "C:\Program Files\Python312\Lib\asyncio\proactor_events.py", line 402, in _loop_writing
+    self._write_fut = self._loop._proactor.send(self._sock, data)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'send'
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/capture "HTTP/1.1 500 Internal Server Error"
+FAILED                                                                   [ 54%]
+tests/test_capture_server.py::TestCaptureServerIntegration::test_html_parsing_integration 
+-------------------------------- live log call --------------------------------
+INFO     omega_kg.routers.capture:capture.py:114 Detecting Raw HTML. Attempting server-side parsing for: https://example.com
+INFO     omega_kg.routers.capture:capture.py:119 \u2713 Successfully parsed 2 messages.\nINFO     omega_kg.routers.capture:capture.py:156 Duplicate conversation captured: ea91e621. Ignoring.
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/capture "HTTP/1.1 200 OK"
+PASSED                                                                   [ 56%]
+tests/test_capture_server.py::TestCaptureServerIntegration::test_error_handling_integration FAILED [ 57%]
+tests/test_capture_server.py::TestCaptureServerSecurity::test_authentication_required 
+-------------------------------- live log call --------------------------------
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/capture "HTTP/1.1 401 Unauthorized"
+WARNING  omega_kg.auth_utils:auth_utils.py:222 JWT validation failed: Not enough segments
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/capture "HTTP/1.1 401 Unauthorized"
+PASSED                                                                   [ 58%]
+tests/test_capture_server.py::TestCaptureServerSecurity::test_cors_headers 
+-------------------------------- live log call --------------------------------
+INFO     httpx:_client.py:1025 HTTP Request: OPTIONS http://testserver/capture "HTTP/1.1 200 OK"
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/capture "HTTP/1.1 401 Unauthorized"
+PASSED                                                                   [ 60%]
+tests/test_capture_server.py::TestCaptureServerSecurity::test_input_validation 
+-------------------------------- live log call --------------------------------
+ERROR    sqlalchemy.pool.impl.AsyncAdaptedQueuePool:base.py:376 Exception terminating connection <AdaptedConnection <asyncpg.connection.Connection object at 0x000001E331E85E50>>
+Traceback (most recent call last):
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 372, in _close_connection
+    self._dialect.do_terminate(connection)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 1127, in do_terminate
+    dbapi_connection.terminate()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\connectors\asyncio.py", line 402, in terminate
+    self.await_(asyncio.shield(self._terminate_graceful_close()))  # type: ignore[attr-defined] # noqa: E501
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 132, in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 196, in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 912, in _terminate_graceful_close
+    await self._connection.close(timeout=2)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\asyncpg\connection.py", line 1513, in close
+    await self._protocol.close(timeout)
+  File "asyncpg/protocol/protocol.pyx", line 617, in close
+  File "asyncpg/protocol/protocol.pyx", line 650, in asyncpg.protocol.protocol.BaseProtocol._request_cancel
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\asyncpg\connection.py", line 1682, in _cancel_current_command
+    self._cancellations.add(self._loop.create_task(self._cancel(waiter)))
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Program Files\Python312\Lib\asyncio\base_events.py", line 455, in create_task
+    self._check_closed()
+  File "C:\Program Files\Python312\Lib\asyncio\base_events.py", line 545, in _check_closed
+    raise RuntimeError('Event loop is closed')
+RuntimeError: Event loop is closed
+ERROR    omega_kg.routers.capture:capture.py:165 Critical Error 2e9c0e7b-866c-4a87-ba89-23466862e66b during capture: 'NoneType' object has no attribute 'send'
+Traceback (most recent call last):
+  File "C:\Program Files\Python312\Lib\asyncio\base_events.py", line 799, in call_soon
+    self._check_closed()
+  File "C:\Program Files\Python312\Lib\asyncio\base_events.py", line 545, in _check_closed
+    raise RuntimeError('Event loop is closed')
+RuntimeError: Event loop is closed
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\projects\OmegaKG\Omega_KG_stable\omega_kg\routers\capture.py", line 144, in capture_conversation
+    await db_session.commit()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\ext\asyncio\session.py", line 1000, in commit
+    await greenlet_spawn(self.sync_session.commit)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 201, in greenlet_spawn
+    result = context.throw(*sys.exc_info())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2030, in commit
+    trans.commit(_to_root=True)
+  File "<string>", line 2, in commit
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1311, in commit
+    self._prepare_impl()
+  File "<string>", line 2, in _prepare_impl
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1286, in _prepare_impl
+    self.session.flush()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4331, in flush
+    self._flush(objects)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4466, in _flush
+    with util.safe_reraise():
+         ^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\langhelpers.py", line 224, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4427, in _flush
+    flush_context.execute()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\unitofwork.py", line 466, in execute
+    rec.execute(self)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\unitofwork.py", line 642, in execute
+    util.preloaded.orm_persistence.save_obj(
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\persistence.py", line 68, in save_obj
+    ) in _organize_states_for_save(base_mapper, states, uowtransaction):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\persistence.py", line 223, in _organize_states_for_save
+    for state, dict_, mapper, connection in _connections_for_states(
+                                            ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\persistence.py", line 1759, in _connections_for_states
+    connection = uowtransaction.transaction.connection(base_mapper)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<string>", line 2, in connection
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1037, in connection
+    return self._connection_for_bind(bind, execution_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<string>", line 2, in _connection_for_bind
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1173, in _connection_for_bind
+    conn = self._parent._connection_for_bind(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<string>", line 2, in _connection_for_bind
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1187, in _connection_for_bind
+    conn = bind.connect()
+           ^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 3277, in connect
+    return self._connection_cls(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 143, in __init__
+    self._dbapi_connection = engine.raw_connection()
+                             ^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 3301, in raw_connection
+    return self.pool.connect()
+           ^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 447, in connect
+    return _ConnectionFairy._checkout(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 1363, in _checkout
+    with util.safe_reraise():
+         ^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\langhelpers.py", line 224, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 1301, in _checkout
+    result = pool._dialect._do_ping_w_event(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\engine\default.py", line 728, in _do_ping_w_event
+    return self.do_ping(dbapi_connection)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 1160, in do_ping
+    dbapi_connection.ping()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 818, in ping
+    self._handle_exception(error)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 799, in _handle_exception
+    raise error
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 816, in ping
+    _ = self.await_(self._async_ping())
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 132, in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 196, in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 825, in _async_ping
+    await tr.start()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\asyncpg\transaction.py", line 146, in start
+    await self._connection.execute(query)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\asyncpg\connection.py", line 354, in execute
+    result = await self._protocol.query(query, timeout)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "asyncpg/protocol/protocol.pyx", line 369, in query
+  File "asyncpg/protocol/protocol.pyx", line 362, in asyncpg.protocol.protocol.BaseProtocol.query
+  File "asyncpg/protocol/coreproto.pyx", line 1174, in asyncpg.protocol.protocol.CoreProtocol._simple_query
+  File "asyncpg/protocol/protocol.pyx", line 956, in asyncpg.protocol.protocol.BaseProtocol._write
+  File "C:\Program Files\Python312\Lib\asyncio\proactor_events.py", line 366, in write
+    self._loop_writing(data=bytes(data))
+  File "C:\Program Files\Python312\Lib\asyncio\proactor_events.py", line 402, in _loop_writing
+    self._write_fut = self._loop._proactor.send(self._sock, data)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'send'
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/capture "HTTP/1.1 500 Internal Server Error"
+PASSED                                                                   [ 61%]
+tests/test_capture_server.py::TestCaptureServerSecurity::test_content_size_limits 
+-------------------------------- live log call --------------------------------
+INFO     omega_kg.routers.capture:capture.py:156 Duplicate conversation captured: bbccdd78. Ignoring.
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/capture "HTTP/1.1 200 OK"
+PASSED                                                                   [ 63%]
+tests/test_capture_server.py::TestCaptureServerPerformance::test_concurrent_requests 
+-------------------------------- live log call --------------------------------
+ERROR    sqlalchemy.pool.impl.AsyncAdaptedQueuePool:base.py:376 Exception terminating connection <AdaptedConnection <asyncpg.connection.Connection object at 0x000001E331E87B60>>
+Traceback (most recent call last):
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 372, in _close_connection
+    self._dialect.do_terminate(connection)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 1127, in do_terminate
+    dbapi_connection.terminate()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\connectors\asyncio.py", line 402, in terminate
+    self.await_(asyncio.shield(self._terminate_graceful_close()))  # type: ignore[attr-defined] # noqa: E501
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 132, in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 196, in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 912, in _terminate_graceful_close
+    await self._connection.close(timeout=2)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\asyncpg\connection.py", line 1513, in close
+    await self._protocol.close(timeout)
+  File "asyncpg/protocol/protocol.pyx", line 617, in close
+  File "asyncpg/protocol/protocol.pyx", line 650, in asyncpg.protocol.protocol.BaseProtocol._request_cancel
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\asyncpg\connection.py", line 1682, in _cancel_current_command
+    self._cancellations.add(self._loop.create_task(self._cancel(waiter)))
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Program Files\Python312\Lib\asyncio\base_events.py", line 455, in create_task
+    self._check_closed()
+  File "C:\Program Files\Python312\Lib\asyncio\base_events.py", line 545, in _check_closed
+    raise RuntimeError('Event loop is closed')
+RuntimeError: Event loop is closed
+ERROR    omega_kg.routers.capture:capture.py:165 Critical Error 59ab5e6c-8993-4b0a-9093-cb38a85f78fd during capture: 'NoneType' object has no attribute 'send'
+Traceback (most recent call last):
+  File "C:\Program Files\Python312\Lib\asyncio\base_events.py", line 799, in call_soon
+    self._check_closed()
+  File "C:\Program Files\Python312\Lib\asyncio\base_events.py", line 545, in _check_closed
+    raise RuntimeError('Event loop is closed')
+RuntimeError: Event loop is closed
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\projects\OmegaKG\Omega_KG_stable\omega_kg\routers\capture.py", line 144, in capture_conversation
+    await db_session.commit()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\ext\asyncio\session.py", line 1000, in commit
+    await greenlet_spawn(self.sync_session.commit)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 201, in greenlet_spawn
+    result = context.throw(*sys.exc_info())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2030, in commit
+    trans.commit(_to_root=True)
+  File "<string>", line 2, in commit
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1311, in commit
+    self._prepare_impl()
+  File "<string>", line 2, in _prepare_impl
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1286, in _prepare_impl
+    self.session.flush()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4331, in flush
+    self._flush(objects)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4466, in _flush
+    with util.safe_reraise():
+         ^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\langhelpers.py", line 224, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4427, in _flush
+    flush_context.execute()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\unitofwork.py", line 466, in execute
+    rec.execute(self)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\unitofwork.py", line 642, in execute
+    util.preloaded.orm_persistence.save_obj(
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\persistence.py", line 68, in save_obj
+    ) in _organize_states_for_save(base_mapper, states, uowtransaction):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\persistence.py", line 223, in _organize_states_for_save
+    for state, dict_, mapper, connection in _connections_for_states(
+                                            ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\persistence.py", line 1759, in _connections_for_states
+    connection = uowtransaction.transaction.connection(base_mapper)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<string>", line 2, in connection
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1037, in connection
+    return self._connection_for_bind(bind, execution_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<string>", line 2, in _connection_for_bind
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1173, in _connection_for_bind
+    conn = self._parent._connection_for_bind(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<string>", line 2, in _connection_for_bind
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1187, in _connection_for_bind
+    conn = bind.connect()
+           ^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 3277, in connect
+    return self._connection_cls(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 143, in __init__
+    self._dbapi_connection = engine.raw_connection()
+                             ^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 3301, in raw_connection
+    return self.pool.connect()
+           ^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 447, in connect
+    return _ConnectionFairy._checkout(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 1363, in _checkout
+    with util.safe_reraise():
+         ^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\langhelpers.py", line 224, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 1301, in _checkout
+    result = pool._dialect._do_ping_w_event(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\engine\default.py", line 728, in _do_ping_w_event
+    return self.do_ping(dbapi_connection)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 1160, in do_ping
+    dbapi_connection.ping()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 818, in ping
+    self._handle_exception(error)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 799, in _handle_exception
+    raise error
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 816, in ping
+    _ = self.await_(self._async_ping())
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 132, in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 196, in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 825, in _async_ping
+    await tr.start()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\asyncpg\transaction.py", line 146, in start
+    await self._connection.execute(query)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\asyncpg\connection.py", line 354, in execute
+    result = await self._protocol.query(query, timeout)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "asyncpg/protocol/protocol.pyx", line 369, in query
+  File "asyncpg/protocol/protocol.pyx", line 362, in asyncpg.protocol.protocol.BaseProtocol.query
+  File "asyncpg/protocol/coreproto.pyx", line 1174, in asyncpg.protocol.protocol.CoreProtocol._simple_query
+  File "asyncpg/protocol/protocol.pyx", line 956, in asyncpg.protocol.protocol.BaseProtocol._write
+  File "C:\Program Files\Python312\Lib\asyncio\proactor_events.py", line 366, in write
+    self._loop_writing(data=bytes(data))
+  File "C:\Program Files\Python312\Lib\asyncio\proactor_events.py", line 402, in _loop_writing
+    self._write_fut = self._loop._proactor.send(self._sock, data)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'send'
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/capture "HTTP/1.1 500 Internal Server Error"
+INFO     omega_kg.routers.capture:capture.py:146 Raw conversation captured: a6b7a060 to DB.
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/capture "HTTP/1.1 200 OK"
+INFO     omega_kg.routers.capture:capture.py:146 Raw conversation captured: ae4545ae to DB.
+INFO     omega_kg.routers.capture:capture.py:146 Raw conversation captured: 992a8576 to DB.
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/capture "HTTP/1.1 200 OK"
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/capture "HTTP/1.1 200 OK"
+INFO     omega_kg.routers.capture:capture.py:146 Raw conversation captured: 82c9f4cf to DB.
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/capture "HTTP/1.1 200 OK"
+FAILED                                                                   [ 64%]
+tests/test_capture_server.py::TestCaptureServerPerformance::test_large_message_handling 
+-------------------------------- live log call --------------------------------
+ERROR    sqlalchemy.pool.impl.AsyncAdaptedQueuePool:base.py:376 Exception terminating connection <AdaptedConnection <asyncpg.connection.Connection object at 0x000001E33204EE40>>
+Traceback (most recent call last):
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 372, in _close_connection
+    self._dialect.do_terminate(connection)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 1127, in do_terminate
+    dbapi_connection.terminate()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\connectors\asyncio.py", line 402, in terminate
+    self.await_(asyncio.shield(self._terminate_graceful_close()))  # type: ignore[attr-defined] # noqa: E501
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 132, in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 196, in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 912, in _terminate_graceful_close
+    await self._connection.close(timeout=2)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\asyncpg\connection.py", line 1513, in close
+    await self._protocol.close(timeout)
+  File "asyncpg/protocol/protocol.pyx", line 617, in close
+  File "asyncpg/protocol/protocol.pyx", line 650, in asyncpg.protocol.protocol.BaseProtocol._request_cancel
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\asyncpg\connection.py", line 1682, in _cancel_current_command
+    self._cancellations.add(self._loop.create_task(self._cancel(waiter)))
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Program Files\Python312\Lib\asyncio\base_events.py", line 455, in create_task
+    self._check_closed()
+  File "C:\Program Files\Python312\Lib\asyncio\base_events.py", line 545, in _check_closed
+    raise RuntimeError('Event loop is closed')
+RuntimeError: Event loop is closed
+ERROR    omega_kg.routers.capture:capture.py:165 Critical Error 75f845f8-0c8c-4ca6-82cb-592ecd243403 during capture: 'NoneType' object has no attribute 'send'
+Traceback (most recent call last):
+  File "C:\Program Files\Python312\Lib\asyncio\base_events.py", line 799, in call_soon
+    self._check_closed()
+  File "C:\Program Files\Python312\Lib\asyncio\base_events.py", line 545, in _check_closed
+    raise RuntimeError('Event loop is closed')
+RuntimeError: Event loop is closed
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\projects\OmegaKG\Omega_KG_stable\omega_kg\routers\capture.py", line 144, in capture_conversation
+    await db_session.commit()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\ext\asyncio\session.py", line 1000, in commit
+    await greenlet_spawn(self.sync_session.commit)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 201, in greenlet_spawn
+    result = context.throw(*sys.exc_info())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2030, in commit
+    trans.commit(_to_root=True)
+  File "<string>", line 2, in commit
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1311, in commit
+    self._prepare_impl()
+  File "<string>", line 2, in _prepare_impl
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1286, in _prepare_impl
+    self.session.flush()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4331, in flush
+    self._flush(objects)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4466, in _flush
+    with util.safe_reraise():
+         ^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\langhelpers.py", line 224, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4427, in _flush
+    flush_context.execute()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\unitofwork.py", line 466, in execute
+    rec.execute(self)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\unitofwork.py", line 642, in execute
+    util.preloaded.orm_persistence.save_obj(
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\persistence.py", line 68, in save_obj
+    ) in _organize_states_for_save(base_mapper, states, uowtransaction):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\persistence.py", line 223, in _organize_states_for_save
+    for state, dict_, mapper, connection in _connections_for_states(
+                                            ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\persistence.py", line 1759, in _connections_for_states
+    connection = uowtransaction.transaction.connection(base_mapper)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<string>", line 2, in connection
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1037, in connection
+    return self._connection_for_bind(bind, execution_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<string>", line 2, in _connection_for_bind
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1173, in _connection_for_bind
+    conn = self._parent._connection_for_bind(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<string>", line 2, in _connection_for_bind
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1187, in _connection_for_bind
+    conn = bind.connect()
+           ^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 3277, in connect
+    return self._connection_cls(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 143, in __init__
+    self._dbapi_connection = engine.raw_connection()
+                             ^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 3301, in raw_connection
+    return self.pool.connect()
+           ^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 447, in connect
+    return _ConnectionFairy._checkout(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 1363, in _checkout
+    with util.safe_reraise():
+         ^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\langhelpers.py", line 224, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 1301, in _checkout
+    result = pool._dialect._do_ping_w_event(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\engine\default.py", line 728, in _do_ping_w_event
+    return self.do_ping(dbapi_connection)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 1160, in do_ping
+    dbapi_connection.ping()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 818, in ping
+    self._handle_exception(error)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 799, in _handle_exception
+    raise error
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 816, in ping
+    _ = self.await_(self._async_ping())
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 132, in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 196, in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 825, in _async_ping
+    await tr.start()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\asyncpg\transaction.py", line 146, in start
+    await self._connection.execute(query)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\asyncpg\connection.py", line 354, in execute
+    result = await self._protocol.query(query, timeout)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "asyncpg/protocol/protocol.pyx", line 369, in query
+  File "asyncpg/protocol/protocol.pyx", line 362, in asyncpg.protocol.protocol.BaseProtocol.query
+  File "asyncpg/protocol/coreproto.pyx", line 1174, in asyncpg.protocol.protocol.CoreProtocol._simple_query
+  File "asyncpg/protocol/protocol.pyx", line 956, in asyncpg.protocol.protocol.BaseProtocol._write
+  File "C:\Program Files\Python312\Lib\asyncio\proactor_events.py", line 366, in write
+    self._loop_writing(data=bytes(data))
+  File "C:\Program Files\Python312\Lib\asyncio\proactor_events.py", line 402, in _loop_writing
+    self._write_fut = self._loop._proactor.send(self._sock, data)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'send'
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/capture "HTTP/1.1 500 Internal Server Error"
+FAILED                                                                   [ 65%]
+tests/test_capture_server.py::TestCaptureServerPerformance::test_memory_usage_stability 
+-------------------------------- live log call --------------------------------
+ERROR    sqlalchemy.pool.impl.AsyncAdaptedQueuePool:base.py:376 Exception terminating connection <AdaptedConnection <asyncpg.connection.Connection object at 0x000001E33204F980>>
+Traceback (most recent call last):
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 372, in _close_connection
+    self._dialect.do_terminate(connection)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 1127, in do_terminate
+    dbapi_connection.terminate()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\connectors\asyncio.py", line 402, in terminate
+    self.await_(asyncio.shield(self._terminate_graceful_close()))  # type: ignore[attr-defined] # noqa: E501
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 132, in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 196, in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 912, in _terminate_graceful_close
+    await self._connection.close(timeout=2)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\asyncpg\connection.py", line 1513, in close
+    await self._protocol.close(timeout)
+  File "asyncpg/protocol/protocol.pyx", line 617, in close
+  File "asyncpg/protocol/protocol.pyx", line 650, in asyncpg.protocol.protocol.BaseProtocol._request_cancel
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\asyncpg\connection.py", line 1682, in _cancel_current_command
+    self._cancellations.add(self._loop.create_task(self._cancel(waiter)))
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Program Files\Python312\Lib\asyncio\base_events.py", line 455, in create_task
+    self._check_closed()
+  File "C:\Program Files\Python312\Lib\asyncio\base_events.py", line 545, in _check_closed
+    raise RuntimeError('Event loop is closed')
+RuntimeError: Event loop is closed
+ERROR    omega_kg.routers.capture:capture.py:165 Critical Error 362892ae-eec6-4c22-a265-ef0c8be8d572 during capture: 'NoneType' object has no attribute 'send'
+Traceback (most recent call last):
+  File "C:\Program Files\Python312\Lib\asyncio\base_events.py", line 799, in call_soon
+    self._check_closed()
+  File "C:\Program Files\Python312\Lib\asyncio\base_events.py", line 545, in _check_closed
+    raise RuntimeError('Event loop is closed')
+RuntimeError: Event loop is closed
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\projects\OmegaKG\Omega_KG_stable\omega_kg\routers\capture.py", line 144, in capture_conversation
+    await db_session.commit()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\ext\asyncio\session.py", line 1000, in commit
+    await greenlet_spawn(self.sync_session.commit)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 201, in greenlet_spawn
+    result = context.throw(*sys.exc_info())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2030, in commit
+    trans.commit(_to_root=True)
+  File "<string>", line 2, in commit
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1311, in commit
+    self._prepare_impl()
+  File "<string>", line 2, in _prepare_impl
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1286, in _prepare_impl
+    self.session.flush()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4331, in flush
+    self._flush(objects)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4466, in _flush
+    with util.safe_reraise():
+         ^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\langhelpers.py", line 224, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4427, in _flush
+    flush_context.execute()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\unitofwork.py", line 466, in execute
+    rec.execute(self)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\unitofwork.py", line 642, in execute
+    util.preloaded.orm_persistence.save_obj(
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\persistence.py", line 68, in save_obj
+    ) in _organize_states_for_save(base_mapper, states, uowtransaction):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\persistence.py", line 223, in _organize_states_for_save
+    for state, dict_, mapper, connection in _connections_for_states(
+                                            ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\persistence.py", line 1759, in _connections_for_states
+    connection = uowtransaction.transaction.connection(base_mapper)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<string>", line 2, in connection
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1037, in connection
+    return self._connection_for_bind(bind, execution_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<string>", line 2, in _connection_for_bind
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1173, in _connection_for_bind
+    conn = self._parent._connection_for_bind(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<string>", line 2, in _connection_for_bind
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1187, in _connection_for_bind
+    conn = bind.connect()
+           ^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 3277, in connect
+    return self._connection_cls(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 143, in __init__
+    self._dbapi_connection = engine.raw_connection()
+                             ^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 3301, in raw_connection
+    return self.pool.connect()
+           ^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 447, in connect
+    return _ConnectionFairy._checkout(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 1363, in _checkout
+    with util.safe_reraise():
+         ^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\langhelpers.py", line 224, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 1301, in _checkout
+    result = pool._dialect._do_ping_w_event(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\engine\default.py", line 728, in _do_ping_w_event
+    return self.do_ping(dbapi_connection)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 1160, in do_ping
+    dbapi_connection.ping()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 818, in ping
+    self._handle_exception(error)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 799, in _handle_exception
+    raise error
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 816, in ping
+    _ = self.await_(self._async_ping())
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 132, in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 196, in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 825, in _async_ping
+    await tr.start()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\asyncpg\transaction.py", line 146, in start
+    await self._connection.execute(query)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\asyncpg\connection.py", line 354, in execute
+    result = await self._protocol.query(query, timeout)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "asyncpg/protocol/protocol.pyx", line 369, in query
+  File "asyncpg/protocol/protocol.pyx", line 362, in asyncpg.protocol.protocol.BaseProtocol.query
+  File "asyncpg/protocol/coreproto.pyx", line 1174, in asyncpg.protocol.protocol.CoreProtocol._simple_query
+  File "asyncpg/protocol/protocol.pyx", line 956, in asyncpg.protocol.protocol.BaseProtocol._write
+  File "C:\Program Files\Python312\Lib\asyncio\proactor_events.py", line 366, in write
+    self._loop_writing(data=bytes(data))
+  File "C:\Program Files\Python312\Lib\asyncio\proactor_events.py", line 402, in _loop_writing
+    self._write_fut = self._loop._proactor.send(self._sock, data)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'send'
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/capture "HTTP/1.1 500 Internal Server Error"
+FAILED                                                                   [ 67%]
+tests/test_capture_server.py::TestObsidianUpdateEndpoint::test_obsidian_update_success_create 
+-------------------------------- live log call --------------------------------
+INFO     omega_kg.capture_server:capture_server.py:788 Received Obsidian update request for: D:\projects\vault\Tasks\task.md
+INFO     omega_kg.capture_server:capture_server.py:807 Successfully synced D:\projects\vault\Tasks\task.md to Linear issue LIN-123
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/obsidian-update "HTTP/1.1 200 OK"
+PASSED                                                                   [ 68%]
+tests/test_capture_server.py::TestObsidianUpdateEndpoint::test_obsidian_update_success_update 
+-------------------------------- live log call --------------------------------
+INFO     omega_kg.capture_server:capture_server.py:788 Received Obsidian update request for: /home/vault/Tasks/existing_task.md
+INFO     omega_kg.capture_server:capture_server.py:807 Successfully synced /home/vault/Tasks/existing_task.md to Linear issue LIN-456
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/obsidian-update "HTTP/1.1 200 OK"
+PASSED                                                                   [ 69%]
+tests/test_capture_server.py::TestObsidianUpdateEndpoint::test_obsidian_update_failure_returns_none 
+-------------------------------- live log call --------------------------------
+INFO     omega_kg.capture_server:capture_server.py:788 Received Obsidian update request for: /home/vault/Tasks/invalid_task.md
+ERROR    omega_kg.capture_server:capture_server.py:796 Failed to sync note: /home/vault/Tasks/invalid_task.md
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/obsidian-update "HTTP/1.1 500 Internal Server Error"
+PASSED                                                                   [ 71%]
+tests/test_capture_server.py::TestObsidianUpdateEndpoint::test_obsidian_update_exception_handling 
+-------------------------------- live log call --------------------------------
+INFO     omega_kg.capture_server:capture_server.py:788 Received Obsidian update request for: /home/vault/Tasks/task.md
+ERROR    omega_kg.capture_server:capture_server.py:823 Error syncing note to Linear: Linear API error
+Traceback (most recent call last):
+  File "D:\projects\OmegaKG\Omega_KG_stable\omega_kg\capture_server.py", line 793, in obsidian_update_endpoint
+    result = await parser.sync_note_to_linear(data.note_path)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Program Files\Python312\Lib\unittest\mock.py", line 2291, in _execute_mock_call
+    raise effect
+Exception: Linear API error
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/obsidian-update "HTTP/1.1 500 Internal Server Error"
+PASSED                                                                   [ 72%]
+tests/test_capture_server.py::TestObsidianUpdateEndpoint::test_obsidian_update_missing_note_path 
+-------------------------------- live log call --------------------------------
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/obsidian-update "HTTP/1.1 422 Unprocessable Entity"
+PASSED                                                                   [ 73%]
+tests/test_capture_server.py::TestObsidianUpdateEndpoint::test_obsidian_update_async_execution 
+-------------------------------- live log call --------------------------------
+INFO     omega_kg.capture_server:capture_server.py:788 Received Obsidian update request for: /home/vault/Tasks/task.md
+INFO     omega_kg.capture_server:capture_server.py:807 Successfully synced /home/vault/Tasks/task.md to Linear issue LIN-789
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/obsidian-update "HTTP/1.1 200 OK"
+PASSED                                                                   [ 75%]
+tests/test_capture_server.py::TestObsidianUpdateEndpoint::test_obsidian_update_windows_path 
+-------------------------------- live log call --------------------------------
+INFO     omega_kg.capture_server:capture_server.py:788 Received Obsidian update request for: C:\Users\username\vault\Tasks\task.md
+INFO     omega_kg.capture_server:capture_server.py:807 Successfully synced C:\Users\username\vault\Tasks\task.md to Linear issue LIN-999
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/obsidian-update "HTTP/1.1 200 OK"
+PASSED                                                                   [ 76%]
+tests/test_capture_server.py::TestObsidianUpdateEndpoint::test_obsidian_update_response_model_validation 
+-------------------------------- live log call --------------------------------
+INFO     omega_kg.capture_server:capture_server.py:788 Received Obsidian update request for: /home/vault/Tasks/task.md
+INFO     omega_kg.capture_server:capture_server.py:807 Successfully synced /home/vault/Tasks/task.md to Linear issue LIN-MIN
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/obsidian-update "HTTP/1.1 200 OK"
+PASSED                                                                   [ 78%]
+tests/test_capture_server.py::TestObsidianUpdateEndpoint::test_root_endpoint_includes_obsidian_update 
+-------------------------------- live log call --------------------------------
+INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/ "HTTP/1.1 200 OK"
+PASSED                                                                   [ 79%]
+tests/test_check_nodes.py::TestCheckNodes::test_check_nodes_with_tasks PASSED [ 80%]
+tests/test_check_nodes.py::TestCheckNodes::test_check_nodes_script_execution PASSED [ 82%]
+tests/test_cli.py::TestCLI::test_init_command <- ..\..\Omega_KG_stable\tests\test_cli.py PASSED [ 83%]
+tests/test_cli.py::TestCLI::test_lifecycle_command_dry_run <- ..\..\Omega_KG_stable\tests\test_cli.py PASSED [ 84%]
+tests/test_cli.py::TestCLI::test_lifecycle_command_with_email <- ..\..\Omega_KG_stable\tests\test_cli.py PASSED [ 86%]
+tests/test_cli.py::TestCLI::test_stats_command_connected <- ..\..\Omega_KG_stable\tests\test_cli.py PASSED [ 87%]
+tests/test_cli.py::TestCLI::test_stats_command_mock_mode <- ..\..\Omega_KG_stable\tests\test_cli.py PASSED [ 89%]
+tests/test_cli.py::TestCLI::test_stale_command <- ..\..\Omega_KG_stable\tests\test_cli.py PASSED [ 90%]
+tests/test_cli.py::TestCLI::test_stale_command_no_stale_tasks <- ..\..\Omega_KG_stable\tests\test_cli.py PASSED [ 91%]
+tests/test_cli.py::TestCLI::test_sync_command <- ..\..\Omega_KG_stable\tests\test_cli.py PASSED [ 93%]
+tests/test_cli.py::TestCLI::test_sync_command_mock_mode <- ..\..\Omega_KG_stable\tests\test_cli.py PASSED [ 94%]
+tests/test_cli.py::TestCLI::test_status_command <- ..\..\Omega_KG_stable\tests\test_cli.py 
+-------------------------------- live log call --------------------------------
+INFO     omega_kg.lifecycle:lifecycle.py:117 Neo4j connection established
+FAILED                                                                   [ 95%]
+tests/test_cli.py::TestCLI::test_status_command_mock_mode <- ..\..\Omega_KG_stable\tests\test_cli.py 
+-------------------------------- live log call --------------------------------
+ERROR    omega_kg.lifecycle:lifecycle.py:119 Failed to connect to Neo4j: ConnectionError: Connection health check failed: Failed to DNS resolve address invalid:9999: [Errno 11001] getaddrinfo failed
+WARNING  omega_kg.lifecycle:lifecycle.py:120 Falling back to mock mode (dry-run only)
+FAILED                                                                   [ 97%]
+tests/test_cli.py::TestCLI::test_report_command <- ..\..\Omega_KG_stable\tests\test_cli.py PASSED [ 98%]
+tests/test_cli.py::TestCLI::test_report_command_with_email <- ..\..\Omega_KG_stable\tests\test_cli.py PASSED [100%]
+
+================================== FAILURES ===================================
+__________ TestCaptureServerEndpoints.test_capture_endpoint_success ___________
+tests\test_capture_server.py:747: in test_capture_endpoint_success
+    assert data["nodes_created"] == 1
+E   assert 0 == 1
+---------------------------- Captured stderr call -----------------------------
+INFO:omega_kg.routers.capture:Duplicate conversation captured: 7f833da6. Ignoring.
+INFO:httpx:HTTP Request: POST http://testserver/capture "HTTP/1.1 200 OK"
+------------------------------ Captured log call ------------------------------
+INFO     omega_kg.routers.capture:capture.py:156 Duplicate conversation captured: 7f833da6. Ignoring.
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/capture "HTTP/1.1 200 OK"
+-------------------------- Captured stdout teardown ---------------------------
+\n\u26a0\ufe0f  Slow test: test_capture_endpoint_success (1.50s)
+___________ TestCaptureServerEndpoints.test_linear_webhook_endpoint ___________
+tests\test_capture_server.py:899: in test_linear_webhook_endpoint
+    mock_sync_engine.handle_linear_webhook_request.assert_called_once()
+C:\Program Files\Python312\Lib\unittest\mock.py:928: in assert_called_once
+    raise AssertionError(msg)
+E   AssertionError: Expected 'handle_linear_webhook_request' to have been called once. Called 0 times.
+---------------------------- Captured stderr call -----------------------------
+INFO:httpx:HTTP Request: POST http://testserver/webhook/linear "HTTP/1.1 404 Not Found"
+------------------------------ Captured log call ------------------------------
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/webhook/linear "HTTP/1.1 404 Not Found"
+__________ TestCaptureServerIntegration.test_end_to_end_capture_flow __________
+tests\test_capture_server.py:950: in test_end_to_end_capture_flow
+    assert response.status_code == 200
+E   assert 500 == 200
+E    +  where 500 = <Response [500 Internal Server Error]>.status_code
+---------------------------- Captured stderr call -----------------------------
+ERROR:sqlalchemy.pool.impl.AsyncAdaptedQueuePool:Exception terminating connection <AdaptedConnection <asyncpg.connection.Connection object at 0x000001E331C4B2F0>>
+Traceback (most recent call last):
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 372, in _close_connection
+    self._dialect.do_terminate(connection)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 1127, in do_terminate
+    dbapi_connection.terminate()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\connectors\asyncio.py", line 402, in terminate
+    self.await_(asyncio.shield(self._terminate_graceful_close()))  # type: ignore[attr-defined] # noqa: E501
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 132, in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 196, in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 912, in _terminate_graceful_close
+    await self._connection.close(timeout=2)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\asyncpg\connection.py", line 1513, in close
+    await self._protocol.close(timeout)
+  File "asyncpg/protocol/protocol.pyx", line 617, in close
+  File "asyncpg/protocol/protocol.pyx", line 650, in asyncpg.protocol.protocol.BaseProtocol._request_cancel
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\asyncpg\connection.py", line 1682, in _cancel_current_command
+    self._cancellations.add(self._loop.create_task(self._cancel(waiter)))
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Program Files\Python312\Lib\asyncio\base_events.py", line 455, in create_task
+    self._check_closed()
+  File "C:\Program Files\Python312\Lib\asyncio\base_events.py", line 545, in _check_closed
+    raise RuntimeError('Event loop is closed')
+RuntimeError: Event loop is closed
+ERROR:omega_kg.routers.capture:Critical Error e29c9d8f-fe4e-4728-b433-df20808ab345 during capture: 'NoneType' object has no attribute 'send'
+Traceback (most recent call last):
+  File "C:\Program Files\Python312\Lib\asyncio\base_events.py", line 799, in call_soon
+    self._check_closed()
+  File "C:\Program Files\Python312\Lib\asyncio\base_events.py", line 545, in _check_closed
+    raise RuntimeError('Event loop is closed')
+RuntimeError: Event loop is closed
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\projects\OmegaKG\Omega_KG_stable\omega_kg\routers\capture.py", line 144, in capture_conversation
+    await db_session.commit()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\ext\asyncio\session.py", line 1000, in commit
+    await greenlet_spawn(self.sync_session.commit)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 201, in greenlet_spawn
+    result = context.throw(*sys.exc_info())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2030, in commit
+    trans.commit(_to_root=True)
+  File "<string>", line 2, in commit
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1311, in commit
+    self._prepare_impl()
+  File "<string>", line 2, in _prepare_impl
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1286, in _prepare_impl
+    self.session.flush()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4331, in flush
+    self._flush(objects)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4466, in _flush
+    with util.safe_reraise():
+         ^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\langhelpers.py", line 224, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4427, in _flush
+    flush_context.execute()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\unitofwork.py", line 466, in execute
+    rec.execute(self)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\unitofwork.py", line 642, in execute
+    util.preloaded.orm_persistence.save_obj(
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\persistence.py", line 68, in save_obj
+    ) in _organize_states_for_save(base_mapper, states, uowtransaction):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\persistence.py", line 223, in _organize_states_for_save
+    for state, dict_, mapper, connection in _connections_for_states(
+                                            ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\persistence.py", line 1759, in _connections_for_states
+    connection = uowtransaction.transaction.connection(base_mapper)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<string>", line 2, in connection
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1037, in connection
+    return self._connection_for_bind(bind, execution_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<string>", line 2, in _connection_for_bind
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1173, in _connection_for_bind
+    conn = self._parent._connection_for_bind(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<string>", line 2, in _connection_for_bind
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1187, in _connection_for_bind
+    conn = bind.connect()
+           ^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 3277, in connect
+    return self._connection_cls(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 143, in __init__
+    self._dbapi_connection = engine.raw_connection()
+                             ^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 3301, in raw_connection
+    return self.pool.connect()
+           ^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 447, in connect
+    return _ConnectionFairy._checkout(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 1363, in _checkout
+    with util.safe_reraise():
+         ^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\langhelpers.py", line 224, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 1301, in _checkout
+    result = pool._dialect._do_ping_w_event(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\engine\default.py", line 728, in _do_ping_w_event
+    return self.do_ping(dbapi_connection)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 1160, in do_ping
+    dbapi_connection.ping()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 818, in ping
+    self._handle_exception(error)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 799, in _handle_exception
+    raise error
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 816, in ping
+    _ = self.await_(self._async_ping())
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 132, in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 196, in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 825, in _async_ping
+    await tr.start()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\asyncpg\transaction.py", line 146, in start
+    await self._connection.execute(query)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\asyncpg\connection.py", line 354, in execute
+    result = await self._protocol.query(query, timeout)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "asyncpg/protocol/protocol.pyx", line 369, in query
+  File "asyncpg/protocol/protocol.pyx", line 362, in asyncpg.protocol.protocol.BaseProtocol.query
+  File "asyncpg/protocol/coreproto.pyx", line 1174, in asyncpg.protocol.protocol.CoreProtocol._simple_query
+  File "asyncpg/protocol/protocol.pyx", line 956, in asyncpg.protocol.protocol.BaseProtocol._write
+  File "C:\Program Files\Python312\Lib\asyncio\proactor_events.py", line 366, in write
+    self._loop_writing(data=bytes(data))
+  File "C:\Program Files\Python312\Lib\asyncio\proactor_events.py", line 402, in _loop_writing
+    self._write_fut = self._loop._proactor.send(self._sock, data)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'send'
+INFO:httpx:HTTP Request: POST http://testserver/capture "HTTP/1.1 500 Internal Server Error"
+------------------------------ Captured log call ------------------------------
+ERROR    sqlalchemy.pool.impl.AsyncAdaptedQueuePool:base.py:376 Exception terminating connection <AdaptedConnection <asyncpg.connection.Connection object at 0x000001E331C4B2F0>>
+Traceback (most recent call last):
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 372, in _close_connection
+    self._dialect.do_terminate(connection)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 1127, in do_terminate
+    dbapi_connection.terminate()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\connectors\asyncio.py", line 402, in terminate
+    self.await_(asyncio.shield(self._terminate_graceful_close()))  # type: ignore[attr-defined] # noqa: E501
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 132, in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 196, in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 912, in _terminate_graceful_close
+    await self._connection.close(timeout=2)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\asyncpg\connection.py", line 1513, in close
+    await self._protocol.close(timeout)
+  File "asyncpg/protocol/protocol.pyx", line 617, in close
+  File "asyncpg/protocol/protocol.pyx", line 650, in asyncpg.protocol.protocol.BaseProtocol._request_cancel
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\asyncpg\connection.py", line 1682, in _cancel_current_command
+    self._cancellations.add(self._loop.create_task(self._cancel(waiter)))
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Program Files\Python312\Lib\asyncio\base_events.py", line 455, in create_task
+    self._check_closed()
+  File "C:\Program Files\Python312\Lib\asyncio\base_events.py", line 545, in _check_closed
+    raise RuntimeError('Event loop is closed')
+RuntimeError: Event loop is closed
+ERROR    omega_kg.routers.capture:capture.py:165 Critical Error e29c9d8f-fe4e-4728-b433-df20808ab345 during capture: 'NoneType' object has no attribute 'send'
+Traceback (most recent call last):
+  File "C:\Program Files\Python312\Lib\asyncio\base_events.py", line 799, in call_soon
+    self._check_closed()
+  File "C:\Program Files\Python312\Lib\asyncio\base_events.py", line 545, in _check_closed
+    raise RuntimeError('Event loop is closed')
+RuntimeError: Event loop is closed
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\projects\OmegaKG\Omega_KG_stable\omega_kg\routers\capture.py", line 144, in capture_conversation
+    await db_session.commit()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\ext\asyncio\session.py", line 1000, in commit
+    await greenlet_spawn(self.sync_session.commit)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 201, in greenlet_spawn
+    result = context.throw(*sys.exc_info())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2030, in commit
+    trans.commit(_to_root=True)
+  File "<string>", line 2, in commit
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1311, in commit
+    self._prepare_impl()
+  File "<string>", line 2, in _prepare_impl
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1286, in _prepare_impl
+    self.session.flush()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4331, in flush
+    self._flush(objects)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4466, in _flush
+    with util.safe_reraise():
+         ^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\langhelpers.py", line 224, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4427, in _flush
+    flush_context.execute()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\unitofwork.py", line 466, in execute
+    rec.execute(self)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\unitofwork.py", line 642, in execute
+    util.preloaded.orm_persistence.save_obj(
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\persistence.py", line 68, in save_obj
+    ) in _organize_states_for_save(base_mapper, states, uowtransaction):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\persistence.py", line 223, in _organize_states_for_save
+    for state, dict_, mapper, connection in _connections_for_states(
+                                            ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\persistence.py", line 1759, in _connections_for_states
+    connection = uowtransaction.transaction.connection(base_mapper)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<string>", line 2, in connection
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1037, in connection
+    return self._connection_for_bind(bind, execution_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<string>", line 2, in _connection_for_bind
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1173, in _connection_for_bind
+    conn = self._parent._connection_for_bind(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<string>", line 2, in _connection_for_bind
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1187, in _connection_for_bind
+    conn = bind.connect()
+           ^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 3277, in connect
+    return self._connection_cls(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 143, in __init__
+    self._dbapi_connection = engine.raw_connection()
+                             ^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 3301, in raw_connection
+    return self.pool.connect()
+           ^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 447, in connect
+    return _ConnectionFairy._checkout(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 1363, in _checkout
+    with util.safe_reraise():
+         ^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\langhelpers.py", line 224, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 1301, in _checkout
+    result = pool._dialect._do_ping_w_event(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\engine\default.py", line 728, in _do_ping_w_event
+    return self.do_ping(dbapi_connection)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 1160, in do_ping
+    dbapi_connection.ping()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 818, in ping
+    self._handle_exception(error)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 799, in _handle_exception
+    raise error
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 816, in ping
+    _ = self.await_(self._async_ping())
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 132, in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 196, in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 825, in _async_ping
+    await tr.start()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\asyncpg\transaction.py", line 146, in start
+    await self._connection.execute(query)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\asyncpg\connection.py", line 354, in execute
+    result = await self._protocol.query(query, timeout)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "asyncpg/protocol/protocol.pyx", line 369, in query
+  File "asyncpg/protocol/protocol.pyx", line 362, in asyncpg.protocol.protocol.BaseProtocol.query
+  File "asyncpg/protocol/coreproto.pyx", line 1174, in asyncpg.protocol.protocol.CoreProtocol._simple_query
+  File "asyncpg/protocol/protocol.pyx", line 956, in asyncpg.protocol.protocol.BaseProtocol._write
+  File "C:\Program Files\Python312\Lib\asyncio\proactor_events.py", line 366, in write
+    self._loop_writing(data=bytes(data))
+  File "C:\Program Files\Python312\Lib\asyncio\proactor_events.py", line 402, in _loop_writing
+    self._write_fut = self._loop._proactor.send(self._sock, data)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'send'
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/capture "HTTP/1.1 500 Internal Server Error"
+________ TestCaptureServerIntegration.test_error_handling_integration _________
+tests\test_capture_server.py:1036: in test_error_handling_integration
+    with patch(
+C:\Program Files\Python312\Lib\unittest\mock.py:1467: in __enter__
+    original, local = self.get_original()
+                      ^^^^^^^^^^^^^^^^^^^
+C:\Program Files\Python312\Lib\unittest\mock.py:1437: in get_original
+    raise AttributeError(
+E   AttributeError: <module 'omega_kg.routers.capture' from 'D:\\projects\\OmegaKG\\Omega_KG_stable\\omega_kg\\routers\\capture.py'> does not have the attribute 'write_to_obsidian'
+____________ TestCaptureServerPerformance.test_concurrent_requests ____________
+tests\test_capture_server.py:1216: in test_concurrent_requests
+    assert all(status == 200 for status in results)
+E   assert False
+E    +  where False = all(<generator object TestCaptureServerPerformance.test_concurrent_requests.<locals>.<genexpr> at 0x000001E331FA68E0>)
+---------------------------- Captured stderr call -----------------------------
+ERROR:sqlalchemy.pool.impl.AsyncAdaptedQueuePool:Exception terminating connection <AdaptedConnection <asyncpg.connection.Connection object at 0x000001E331E87B60>>
+Traceback (most recent call last):
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 372, in _close_connection
+    self._dialect.do_terminate(connection)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 1127, in do_terminate
+    dbapi_connection.terminate()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\connectors\asyncio.py", line 402, in terminate
+    self.await_(asyncio.shield(self._terminate_graceful_close()))  # type: ignore[attr-defined] # noqa: E501
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 132, in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 196, in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 912, in _terminate_graceful_close
+    await self._connection.close(timeout=2)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\asyncpg\connection.py", line 1513, in close
+    await self._protocol.close(timeout)
+  File "asyncpg/protocol/protocol.pyx", line 617, in close
+  File "asyncpg/protocol/protocol.pyx", line 650, in asyncpg.protocol.protocol.BaseProtocol._request_cancel
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\asyncpg\connection.py", line 1682, in _cancel_current_command
+    self._cancellations.add(self._loop.create_task(self._cancel(waiter)))
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Program Files\Python312\Lib\asyncio\base_events.py", line 455, in create_task
+    self._check_closed()
+  File "C:\Program Files\Python312\Lib\asyncio\base_events.py", line 545, in _check_closed
+    raise RuntimeError('Event loop is closed')
+RuntimeError: Event loop is closed
+ERROR:omega_kg.routers.capture:Critical Error 59ab5e6c-8993-4b0a-9093-cb38a85f78fd during capture: 'NoneType' object has no attribute 'send'
+Traceback (most recent call last):
+  File "C:\Program Files\Python312\Lib\asyncio\base_events.py", line 799, in call_soon
+    self._check_closed()
+  File "C:\Program Files\Python312\Lib\asyncio\base_events.py", line 545, in _check_closed
+    raise RuntimeError('Event loop is closed')
+RuntimeError: Event loop is closed
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\projects\OmegaKG\Omega_KG_stable\omega_kg\routers\capture.py", line 144, in capture_conversation
+    await db_session.commit()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\ext\asyncio\session.py", line 1000, in commit
+    await greenlet_spawn(self.sync_session.commit)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 201, in greenlet_spawn
+    result = context.throw(*sys.exc_info())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2030, in commit
+    trans.commit(_to_root=True)
+  File "<string>", line 2, in commit
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1311, in commit
+    self._prepare_impl()
+  File "<string>", line 2, in _prepare_impl
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1286, in _prepare_impl
+    self.session.flush()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4331, in flush
+    self._flush(objects)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4466, in _flush
+    with util.safe_reraise():
+         ^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\langhelpers.py", line 224, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4427, in _flush
+    flush_context.execute()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\unitofwork.py", line 466, in execute
+    rec.execute(self)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\unitofwork.py", line 642, in execute
+    util.preloaded.orm_persistence.save_obj(
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\persistence.py", line 68, in save_obj
+    ) in _organize_states_for_save(base_mapper, states, uowtransaction):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\persistence.py", line 223, in _organize_states_for_save
+    for state, dict_, mapper, connection in _connections_for_states(
+                                            ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\persistence.py", line 1759, in _connections_for_states
+    connection = uowtransaction.transaction.connection(base_mapper)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<string>", line 2, in connection
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1037, in connection
+    return self._connection_for_bind(bind, execution_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<string>", line 2, in _connection_for_bind
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1173, in _connection_for_bind
+    conn = self._parent._connection_for_bind(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<string>", line 2, in _connection_for_bind
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1187, in _connection_for_bind
+    conn = bind.connect()
+           ^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 3277, in connect
+    return self._connection_cls(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 143, in __init__
+    self._dbapi_connection = engine.raw_connection()
+                             ^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 3301, in raw_connection
+    return self.pool.connect()
+           ^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 447, in connect
+    return _ConnectionFairy._checkout(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 1363, in _checkout
+    with util.safe_reraise():
+         ^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\langhelpers.py", line 224, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 1301, in _checkout
+    result = pool._dialect._do_ping_w_event(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\engine\default.py", line 728, in _do_ping_w_event
+    return self.do_ping(dbapi_connection)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 1160, in do_ping
+    dbapi_connection.ping()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 818, in ping
+    self._handle_exception(error)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 799, in _handle_exception
+    raise error
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 816, in ping
+    _ = self.await_(self._async_ping())
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 132, in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 196, in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 825, in _async_ping
+    await tr.start()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\asyncpg\transaction.py", line 146, in start
+    await self._connection.execute(query)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\asyncpg\connection.py", line 354, in execute
+    result = await self._protocol.query(query, timeout)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "asyncpg/protocol/protocol.pyx", line 369, in query
+  File "asyncpg/protocol/protocol.pyx", line 362, in asyncpg.protocol.protocol.BaseProtocol.query
+  File "asyncpg/protocol/coreproto.pyx", line 1174, in asyncpg.protocol.protocol.CoreProtocol._simple_query
+  File "asyncpg/protocol/protocol.pyx", line 956, in asyncpg.protocol.protocol.BaseProtocol._write
+  File "C:\Program Files\Python312\Lib\asyncio\proactor_events.py", line 366, in write
+    self._loop_writing(data=bytes(data))
+  File "C:\Program Files\Python312\Lib\asyncio\proactor_events.py", line 402, in _loop_writing
+    self._write_fut = self._loop._proactor.send(self._sock, data)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'send'
+INFO:httpx:HTTP Request: POST http://testserver/capture "HTTP/1.1 500 Internal Server Error"
+INFO:omega_kg.routers.capture:Raw conversation captured: a6b7a060 to DB.
+INFO:httpx:HTTP Request: POST http://testserver/capture "HTTP/1.1 200 OK"
+INFO:omega_kg.routers.capture:Raw conversation captured: ae4545ae to DB.
+INFO:omega_kg.routers.capture:Raw conversation captured: 992a8576 to DB.
+INFO:httpx:HTTP Request: POST http://testserver/capture "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST http://testserver/capture "HTTP/1.1 200 OK"
+INFO:omega_kg.routers.capture:Raw conversation captured: 82c9f4cf to DB.
+INFO:httpx:HTTP Request: POST http://testserver/capture "HTTP/1.1 200 OK"
+------------------------------ Captured log call ------------------------------
+ERROR    sqlalchemy.pool.impl.AsyncAdaptedQueuePool:base.py:376 Exception terminating connection <AdaptedConnection <asyncpg.connection.Connection object at 0x000001E331E87B60>>
+Traceback (most recent call last):
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 372, in _close_connection
+    self._dialect.do_terminate(connection)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 1127, in do_terminate
+    dbapi_connection.terminate()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\connectors\asyncio.py", line 402, in terminate
+    self.await_(asyncio.shield(self._terminate_graceful_close()))  # type: ignore[attr-defined] # noqa: E501
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 132, in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 196, in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 912, in _terminate_graceful_close
+    await self._connection.close(timeout=2)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\asyncpg\connection.py", line 1513, in close
+    await self._protocol.close(timeout)
+  File "asyncpg/protocol/protocol.pyx", line 617, in close
+  File "asyncpg/protocol/protocol.pyx", line 650, in asyncpg.protocol.protocol.BaseProtocol._request_cancel
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\asyncpg\connection.py", line 1682, in _cancel_current_command
+    self._cancellations.add(self._loop.create_task(self._cancel(waiter)))
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Program Files\Python312\Lib\asyncio\base_events.py", line 455, in create_task
+    self._check_closed()
+  File "C:\Program Files\Python312\Lib\asyncio\base_events.py", line 545, in _check_closed
+    raise RuntimeError('Event loop is closed')
+RuntimeError: Event loop is closed
+ERROR    omega_kg.routers.capture:capture.py:165 Critical Error 59ab5e6c-8993-4b0a-9093-cb38a85f78fd during capture: 'NoneType' object has no attribute 'send'
+Traceback (most recent call last):
+  File "C:\Program Files\Python312\Lib\asyncio\base_events.py", line 799, in call_soon
+    self._check_closed()
+  File "C:\Program Files\Python312\Lib\asyncio\base_events.py", line 545, in _check_closed
+    raise RuntimeError('Event loop is closed')
+RuntimeError: Event loop is closed
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\projects\OmegaKG\Omega_KG_stable\omega_kg\routers\capture.py", line 144, in capture_conversation
+    await db_session.commit()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\ext\asyncio\session.py", line 1000, in commit
+    await greenlet_spawn(self.sync_session.commit)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 201, in greenlet_spawn
+    result = context.throw(*sys.exc_info())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2030, in commit
+    trans.commit(_to_root=True)
+  File "<string>", line 2, in commit
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1311, in commit
+    self._prepare_impl()
+  File "<string>", line 2, in _prepare_impl
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1286, in _prepare_impl
+    self.session.flush()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4331, in flush
+    self._flush(objects)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4466, in _flush
+    with util.safe_reraise():
+         ^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\langhelpers.py", line 224, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4427, in _flush
+    flush_context.execute()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\unitofwork.py", line 466, in execute
+    rec.execute(self)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\unitofwork.py", line 642, in execute
+    util.preloaded.orm_persistence.save_obj(
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\persistence.py", line 68, in save_obj
+    ) in _organize_states_for_save(base_mapper, states, uowtransaction):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\persistence.py", line 223, in _organize_states_for_save
+    for state, dict_, mapper, connection in _connections_for_states(
+                                            ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\persistence.py", line 1759, in _connections_for_states
+    connection = uowtransaction.transaction.connection(base_mapper)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<string>", line 2, in connection
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1037, in connection
+    return self._connection_for_bind(bind, execution_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<string>", line 2, in _connection_for_bind
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1173, in _connection_for_bind
+    conn = self._parent._connection_for_bind(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<string>", line 2, in _connection_for_bind
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1187, in _connection_for_bind
+    conn = bind.connect()
+           ^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 3277, in connect
+    return self._connection_cls(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 143, in __init__
+    self._dbapi_connection = engine.raw_connection()
+                             ^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 3301, in raw_connection
+    return self.pool.connect()
+           ^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 447, in connect
+    return _ConnectionFairy._checkout(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 1363, in _checkout
+    with util.safe_reraise():
+         ^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\langhelpers.py", line 224, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 1301, in _checkout
+    result = pool._dialect._do_ping_w_event(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\engine\default.py", line 728, in _do_ping_w_event
+    return self.do_ping(dbapi_connection)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 1160, in do_ping
+    dbapi_connection.ping()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 818, in ping
+    self._handle_exception(error)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 799, in _handle_exception
+    raise error
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 816, in ping
+    _ = self.await_(self._async_ping())
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 132, in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 196, in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 825, in _async_ping
+    await tr.start()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\asyncpg\transaction.py", line 146, in start
+    await self._connection.execute(query)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\asyncpg\connection.py", line 354, in execute
+    result = await self._protocol.query(query, timeout)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "asyncpg/protocol/protocol.pyx", line 369, in query
+  File "asyncpg/protocol/protocol.pyx", line 362, in asyncpg.protocol.protocol.BaseProtocol.query
+  File "asyncpg/protocol/coreproto.pyx", line 1174, in asyncpg.protocol.protocol.CoreProtocol._simple_query
+  File "asyncpg/protocol/protocol.pyx", line 956, in asyncpg.protocol.protocol.BaseProtocol._write
+  File "C:\Program Files\Python312\Lib\asyncio\proactor_events.py", line 366, in write
+    self._loop_writing(data=bytes(data))
+  File "C:\Program Files\Python312\Lib\asyncio\proactor_events.py", line 402, in _loop_writing
+    self._write_fut = self._loop._proactor.send(self._sock, data)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'send'
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/capture "HTTP/1.1 500 Internal Server Error"
+INFO     omega_kg.routers.capture:capture.py:146 Raw conversation captured: a6b7a060 to DB.
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/capture "HTTP/1.1 200 OK"
+INFO     omega_kg.routers.capture:capture.py:146 Raw conversation captured: ae4545ae to DB.
+INFO     omega_kg.routers.capture:capture.py:146 Raw conversation captured: 992a8576 to DB.
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/capture "HTTP/1.1 200 OK"
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/capture "HTTP/1.1 200 OK"
+INFO     omega_kg.routers.capture:capture.py:146 Raw conversation captured: 82c9f4cf to DB.
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/capture "HTTP/1.1 200 OK"
+__________ TestCaptureServerPerformance.test_large_message_handling ___________
+tests\test_capture_server.py:1262: in test_large_message_handling
+    assert response.status_code == 200
+E   assert 500 == 200
+E    +  where 500 = <Response [500 Internal Server Error]>.status_code
+---------------------------- Captured stderr call -----------------------------
+ERROR:sqlalchemy.pool.impl.AsyncAdaptedQueuePool:Exception terminating connection <AdaptedConnection <asyncpg.connection.Connection object at 0x000001E33204EE40>>
+Traceback (most recent call last):
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 372, in _close_connection
+    self._dialect.do_terminate(connection)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 1127, in do_terminate
+    dbapi_connection.terminate()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\connectors\asyncio.py", line 402, in terminate
+    self.await_(asyncio.shield(self._terminate_graceful_close()))  # type: ignore[attr-defined] # noqa: E501
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 132, in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 196, in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 912, in _terminate_graceful_close
+    await self._connection.close(timeout=2)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\asyncpg\connection.py", line 1513, in close
+    await self._protocol.close(timeout)
+  File "asyncpg/protocol/protocol.pyx", line 617, in close
+  File "asyncpg/protocol/protocol.pyx", line 650, in asyncpg.protocol.protocol.BaseProtocol._request_cancel
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\asyncpg\connection.py", line 1682, in _cancel_current_command
+    self._cancellations.add(self._loop.create_task(self._cancel(waiter)))
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Program Files\Python312\Lib\asyncio\base_events.py", line 455, in create_task
+    self._check_closed()
+  File "C:\Program Files\Python312\Lib\asyncio\base_events.py", line 545, in _check_closed
+    raise RuntimeError('Event loop is closed')
+RuntimeError: Event loop is closed
+ERROR:omega_kg.routers.capture:Critical Error 75f845f8-0c8c-4ca6-82cb-592ecd243403 during capture: 'NoneType' object has no attribute 'send'
+Traceback (most recent call last):
+  File "C:\Program Files\Python312\Lib\asyncio\base_events.py", line 799, in call_soon
+    self._check_closed()
+  File "C:\Program Files\Python312\Lib\asyncio\base_events.py", line 545, in _check_closed
+    raise RuntimeError('Event loop is closed')
+RuntimeError: Event loop is closed
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\projects\OmegaKG\Omega_KG_stable\omega_kg\routers\capture.py", line 144, in capture_conversation
+    await db_session.commit()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\ext\asyncio\session.py", line 1000, in commit
+    await greenlet_spawn(self.sync_session.commit)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 201, in greenlet_spawn
+    result = context.throw(*sys.exc_info())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2030, in commit
+    trans.commit(_to_root=True)
+  File "<string>", line 2, in commit
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1311, in commit
+    self._prepare_impl()
+  File "<string>", line 2, in _prepare_impl
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1286, in _prepare_impl
+    self.session.flush()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4331, in flush
+    self._flush(objects)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4466, in _flush
+    with util.safe_reraise():
+         ^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\langhelpers.py", line 224, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4427, in _flush
+    flush_context.execute()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\unitofwork.py", line 466, in execute
+    rec.execute(self)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\unitofwork.py", line 642, in execute
+    util.preloaded.orm_persistence.save_obj(
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\persistence.py", line 68, in save_obj
+    ) in _organize_states_for_save(base_mapper, states, uowtransaction):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\persistence.py", line 223, in _organize_states_for_save
+    for state, dict_, mapper, connection in _connections_for_states(
+                                            ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\persistence.py", line 1759, in _connections_for_states
+    connection = uowtransaction.transaction.connection(base_mapper)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<string>", line 2, in connection
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1037, in connection
+    return self._connection_for_bind(bind, execution_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<string>", line 2, in _connection_for_bind
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1173, in _connection_for_bind
+    conn = self._parent._connection_for_bind(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<string>", line 2, in _connection_for_bind
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1187, in _connection_for_bind
+    conn = bind.connect()
+           ^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 3277, in connect
+    return self._connection_cls(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 143, in __init__
+    self._dbapi_connection = engine.raw_connection()
+                             ^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 3301, in raw_connection
+    return self.pool.connect()
+           ^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 447, in connect
+    return _ConnectionFairy._checkout(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 1363, in _checkout
+    with util.safe_reraise():
+         ^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\langhelpers.py", line 224, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 1301, in _checkout
+    result = pool._dialect._do_ping_w_event(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\engine\default.py", line 728, in _do_ping_w_event
+    return self.do_ping(dbapi_connection)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 1160, in do_ping
+    dbapi_connection.ping()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 818, in ping
+    self._handle_exception(error)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 799, in _handle_exception
+    raise error
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 816, in ping
+    _ = self.await_(self._async_ping())
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 132, in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 196, in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 825, in _async_ping
+    await tr.start()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\asyncpg\transaction.py", line 146, in start
+    await self._connection.execute(query)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\asyncpg\connection.py", line 354, in execute
+    result = await self._protocol.query(query, timeout)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "asyncpg/protocol/protocol.pyx", line 369, in query
+  File "asyncpg/protocol/protocol.pyx", line 362, in asyncpg.protocol.protocol.BaseProtocol.query
+  File "asyncpg/protocol/coreproto.pyx", line 1174, in asyncpg.protocol.protocol.CoreProtocol._simple_query
+  File "asyncpg/protocol/protocol.pyx", line 956, in asyncpg.protocol.protocol.BaseProtocol._write
+  File "C:\Program Files\Python312\Lib\asyncio\proactor_events.py", line 366, in write
+    self._loop_writing(data=bytes(data))
+  File "C:\Program Files\Python312\Lib\asyncio\proactor_events.py", line 402, in _loop_writing
+    self._write_fut = self._loop._proactor.send(self._sock, data)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'send'
+INFO:httpx:HTTP Request: POST http://testserver/capture "HTTP/1.1 500 Internal Server Error"
+------------------------------ Captured log call ------------------------------
+ERROR    sqlalchemy.pool.impl.AsyncAdaptedQueuePool:base.py:376 Exception terminating connection <AdaptedConnection <asyncpg.connection.Connection object at 0x000001E33204EE40>>
+Traceback (most recent call last):
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 372, in _close_connection
+    self._dialect.do_terminate(connection)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 1127, in do_terminate
+    dbapi_connection.terminate()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\connectors\asyncio.py", line 402, in terminate
+    self.await_(asyncio.shield(self._terminate_graceful_close()))  # type: ignore[attr-defined] # noqa: E501
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 132, in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 196, in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 912, in _terminate_graceful_close
+    await self._connection.close(timeout=2)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\asyncpg\connection.py", line 1513, in close
+    await self._protocol.close(timeout)
+  File "asyncpg/protocol/protocol.pyx", line 617, in close
+  File "asyncpg/protocol/protocol.pyx", line 650, in asyncpg.protocol.protocol.BaseProtocol._request_cancel
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\asyncpg\connection.py", line 1682, in _cancel_current_command
+    self._cancellations.add(self._loop.create_task(self._cancel(waiter)))
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Program Files\Python312\Lib\asyncio\base_events.py", line 455, in create_task
+    self._check_closed()
+  File "C:\Program Files\Python312\Lib\asyncio\base_events.py", line 545, in _check_closed
+    raise RuntimeError('Event loop is closed')
+RuntimeError: Event loop is closed
+ERROR    omega_kg.routers.capture:capture.py:165 Critical Error 75f845f8-0c8c-4ca6-82cb-592ecd243403 during capture: 'NoneType' object has no attribute 'send'
+Traceback (most recent call last):
+  File "C:\Program Files\Python312\Lib\asyncio\base_events.py", line 799, in call_soon
+    self._check_closed()
+  File "C:\Program Files\Python312\Lib\asyncio\base_events.py", line 545, in _check_closed
+    raise RuntimeError('Event loop is closed')
+RuntimeError: Event loop is closed
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\projects\OmegaKG\Omega_KG_stable\omega_kg\routers\capture.py", line 144, in capture_conversation
+    await db_session.commit()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\ext\asyncio\session.py", line 1000, in commit
+    await greenlet_spawn(self.sync_session.commit)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 201, in greenlet_spawn
+    result = context.throw(*sys.exc_info())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2030, in commit
+    trans.commit(_to_root=True)
+  File "<string>", line 2, in commit
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1311, in commit
+    self._prepare_impl()
+  File "<string>", line 2, in _prepare_impl
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1286, in _prepare_impl
+    self.session.flush()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4331, in flush
+    self._flush(objects)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4466, in _flush
+    with util.safe_reraise():
+         ^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\langhelpers.py", line 224, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4427, in _flush
+    flush_context.execute()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\unitofwork.py", line 466, in execute
+    rec.execute(self)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\unitofwork.py", line 642, in execute
+    util.preloaded.orm_persistence.save_obj(
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\persistence.py", line 68, in save_obj
+    ) in _organize_states_for_save(base_mapper, states, uowtransaction):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\persistence.py", line 223, in _organize_states_for_save
+    for state, dict_, mapper, connection in _connections_for_states(
+                                            ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\persistence.py", line 1759, in _connections_for_states
+    connection = uowtransaction.transaction.connection(base_mapper)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<string>", line 2, in connection
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1037, in connection
+    return self._connection_for_bind(bind, execution_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<string>", line 2, in _connection_for_bind
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1173, in _connection_for_bind
+    conn = self._parent._connection_for_bind(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<string>", line 2, in _connection_for_bind
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1187, in _connection_for_bind
+    conn = bind.connect()
+           ^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 3277, in connect
+    return self._connection_cls(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 143, in __init__
+    self._dbapi_connection = engine.raw_connection()
+                             ^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 3301, in raw_connection
+    return self.pool.connect()
+           ^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 447, in connect
+    return _ConnectionFairy._checkout(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 1363, in _checkout
+    with util.safe_reraise():
+         ^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\langhelpers.py", line 224, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 1301, in _checkout
+    result = pool._dialect._do_ping_w_event(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\engine\default.py", line 728, in _do_ping_w_event
+    return self.do_ping(dbapi_connection)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 1160, in do_ping
+    dbapi_connection.ping()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 818, in ping
+    self._handle_exception(error)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 799, in _handle_exception
+    raise error
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 816, in ping
+    _ = self.await_(self._async_ping())
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 132, in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 196, in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 825, in _async_ping
+    await tr.start()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\asyncpg\transaction.py", line 146, in start
+    await self._connection.execute(query)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\asyncpg\connection.py", line 354, in execute
+    result = await self._protocol.query(query, timeout)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "asyncpg/protocol/protocol.pyx", line 369, in query
+  File "asyncpg/protocol/protocol.pyx", line 362, in asyncpg.protocol.protocol.BaseProtocol.query
+  File "asyncpg/protocol/coreproto.pyx", line 1174, in asyncpg.protocol.protocol.CoreProtocol._simple_query
+  File "asyncpg/protocol/protocol.pyx", line 956, in asyncpg.protocol.protocol.BaseProtocol._write
+  File "C:\Program Files\Python312\Lib\asyncio\proactor_events.py", line 366, in write
+    self._loop_writing(data=bytes(data))
+  File "C:\Program Files\Python312\Lib\asyncio\proactor_events.py", line 402, in _loop_writing
+    self._write_fut = self._loop._proactor.send(self._sock, data)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'send'
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/capture "HTTP/1.1 500 Internal Server Error"
+__________ TestCaptureServerPerformance.test_memory_usage_stability ___________
+tests\test_capture_server.py:1316: in test_memory_usage_stability
+    assert response.status_code == 200
+E   assert 500 == 200
+E    +  where 500 = <Response [500 Internal Server Error]>.status_code
+---------------------------- Captured stderr call -----------------------------
+ERROR:sqlalchemy.pool.impl.AsyncAdaptedQueuePool:Exception terminating connection <AdaptedConnection <asyncpg.connection.Connection object at 0x000001E33204F980>>
+Traceback (most recent call last):
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 372, in _close_connection
+    self._dialect.do_terminate(connection)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 1127, in do_terminate
+    dbapi_connection.terminate()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\connectors\asyncio.py", line 402, in terminate
+    self.await_(asyncio.shield(self._terminate_graceful_close()))  # type: ignore[attr-defined] # noqa: E501
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 132, in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 196, in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 912, in _terminate_graceful_close
+    await self._connection.close(timeout=2)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\asyncpg\connection.py", line 1513, in close
+    await self._protocol.close(timeout)
+  File "asyncpg/protocol/protocol.pyx", line 617, in close
+  File "asyncpg/protocol/protocol.pyx", line 650, in asyncpg.protocol.protocol.BaseProtocol._request_cancel
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\asyncpg\connection.py", line 1682, in _cancel_current_command
+    self._cancellations.add(self._loop.create_task(self._cancel(waiter)))
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Program Files\Python312\Lib\asyncio\base_events.py", line 455, in create_task
+    self._check_closed()
+  File "C:\Program Files\Python312\Lib\asyncio\base_events.py", line 545, in _check_closed
+    raise RuntimeError('Event loop is closed')
+RuntimeError: Event loop is closed
+ERROR:omega_kg.routers.capture:Critical Error 362892ae-eec6-4c22-a265-ef0c8be8d572 during capture: 'NoneType' object has no attribute 'send'
+Traceback (most recent call last):
+  File "C:\Program Files\Python312\Lib\asyncio\base_events.py", line 799, in call_soon
+    self._check_closed()
+  File "C:\Program Files\Python312\Lib\asyncio\base_events.py", line 545, in _check_closed
+    raise RuntimeError('Event loop is closed')
+RuntimeError: Event loop is closed
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\projects\OmegaKG\Omega_KG_stable\omega_kg\routers\capture.py", line 144, in capture_conversation
+    await db_session.commit()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\ext\asyncio\session.py", line 1000, in commit
+    await greenlet_spawn(self.sync_session.commit)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 201, in greenlet_spawn
+    result = context.throw(*sys.exc_info())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2030, in commit
+    trans.commit(_to_root=True)
+  File "<string>", line 2, in commit
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1311, in commit
+    self._prepare_impl()
+  File "<string>", line 2, in _prepare_impl
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1286, in _prepare_impl
+    self.session.flush()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4331, in flush
+    self._flush(objects)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4466, in _flush
+    with util.safe_reraise():
+         ^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\langhelpers.py", line 224, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4427, in _flush
+    flush_context.execute()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\unitofwork.py", line 466, in execute
+    rec.execute(self)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\unitofwork.py", line 642, in execute
+    util.preloaded.orm_persistence.save_obj(
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\persistence.py", line 68, in save_obj
+    ) in _organize_states_for_save(base_mapper, states, uowtransaction):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\persistence.py", line 223, in _organize_states_for_save
+    for state, dict_, mapper, connection in _connections_for_states(
+                                            ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\persistence.py", line 1759, in _connections_for_states
+    connection = uowtransaction.transaction.connection(base_mapper)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<string>", line 2, in connection
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1037, in connection
+    return self._connection_for_bind(bind, execution_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<string>", line 2, in _connection_for_bind
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1173, in _connection_for_bind
+    conn = self._parent._connection_for_bind(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<string>", line 2, in _connection_for_bind
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1187, in _connection_for_bind
+    conn = bind.connect()
+           ^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 3277, in connect
+    return self._connection_cls(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 143, in __init__
+    self._dbapi_connection = engine.raw_connection()
+                             ^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 3301, in raw_connection
+    return self.pool.connect()
+           ^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 447, in connect
+    return _ConnectionFairy._checkout(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 1363, in _checkout
+    with util.safe_reraise():
+         ^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\langhelpers.py", line 224, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 1301, in _checkout
+    result = pool._dialect._do_ping_w_event(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\engine\default.py", line 728, in _do_ping_w_event
+    return self.do_ping(dbapi_connection)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 1160, in do_ping
+    dbapi_connection.ping()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 818, in ping
+    self._handle_exception(error)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 799, in _handle_exception
+    raise error
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 816, in ping
+    _ = self.await_(self._async_ping())
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 132, in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 196, in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 825, in _async_ping
+    await tr.start()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\asyncpg\transaction.py", line 146, in start
+    await self._connection.execute(query)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\asyncpg\connection.py", line 354, in execute
+    result = await self._protocol.query(query, timeout)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "asyncpg/protocol/protocol.pyx", line 369, in query
+  File "asyncpg/protocol/protocol.pyx", line 362, in asyncpg.protocol.protocol.BaseProtocol.query
+  File "asyncpg/protocol/coreproto.pyx", line 1174, in asyncpg.protocol.protocol.CoreProtocol._simple_query
+  File "asyncpg/protocol/protocol.pyx", line 956, in asyncpg.protocol.protocol.BaseProtocol._write
+  File "C:\Program Files\Python312\Lib\asyncio\proactor_events.py", line 366, in write
+    self._loop_writing(data=bytes(data))
+  File "C:\Program Files\Python312\Lib\asyncio\proactor_events.py", line 402, in _loop_writing
+    self._write_fut = self._loop._proactor.send(self._sock, data)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'send'
+INFO:httpx:HTTP Request: POST http://testserver/capture "HTTP/1.1 500 Internal Server Error"
+------------------------------ Captured log call ------------------------------
+ERROR    sqlalchemy.pool.impl.AsyncAdaptedQueuePool:base.py:376 Exception terminating connection <AdaptedConnection <asyncpg.connection.Connection object at 0x000001E33204F980>>
+Traceback (most recent call last):
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 372, in _close_connection
+    self._dialect.do_terminate(connection)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 1127, in do_terminate
+    dbapi_connection.terminate()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\connectors\asyncio.py", line 402, in terminate
+    self.await_(asyncio.shield(self._terminate_graceful_close()))  # type: ignore[attr-defined] # noqa: E501
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 132, in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 196, in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 912, in _terminate_graceful_close
+    await self._connection.close(timeout=2)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\asyncpg\connection.py", line 1513, in close
+    await self._protocol.close(timeout)
+  File "asyncpg/protocol/protocol.pyx", line 617, in close
+  File "asyncpg/protocol/protocol.pyx", line 650, in asyncpg.protocol.protocol.BaseProtocol._request_cancel
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\asyncpg\connection.py", line 1682, in _cancel_current_command
+    self._cancellations.add(self._loop.create_task(self._cancel(waiter)))
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Program Files\Python312\Lib\asyncio\base_events.py", line 455, in create_task
+    self._check_closed()
+  File "C:\Program Files\Python312\Lib\asyncio\base_events.py", line 545, in _check_closed
+    raise RuntimeError('Event loop is closed')
+RuntimeError: Event loop is closed
+ERROR    omega_kg.routers.capture:capture.py:165 Critical Error 362892ae-eec6-4c22-a265-ef0c8be8d572 during capture: 'NoneType' object has no attribute 'send'
+Traceback (most recent call last):
+  File "C:\Program Files\Python312\Lib\asyncio\base_events.py", line 799, in call_soon
+    self._check_closed()
+  File "C:\Program Files\Python312\Lib\asyncio\base_events.py", line 545, in _check_closed
+    raise RuntimeError('Event loop is closed')
+RuntimeError: Event loop is closed
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\projects\OmegaKG\Omega_KG_stable\omega_kg\routers\capture.py", line 144, in capture_conversation
+    await db_session.commit()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\ext\asyncio\session.py", line 1000, in commit
+    await greenlet_spawn(self.sync_session.commit)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 201, in greenlet_spawn
+    result = context.throw(*sys.exc_info())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2030, in commit
+    trans.commit(_to_root=True)
+  File "<string>", line 2, in commit
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1311, in commit
+    self._prepare_impl()
+  File "<string>", line 2, in _prepare_impl
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1286, in _prepare_impl
+    self.session.flush()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4331, in flush
+    self._flush(objects)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4466, in _flush
+    with util.safe_reraise():
+         ^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\langhelpers.py", line 224, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4427, in _flush
+    flush_context.execute()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\unitofwork.py", line 466, in execute
+    rec.execute(self)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\unitofwork.py", line 642, in execute
+    util.preloaded.orm_persistence.save_obj(
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\persistence.py", line 68, in save_obj
+    ) in _organize_states_for_save(base_mapper, states, uowtransaction):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\persistence.py", line 223, in _organize_states_for_save
+    for state, dict_, mapper, connection in _connections_for_states(
+                                            ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\persistence.py", line 1759, in _connections_for_states
+    connection = uowtransaction.transaction.connection(base_mapper)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<string>", line 2, in connection
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1037, in connection
+    return self._connection_for_bind(bind, execution_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<string>", line 2, in _connection_for_bind
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1173, in _connection_for_bind
+    conn = self._parent._connection_for_bind(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<string>", line 2, in _connection_for_bind
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1187, in _connection_for_bind
+    conn = bind.connect()
+           ^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 3277, in connect
+    return self._connection_cls(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 143, in __init__
+    self._dbapi_connection = engine.raw_connection()
+                             ^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 3301, in raw_connection
+    return self.pool.connect()
+           ^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 447, in connect
+    return _ConnectionFairy._checkout(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 1363, in _checkout
+    with util.safe_reraise():
+         ^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\langhelpers.py", line 224, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 1301, in _checkout
+    result = pool._dialect._do_ping_w_event(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\engine\default.py", line 728, in _do_ping_w_event
+    return self.do_ping(dbapi_connection)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 1160, in do_ping
+    dbapi_connection.ping()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 818, in ping
+    self._handle_exception(error)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 799, in _handle_exception
+    raise error
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 816, in ping
+    _ = self.await_(self._async_ping())
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 132, in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 196, in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 825, in _async_ping
+    await tr.start()
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\asyncpg\transaction.py", line 146, in start
+    await self._connection.execute(query)
+  File "D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\asyncpg\connection.py", line 354, in execute
+    result = await self._protocol.query(query, timeout)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "asyncpg/protocol/protocol.pyx", line 369, in query
+  File "asyncpg/protocol/protocol.pyx", line 362, in asyncpg.protocol.protocol.BaseProtocol.query
+  File "asyncpg/protocol/coreproto.pyx", line 1174, in asyncpg.protocol.protocol.CoreProtocol._simple_query
+  File "asyncpg/protocol/protocol.pyx", line 956, in asyncpg.protocol.protocol.BaseProtocol._write
+  File "C:\Program Files\Python312\Lib\asyncio\proactor_events.py", line 366, in write
+    self._loop_writing(data=bytes(data))
+  File "C:\Program Files\Python312\Lib\asyncio\proactor_events.py", line 402, in _loop_writing
+    self._write_fut = self._loop._proactor.send(self._sock, data)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'send'
+D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\_pytest\unraisableexception.py:33: RuntimeWarning: coroutine 'Connection._cancel' was never awaited
+  gc.collect()
+RuntimeWarning: Enable tracemalloc to get the object allocation traceback
+INFO     httpx:_client.py:1025 HTTP Request: POST http://testserver/capture "HTTP/1.1 500 Internal Server Error"
+_________________________ TestCLI.test_status_command _________________________
+D:\projects\Omega_KG_stable\tests\test_cli.py:225: in test_status_command
+    ???
+.venv\Lib\site-packages\click\testing.py:532: in invoke
+    stderr = outstreams[1].getvalue()
+             ^^^^^^^^^^^^^^^^^^^^^^^^
+E   ValueError: I/O operation on closed file.
+---------------------------- Captured stdout call -----------------------------
+\n\U0001f4ca Neo4j Connection:\n  URI:         bolt://localhost:7687\n  Connected:   \u2713 Yes\n  Mock Mode:   No\n\n\U0001f4c1 Configuration:\n  Environment: development\n  Vault Path:  D:\\projects\\OmegaKG\\OmegaVault\n\n\U0001f4e7 Email Settings:\n  SMTP Host:   localhost:587\n  From:        steynsean11@gmail.com\n  To:          steynsean11@gmail.com\n  Status:      \u2713 Configured\n\n\U0001f517 Linear Integration:\n  API Key:     \u2713 Configured\n  Team ID:     ALPHA
+---------------------------- Captured stderr call -----------------------------
+INFO:omega_kg.lifecycle:Neo4j connection established
+------------------------------ Captured log call ------------------------------
+INFO     omega_kg.lifecycle:lifecycle.py:117 Neo4j connection established
+____________________ TestCLI.test_status_command_mock_mode ____________________
+D:\projects\Omega_KG_stable\tests\test_cli.py:258: in test_status_command_mock_mode
+    ???
+.venv\Lib\site-packages\click\testing.py:532: in invoke
+    stderr = outstreams[1].getvalue()
+             ^^^^^^^^^^^^^^^^^^^^^^^^
+E   ValueError: I/O operation on closed file.
+---------------------------- Captured stdout call -----------------------------
+\n\U0001f4ca Neo4j Connection:\n  URI:         mock://local\n  Connected:   \u2717 No\n  Mock Mode:   Yes\n\n\U0001f4c1 Configuration:\n  Environment: test\n  Vault Path:  ./vault\n\n\U0001f4e7 Email Settings:\n  Status:      \u2717 Not configured\n\n\U0001f517 Linear Integration:\n  Status:      \u2717 Not configured
+---------------------------- Captured stderr call -----------------------------
+ERROR:omega_kg.lifecycle:Failed to connect to Neo4j: ConnectionError: Connection health check failed: Failed to DNS resolve address invalid:9999: [Errno 11001] getaddrinfo failed
+WARNING:omega_kg.lifecycle:Falling back to mock mode (dry-run only)
+------------------------------ Captured log call ------------------------------
+ERROR    omega_kg.lifecycle:lifecycle.py:119 Failed to connect to Neo4j: ConnectionError: Connection health check failed: Failed to DNS resolve address invalid:9999: [Errno 11001] getaddrinfo failed
+WARNING  omega_kg.lifecycle:lifecycle.py:120 Falling back to mock mode (dry-run only)
+-------------------------- Captured stdout teardown ---------------------------
+\n\u26a0\ufe0f  Slow test: test_status_command_mock_mode (2.77s)
+============================== warnings summary ===============================
+tests/test_capture_server.py::TestCaptureServerPerformance::test_concurrent_requests
+  D:\projects\OmegaKG\Omega_KG_stable\.venv\Lib\site-packages\fastapi\dependencies\models.py:37: RuntimeWarning: coroutine 'Connection._cancel' was never awaited
+    self.cache_key = (self.call, tuple(sorted(set(self.security_scopes or []))))
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_capture_server.py::TestCaptureServerPerformance::test_memory_usage_stability
+  D:\projects\OmegaKG\Omega_KG_stable\tests\test_capture_server.py:1286: RuntimeWarning: coroutine 'Connection._cancel' was never awaited
+    gc.collect()
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/test_capture_server.py::TestCaptureServerEndpoints::test_capture_endpoint_success - assert 0 == 1
+FAILED tests/test_capture_server.py::TestCaptureServerEndpoints::test_linear_webhook_endpoint - AssertionError: Expected 'handle_linear_webhook_request' to have been called once. Called 0 times.
+FAILED tests/test_capture_server.py::TestCaptureServerIntegration::test_end_to_end_capture_flow - assert 500 == 200
+ +  where 500 = <Response [500 Internal Server Error]>.status_code
+FAILED tests/test_capture_server.py::TestCaptureServerIntegration::test_error_handling_integration - AttributeError: <module 'omega_kg.routers.capture' from 'D:\\projects\\OmegaKG\\Omega_KG_stable\\omega_kg\\routers\\capture.py'> does not have the attribute 'write_to_obsidian'
+FAILED tests/test_capture_server.py::TestCaptureServerPerformance::test_concurrent_requests - assert False
+ +  where False = all(<generator object TestCaptureServerPerformance.test_concurrent_requests.<locals>.<genexpr> at 0x000001E331FA68E0>)
+FAILED tests/test_capture_server.py::TestCaptureServerPerformance::test_large_message_handling - assert 500 == 200
+ +  where 500 = <Response [500 Internal Server Error]>.status_code
+FAILED tests/test_capture_server.py::TestCaptureServerPerformance::test_memory_usage_stability - assert 500 == 200
+ +  where 500 = <Response [500 Internal Server Error]>.status_code
+FAILED tests/test_cli.py::TestCLI::test_status_command - ValueError: I/O operation on closed file.
+FAILED tests/test_cli.py::TestCLI::test_status_command_mock_mode - ValueError: I/O operation on closed file.
+================== 9 failed, 64 passed, 2 warnings in 27.43s ==================

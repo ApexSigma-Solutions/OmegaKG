@@ -40,7 +40,8 @@ class TestLinearProcessor:
         assert processor.graph_writer is not None
         assert processor.mapper is not None
     
-    def test_process_single_event_success(self, processor, temp_vault_path):
+    @pytest.mark.asyncio
+    async def test_process_single_event_success(self, processor, temp_vault_path):
         """Test successful processing of single event."""
         payload = {
             "type": "Issue",
@@ -73,7 +74,8 @@ class TestLinearProcessor:
                 expected_file = temp_vault_path / "01_Active" / "LIN-TEST-001.md"
                 assert expected_file.exists()
     
-    def test_process_single_event_no_data(self, processor):
+    @pytest.mark.asyncio
+    async def test_process_single_event_no_data(self, processor):
         """Test processing event with no data."""
         payload = {
             "type": "Issue",
@@ -86,7 +88,8 @@ class TestLinearProcessor:
         # Should return True (skip, not error)
         assert result is True
     
-    def test_process_single_event_validation_error(self, processor):
+    @pytest.mark.asyncio
+    async def test_process_single_event_validation_error(self, processor):
         """Test processing with invalid payload."""
         payload = {
             "type": "Issue",
@@ -102,7 +105,8 @@ class TestLinearProcessor:
         
         assert result is False
     
-    def test_process_single_event_graph_error(self, processor):
+    @pytest.mark.asyncio
+    async def test_process_single_event_graph_error(self, processor):
         """Test handling of graph writer errors."""
         payload = {
             "type": "Issue",
@@ -126,7 +130,8 @@ class TestLinearProcessor:
             # Should return False on graph error
             assert result is False
     
-    def test_process_single_event_embedding_error(self, processor):
+    @pytest.mark.asyncio
+    async def test_process_single_event_embedding_error(self, processor):
         """Test handling of embedding generation errors."""
         payload = {
             "type": "Issue",
@@ -150,7 +155,8 @@ class TestLinearProcessor:
             # Should return False on embedding error (non-blocking)
             assert result is False
     
-    def test_create_tnp_if_needed(self, processor, temp_vault_path):
+    @pytest.mark.asyncio
+    async def test_create_tnp_if_needed(self, processor, temp_vault_path):
         """Test TNP file creation."""
         payload = {
             "type": "Issue",

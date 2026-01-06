@@ -7,7 +7,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from omega_kg.database.session import get_db
 from omega_kg.settings import settings
 from omega_kg.models.webhook import RawWebhookEvent
-from omega_kg.models.linear import RawLinearEvent  # Keep for backward compatibility in processor
+from omega_kg.models.linear import (
+    RawLinearEvent,
+)  # Keep for backward compatibility in processor
 
 # Setup Logger
 logger = logging.getLogger(__name__)
@@ -67,7 +69,7 @@ async def receive_linear_event(
     db_event = RawWebhookEvent(
         source="linear",
         headers=dict(request.headers),
-        payload=payload,  # Store parsed JSON dict
+        payload=payload_bytes,  # Store raw bytes for byte-for-byte comparison
         processed_status=False,
     )
 

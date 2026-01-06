@@ -76,6 +76,7 @@ def get_exempted_keys() -> Set[str]:
         "ZERO_TRUST_REQUIRED",
         # Legacy extension API key (handled via AliasChoices in Settings)
         "EXTENSION_API_KEY_PRD",
+        "EXTENSION_API_KEY",
         # Optional parsing configs (not in Settings class)
         "LINEAR_USER_MAP_JSON",
         "LINEAR_LABEL_MAP_JSON",
