@@ -219,7 +219,15 @@ class Settings(BaseSettings):
         validation_alias="LINEAR_STATUS_MAP_JSON",
     )
     linear_user_map_json: str = Field("{}", validation_alias="LINEAR_USER_MAP_JSON")
-    linear_label_map_json: str = Field("{}", validation_alias="LINEAR_LABEL_MAP_JSON")
+    linear_label_map_json: str = Field(
+        '{"bug": "c757066a-8d71-4612-be2b-b9cd6c7987c5", '
+        '"feature": "b2a452c5-bec3-4ebc-a14a-b1d44d87b481", '
+        '"improvement": "5c0c5400-2d67-4e64-b7ba-31019ab522f6", '
+        '"documentation": "2ab9b46e-21a3-47f4-8660-ab68093a99b4", '
+        '"question": "72d2560d-6de4-49f4-bde7-9a58e0849293"}',
+        validation_alias="LINEAR_LABEL_MAP_JSON",
+        description="JSON mapping of Linear label names to label IDs. Example: {\"bug\": \"uuid\", \"feature\": \"uuid\"}",
+    )
 
     # --- Secrets & Keys ---
     linear_webhook_secret: str = Field(..., validation_alias="LINEAR_WEBHOOK_SECRET")

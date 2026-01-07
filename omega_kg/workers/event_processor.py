@@ -54,6 +54,14 @@ class EventProcessorMetrics:
             stats["uptime_seconds"],
         )
 
+    def reset(self) -> None:
+        """Reset all metrics to initial state."""
+        self.processed_count = 0
+        self.error_count = 0
+        self.batch_count = 0
+        self.last_batch_time = 0.0
+        self.start_time = time.time()
+
 class EventProcessor:
     """
     TN-103: The Refinery (Schema Aligned).
@@ -148,14 +156,10 @@ class EventProcessor:
 
                     if success:
                         await self._mark_complete(session, event)
-                        # Linear successes already counted inside _handle_linear_event
-                        if getattr(event, "source", None) != "linear":
-                            self.metrics.record_processed()
+                        self.metrics.record_processed()
                     else:
                         await self._mark_failed(session, event, error_msg)
-                        # Linear failures already counted in _handle_linear_event
-                        if getattr(event, "source", None) != "linear":
-                            self.metrics.record_error()
+                        self.metrics.record_error()
                 except Exception as exc:  # pragma: no cover - defensive
                     logger.error("Event %s processing error: %s", event.id, exc)
                     await self._mark_failed(session, event, str(exc))
@@ -218,15 +222,14 @@ class EventProcessor:
             if asyncio.iscoroutine(result):
                 result = await result
             if result:
-                self.metrics.record_processed()
                 return True, None
             return False, "Handler returned False"
         except Exception as exc:
             logger.error("Linear event %s failed: %s", getattr(event, "id", "<no id>"), exc)
-            self.metrics.record_error()
             return False, str(exc)
 
     async def _mark_complete(self, session: Any, event: RawWebhookEvent) -> None:
+        """Mark event as successfully processed and commit immediately."""
         event.processed_status = True
         event.error_log = None
         await session.commit()
@@ -234,6 +237,7 @@ class EventProcessor:
     async def _mark_failed(
         self, session: Any, event: RawWebhookEvent, error_message: Optional[str]
     ) -> None:
+        """Mark event as failed and commit immediately."""
         event.processed_status = True
         if error_message:
             event.error_log = (error_message or "Unknown Error")[:1000]

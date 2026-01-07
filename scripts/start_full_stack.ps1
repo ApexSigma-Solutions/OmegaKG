@@ -138,6 +138,26 @@ if ($WorkerProc) {
     }
 }
 
+# --- 5B. START VECTOR INDEX WORKER ---
+Write-Output "[$Time] Checking Vector Index Worker status..."
+$VectorWorkerProc = Get-Process -Name "python" -ErrorAction SilentlyContinue | Where-Object {
+    $_.CommandLine -like "*omega_kg.workers.vector_index_worker*"
+}
+
+$PoetryVectorWorkerArgs = "run python -m omega_kg.workers.vector_index_worker"
+
+if ($VectorWorkerProc) {
+    Write-Output "   [i] Vector Index Worker already running (PID: $($VectorWorkerProc.Id)). Skipping start."
+} else {
+    Write-Output "[$Time] Launching Vector Index Worker..."
+    try {
+        $VectorWorkerProc = Start-Process -FilePath $PoetryPath -ArgumentList $PoetryVectorWorkerArgs -WindowStyle $WindowStyle -PassThru @LogArgs_Capture
+        Write-Output "   [+] Vector Index Worker started (PID: $($VectorWorkerProc.Id))."
+    } catch {
+        Write-Error "   [-] Failed to start Vector Index Worker: $($_.Exception.Message)"
+    }
+}
+
 
 # --- 6. TERMINAL HOOK SETUP ---
 $HookScriptPath = Join-Path $ProjectRoot "scripts" "Invoke-OmegaCapture.ps1"
@@ -174,6 +194,18 @@ if ($Persistent) {
                 Write-Output "   [+] Embedding Worker restarted (PID: $($WorkerProc.Id))."
             } catch {
                 Write-Error "   [-] Failed to restart Embedding Worker: $($_.Exception.Message)"
+            }
+        }
+
+        # Check Vector Index Worker
+        if ($null -eq $VectorWorkerProc -or $VectorWorkerProc.HasExited) {
+            $RestartTime = Get-Date -Format "HH:mm:ss"
+            Write-Warning "[$RestartTime] Vector Index Worker is down. Restarting..."
+            try {
+                $VectorWorkerProc = Start-Process -FilePath $PoetryPath -ArgumentList $PoetryVectorWorkerArgs -WindowStyle $WindowStyle -PassThru @LogArgs_Capture
+                Write-Output "   [+] Vector Index Worker restarted (PID: $($VectorWorkerProc.Id))."
+            } catch {
+                Write-Error "   [-] Failed to restart Vector Index Worker: $($_.Exception.Message)"
             }
         }
     }

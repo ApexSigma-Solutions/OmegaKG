@@ -731,6 +731,9 @@ app.include_router(service_control_router)
 cors_origins = []
 if settings.chrome_extension_id:
     cors_origins.append(f"chrome-extension://{settings.chrome_extension_id}")
+else:
+    # Allow any chrome-extension origin if extension ID not configured (development mode)
+    cors_origins.append("chrome-extension://*")
 # Allow localhost for development (Backend)
 cors_origins.extend(["http://localhost:8765", "http://127.0.0.1:8765"])
 # Allow CortexBridge Frontend (Vite Dev & Preview)

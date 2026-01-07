@@ -153,6 +153,20 @@ class PercolationEngine:
         # Look for task references (e.g., [[DRAFT-001]])
         task_pattern = r"\[\[([A-Z]+-\d+)\]\]"
         tasks = re.findall(task_pattern, content)
+        
+        # Look for checkbox task references (e.g., - [x] [[DRAFT-001]])
+        checkbox_task_pattern = r"^\s*-\s*\[([ x])\]\s*\[\[([A-Z]+-\d+)\]\]"
+        checkbox_tasks = re.findall(checkbox_task_pattern, content, re.MULTILINE)
+        if checkbox_tasks:
+            logger.info(
+                f"[DIAGNOSTIC] Found {len(checkbox_tasks)} checkbox task references in {path.name}"
+            )
+            # Extract UIDs from checkbox tasks and add to tasks list
+            for checkbox_match in checkbox_tasks:
+                checkbox_state, task_uid = checkbox_match.groups()
+                if checkbox_state.strip() == 'x':  # Only process checked checkboxes
+                    tasks.append(task_uid)
+                    logger.debug(f"[DIAGNOSTIC] Extracted checkbox task UID: {task_uid}")
 
         logger.info(
             f"[DIAGNOSTIC] Task extraction from {path.name}: "

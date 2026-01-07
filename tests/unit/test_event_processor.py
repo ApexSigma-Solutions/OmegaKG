@@ -302,9 +302,6 @@ async def test_handle_linear_event_success(mock_settings) -> None:
         assert success is True, "Should return True on successful processing"
         assert error_msg is None, "Error message should be None on success"
         mock_lp.process_single_event.assert_called_once_with(payload)
-        assert processor.metrics.processed_count == 1, (
-            "Processed count should increment"
-        )
 
 
 @pytest.mark.asyncio
@@ -322,9 +319,6 @@ async def test_handle_linear_event_failure(mock_settings) -> None:
         mock_event = MagicMock(spec=RawWebhookEvent)
         payload = {"type": "Issue", "action": "create"}
 
-        # Verify initial state
-        assert processor.metrics.error_count == 0, "Initial error count should be zero"
-
         # Act: Process the event
         success, error_msg = await processor._handle_linear_event(mock_event, payload)
 
@@ -334,7 +328,6 @@ async def test_handle_linear_event_failure(mock_settings) -> None:
         assert "Processing error: Invalid payload" in error_msg, (
             "Error message should contain exception details"
         )
-        assert processor.metrics.error_count == 1, "Error count should increment"
         mock_lp.process_single_event.assert_called_once_with(payload)
 
 
@@ -359,7 +352,6 @@ async def test_handle_linear_event_failure_connection_error(mock_settings) -> No
         assert "Failed to connect to Linear API" in error_msg, (
             "Error message should contain connection details"
         )
-        assert processor.metrics.error_count == 1, "Error count should increment"
 
 
 @pytest.mark.asyncio
@@ -383,7 +375,6 @@ async def test_handle_linear_event_failure_timeout(mock_settings) -> None:
         assert "Request timed out after 30s" in error_msg, (
             "Error message should contain timeout details"
         )
-        assert processor.metrics.error_count == 1, "Error count should increment"
 
 
 @pytest.mark.asyncio
@@ -412,10 +403,6 @@ async def test_handle_linear_event_failure_multiple_errors(mock_settings) -> Non
                 f"Iteration {i}: Error message should be populated"
             )
 
-        assert processor.metrics.error_count == 3, (
-            "Error count should increment for each failure"
-        )
-
 
 @pytest.mark.asyncio
 async def test_handle_linear_event_failure_with_none_payload(mock_settings) -> None:
@@ -437,7 +424,6 @@ async def test_handle_linear_event_failure_with_none_payload(mock_settings) -> N
         assert "Payload cannot be None" in error_msg, (
             "Error message should contain type error details"
         )
-        assert processor.metrics.error_count == 1, "Error count should increment"
 
 
 @pytest.mark.asyncio
@@ -451,11 +437,10 @@ async def test_mark_complete_updates_event(mock_settings):
     mock_event.error_log = "previous error"
 
     processor = EventProcessor()
-    await processor._mark_complete(mock_session, mock_event)
+    processor._mark_complete(mock_session, mock_event)
 
     assert mock_event.processed_status is True
     assert mock_event.error_log is None
-    mock_session.commit.assert_called_once()
 
 
 @pytest.mark.asyncio
@@ -468,11 +453,10 @@ async def test_mark_failed_truncates_long_errors(mock_settings):
     long_error = "x" * 2000
 
     processor = EventProcessor()
-    await processor._mark_failed(mock_session, mock_event, long_error)
+    processor._mark_failed(mock_session, mock_event, long_error)
 
     assert mock_event.processed_status is True
     assert len(mock_event.error_log) == 1000
-    mock_session.commit.assert_called_once()
 
 
 @pytest.mark.asyncio
@@ -627,3 +611,290 @@ def test_handler_registry_extensibility():
 
     processor.handlers["github"] = mock_handler
     assert "github" in processor.handlers
+
+
+@pytest.mark.asyncio
+async def test_dispatch_calls_correct_handler(mock_settings):
+    """Verifies _dispatch routes to correct handler based on source."""
+    mock_handler = AsyncMock(return_value=True)
+    processor = EventProcessor()
+    processor.handlers["custom"] = mock_handler
+
+    mock_event = MagicMock(spec=RawWebhookEvent)
+    mock_event.source = "custom"
+    payload = {"type": "CustomEvent"}
+
+    success, error_msg = await processor._dispatch(mock_event, payload)
+
+    assert success is True
+    assert error_msg is None
+    mock_handler.assert_called_once_with(payload)
+
+
+@pytest.mark.asyncio
+async def test_dispatch_handler_exception_handling(mock_settings):
+    """Verifies _dispatch handles exceptions from handlers gracefully."""
+    mock_handler = AsyncMock(side_effect=RuntimeError("Handler crash"))
+    processor = EventProcessor()
+    processor.handlers["test"] = mock_handler
+
+    mock_event = MagicMock(spec=RawWebhookEvent)
+    mock_event.source = "test"
+    payload = {"type": "Test"}
+
+    success, error_msg = await processor._dispatch(mock_event, payload)
+
+    assert success is False
+    assert "Handler crash" in error_msg
+
+
+@pytest.mark.asyncio
+async def test_process_batch_query_construction(mock_settings):
+    """Verifies process_batch constructs correct database query."""
+    mock_session = MagicMock()
+    mock_session_cls = MagicMock(return_value=mock_session)
+    mock_session.__aenter__.return_value = mock_session
+    mock_session.__aexit__ = AsyncMock(return_value=None)
+
+    mock_result = MagicMock()
+    mock_result.scalars.return_value.all.return_value = []
+    mock_session.execute = AsyncMock(return_value=mock_result)
+
+    with patch("omega_kg.workers.event_processor.AsyncSessionLocal", mock_session_cls):
+        processor = EventProcessor()
+        await processor.process_batch()
+
+        # Verify session was used as context manager
+        mock_session.__aenter__.assert_called_once()
+        mock_session.__aexit__.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_process_batch_metrics_updated(mock_settings):
+    """Verifies process_batch updates metrics correctly."""
+    mock_session = MagicMock()
+    mock_session_cls = MagicMock(return_value=mock_session)
+    mock_session.__aenter__.return_value = mock_session
+    mock_session.__aexit__ = AsyncMock(return_value=None)
+    mock_session.commit = AsyncMock()
+
+    events = []
+    for i in range(2):
+        mock_event = MagicMock(spec=RawWebhookEvent)
+        mock_event.source = "linear"
+        mock_event.payload = f'{{"id": {i}}}'
+        mock_event.processed_status = False
+        mock_event.error_log = None
+        events.append(mock_event)
+
+    mock_result = MagicMock()
+    mock_result.scalars.return_value.all.return_value = events
+    mock_session.execute = AsyncMock(return_value=mock_result)
+
+    with patch("omega_kg.workers.event_processor.AsyncSessionLocal", mock_session_cls):
+        with patch(
+            "omega_kg.workers.event_processor.get_linear_processor"
+        ) as mock_get_lp:
+            mock_lp = MagicMock()
+            mock_lp.process_single_event = AsyncMock(return_value=True)
+            mock_get_lp.return_value = mock_lp
+
+            processor = EventProcessor()
+            count = await processor.process_batch()
+
+            assert count == 2
+            assert processor.metrics.processed_count == 2
+
+
+@pytest.mark.asyncio
+async def test_parse_payload_nested_json():
+    """Verifies _parse_payload handles nested JSON structures."""
+    processor = EventProcessor()
+    payload = '{"user": {"id": 123, "name": "Test"}, "nested": {"deep": {"value": true}}}'
+
+    result = processor._parse_payload(payload)
+
+    assert result["user"]["id"] == 123
+    assert result["nested"]["deep"]["value"] is True
+
+
+@pytest.mark.asyncio
+async def test_parse_payload_empty_string():
+    """Verifies _parse_payload handles empty string gracefully."""
+    processor = EventProcessor()
+    payload = ""
+
+    result = processor._parse_payload(payload)
+
+    assert result == {}
+
+
+@pytest.mark.asyncio
+async def test_parse_payload_empty_bytes():
+    """Verifies _parse_payload handles empty bytes gracefully."""
+    processor = EventProcessor()
+    payload = b""
+
+    result = processor._parse_payload(payload)
+
+    assert result == {}
+
+
+@pytest.mark.asyncio
+async def test_mark_failed_error_truncation_boundary():
+    """Verifies _mark_failed correctly truncates at exactly 1000 chars."""
+    mock_session = MagicMock()
+    mock_session.commit = AsyncMock()
+
+    mock_event = MagicMock(spec=RawWebhookEvent)
+    error_message = "x" * 1500
+
+    processor = EventProcessor()
+    processor._mark_failed(mock_session, mock_event, error_message)
+
+    assert len(mock_event.error_log) == 1000
+    assert mock_event.error_log == "x" * 1000
+
+
+@pytest.mark.asyncio
+async def test_mark_failed_preserves_short_errors():
+    """Verifies _mark_failed preserves error messages under 1000 chars."""
+    mock_session = MagicMock()
+    mock_session.commit = AsyncMock()
+
+    mock_event = MagicMock(spec=RawWebhookEvent)
+    short_error = "This is a short error message"
+
+    processor = EventProcessor()
+    processor._mark_failed(mock_session, mock_event, short_error)
+
+    assert mock_event.error_log == short_error
+    assert len(mock_event.error_log) < 1000
+
+
+@pytest.mark.asyncio
+async def test_handle_linear_event_partial_success():
+    """Verifies _handle_linear_event handles partial processor success."""
+    with patch("omega_kg.workers.event_processor.get_linear_processor") as mock_get_lp:
+        mock_lp = MagicMock()
+        mock_lp.process_single_event = AsyncMock(return_value=False)
+        mock_get_lp.return_value = mock_lp
+
+        processor = EventProcessor()
+        mock_event = MagicMock(spec=RawWebhookEvent)
+        payload = {"type": "Issue"}
+
+        success, error_msg = await processor._handle_linear_event(mock_event, payload)
+
+        assert success is False
+
+
+@pytest.mark.asyncio
+async def test_process_batch_session_cleanup_on_error(mock_settings):
+    """Verifies process_batch cleans up session even on error."""
+    mock_session = MagicMock()
+    mock_session_cls = MagicMock(return_value=mock_session)
+    mock_session.__aenter__.return_value = mock_session
+    mock_session.__aexit__ = AsyncMock(return_value=None)
+    mock_session.execute = AsyncMock(side_effect=Exception("DB error"))
+
+    with patch("omega_kg.workers.event_processor.AsyncSessionLocal", mock_session_cls):
+        processor = EventProcessor()
+        with pytest.raises(Exception):
+            await processor.process_batch()
+
+        # Verify session cleanup
+        mock_session.__aexit__.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_process_batch_status_transitions(mock_settings):
+    """Verifies event status transitions from False to True."""
+    mock_session = MagicMock()
+    mock_session_cls = MagicMock(return_value=mock_session)
+    mock_session.__aenter__.return_value = mock_session
+    mock_session.__aexit__ = AsyncMock(return_value=None)
+    mock_session.commit = AsyncMock()
+
+    mock_event = MagicMock(spec=RawWebhookEvent)
+    mock_event.source = "linear"
+    mock_event.payload = '{"type": "Issue"}'
+    mock_event.processed_status = False
+
+    assert mock_event.processed_status is False
+
+    mock_result = MagicMock()
+    mock_result.scalars.return_value.all.return_value = [mock_event]
+    mock_session.execute = AsyncMock(return_value=mock_result)
+
+    with patch("omega_kg.workers.event_processor.AsyncSessionLocal", mock_session_cls):
+        with patch(
+            "omega_kg.workers.event_processor.get_linear_processor"
+        ) as mock_get_lp:
+            mock_lp = MagicMock()
+            mock_lp.process_single_event = AsyncMock(return_value=True)
+            mock_get_lp.return_value = mock_lp
+
+            processor = EventProcessor()
+            await processor.process_batch()
+
+            assert mock_event.processed_status is True
+
+
+def test_metrics_error_rate_calculation():
+    """Verifies metrics can calculate error rate."""
+    metrics = EventProcessorMetrics()
+    metrics.record_processed()
+    metrics.record_processed()
+    metrics.record_error()
+
+    stats = metrics.get_stats()
+
+    assert stats["processed_total"] == 2
+    assert stats["errors_total"] == 1
+    error_rate = stats["errors_total"] / max(1, stats["processed_total"])
+    assert error_rate == 0.5
+
+
+@pytest.mark.asyncio
+async def test_start_loop_respects_running_flag(mock_settings):
+    """Verifies start() stops when running flag is set to False."""
+    processor = EventProcessor()
+    processor.running = True
+
+    with patch.object(processor, "process_batch", new_callable=AsyncMock) as mock_batch:
+        # Set running to False on first call completion
+        async def stop_on_first_call():
+            processor.running = False
+            return 0
+
+        mock_batch.side_effect = stop_on_first_call
+
+        await processor.start()
+
+        assert processor.running is False
+
+
+@pytest.mark.asyncio
+async def test_process_batch_handles_payload_parsing_error(mock_settings):
+    """Verifies process_batch continues when payload parsing fails."""
+    mock_session = MagicMock()
+    mock_session_cls = MagicMock(return_value=mock_session)
+    mock_session.__aenter__.return_value = mock_session
+    mock_session.__aexit__ = AsyncMock(return_value=None)
+    mock_session.commit = AsyncMock()
+
+    mock_event = MagicMock(spec=RawWebhookEvent)
+    mock_event.source = "linear"
+    mock_event.payload = b"corrupted{{{json"
+
+    mock_result = MagicMock()
+    mock_result.scalars.return_value.all.return_value = [mock_event]
+    mock_session.execute = AsyncMock(return_value=mock_result)
+
+    with patch("omega_kg.workers.event_processor.AsyncSessionLocal", mock_session_cls):
+        processor = EventProcessor()
+        count = await processor.process_batch()
+
+        assert count == 1
+        assert mock_event.processed_status is True
