@@ -42,7 +42,9 @@ async def lifespan(app: FastAPI):
         codex.connect()
         logger.info("[OK] Codex initialized and connected")
     except Exception as e:
-        logger.warning(f"Failed to initialize Codex: {e}. Intelligence layer will be unavailable.")
+        logger.warning(
+            f"Failed to initialize Codex: {e}. Intelligence layer will be unavailable."
+        )
         codex = None
 
     logger.info("Application startup: Initializing EventProcessor")
@@ -80,6 +82,10 @@ app = FastAPI(
 app.include_router(linear_receiver.router, tags=["Linear Ingest"])
 app.include_router(github_receiver.router, tags=["GitHub Ingest"])
 
+from omega_kg.routers import telemetry
+
+app.include_router(telemetry.router)
+
 # MCP router for intelligence layer tools
 mcp_router = APIRouter(prefix="/mcp", tags=["MCP"])
 
@@ -100,7 +106,7 @@ async def consult_codex(action_description: str) -> Dict[str, Any]:
     if not codex:
         return {
             "error": "Codex not initialized",
-            "message": "Intelligence layer unavailable"
+            "message": "Intelligence layer unavailable",
         }
 
     mirmir = Mirmir(codex)
@@ -110,7 +116,7 @@ async def consult_codex(action_description: str) -> Dict[str, Any]:
         "allowed": verdict.approved,
         "reason": verdict.message,
         "constraint_id": verdict.violations[0] if verdict.violations else None,
-        "verdict": verdict.dict()
+        "verdict": verdict.dict(),
     }
 
 
@@ -128,7 +134,7 @@ async def health_check():
         async for session in get_db():
             await session.execute(text("SELECT 1"))
             db_status = "connected"
-            break # Only need one
+            break  # Only need one
     except Exception as e:
         db_status = f"error: {str(e)}"
 

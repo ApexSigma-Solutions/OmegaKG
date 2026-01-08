@@ -344,14 +344,14 @@ async def batch_percolate_sessions():
 
         # --- Phase 1: Task Sync (Linear + Neo4j) ---
         sync_stats = {"linear_created": 0, "neo4j_synced": 0, "errors": 0}
-        
+
         try:
             obsidian_sync = ObsidianNeo4jSync()
             # Initialize SmartParser (only if linear sync is configured)
             smart_parser = None
             if settings.linear_team_id:
                 smart_parser = SmartParser()
-            
+
             task_files = obsidian_sync.get_all_task_files()
             logger.info(f"Found {len(task_files)} task files to process")
 
@@ -366,7 +366,7 @@ async def batch_percolate_sessions():
                                 meta = frontmatter.load(f).metadata
                         except Exception:
                             pass
-                        
+
                         if not meta.get("linear_id"):
                             logger.info(f"Syncing new task to Linear: {task_file.name}")
                             await smart_parser.sync_note_to_linear(task_file)
@@ -386,13 +386,14 @@ async def batch_percolate_sessions():
         except Exception as e:
             logger.error(f"Task Sync phase failed: {e}", exc_info=True)
 
-
         # --- Phase 2: Session/Reference Percolation ---
         # Parse scan folders from settings
         # Use explicit session scan folders setting (TN-103/TN-301)
         scan_folders_str = settings.obsidian_session_scan_folders
         separator = "," if "," in scan_folders_str else ":"
-        scan_folders = [f.strip() for f in scan_folders_str.split(separator) if f.strip()]
+        scan_folders = [
+            f.strip() for f in scan_folders_str.split(separator) if f.strip()
+        ]
 
         logger.info(f"Scanning folders for percolation: {', '.join(scan_folders)}")
 
@@ -420,9 +421,13 @@ async def batch_percolate_sessions():
 
         # Percolate from vault root with filtered folder list
         valid_folder_names = [p.name for p in valid_folders]
-        logger.debug(f"Initiating percolation from: {vault_base} for folders: {valid_folder_names}")
-        
-        total_stats = engine.percolate_from_vault(vault_base, scan_folders=valid_folder_names)
+        logger.debug(
+            f"Initiating percolation from: {vault_base} for folders: {valid_folder_names}"
+        )
+
+        total_stats = engine.percolate_from_vault(
+            vault_base, scan_folders=valid_folder_names
+        )
 
         elapsed_ms = (time.time() - start_time) * 1000
         logger.info(
@@ -443,21 +448,25 @@ async def run_lifecycle_check():
     Run lifecycle enforcement periodically.
     """
     import asyncio
-    
+
     logger.info("→ Scheduler execution started: run_lifecycle_check")
     lifecycle = None
     try:
         lifecycle = TaskLifecycle()
         # Run enforcement in executor to avoid blocking the loop
         loop = asyncio.get_running_loop()
-        results = await loop.run_in_executor(None, lambda: lifecycle.enforce_lifecycle(dry_run=False))
-        
+        results = await loop.run_in_executor(
+            None, lambda: lifecycle.enforce_lifecycle(dry_run=False)
+        )
+
         report = lifecycle.generate_report(results)
         logger.info(f"[OK] Lifecycle check complete:\n{report}")
-        
+
         # Send email if configured
         if settings.email_to:
-             await loop.run_in_executor(None, lambda: lifecycle.send_email_report(report))
+            await loop.run_in_executor(
+                None, lambda: lifecycle.send_email_report(report)
+            )
 
     except Exception as e:
         logger.error(f"Lifecycle check failed: {e}", exc_info=True)
@@ -723,8 +732,13 @@ app.include_router(terminal_router)
 app.include_router(linear_receiver.router, tags=["Linear Ingest"])
 app.include_router(github_receiver.router, tags=["GitHub Ingest"])
 
+from omega_kg.routers import telemetry
+
+app.include_router(telemetry.router)
+
 # Service Control (Subprocess Management)
 from omega_kg.routers.service_control import router as service_control_router
+
 app.include_router(service_control_router)
 
 # CORS middleware
@@ -737,7 +751,14 @@ else:
 # Allow localhost for development (Backend)
 cors_origins.extend(["http://localhost:8765", "http://127.0.0.1:8765"])
 # Allow CortexBridge Frontend (Vite Dev & Preview)
-cors_origins.extend(["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:4173", "http://127.0.0.1:4173"])
+cors_origins.extend(
+    [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:4173",
+        "http://127.0.0.1:4173",
+    ]
+)
 
 app.add_middleware(
     CORSMiddleware,
