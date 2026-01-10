@@ -20,7 +20,7 @@ if config.config_file_name is not None:
 # from myapp import mymodel
 # for 'autogenerate' support
 from omega_kg.database.base import Base
-from omega_kg.models import terminal  # noqa: F401
+from omega_kg.models import terminal, validation  # noqa: F401
 # Import other models here if they exist and use the shared Base
 target_metadata = Base.metadata
 

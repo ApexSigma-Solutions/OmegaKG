@@ -169,8 +169,8 @@ class Settings(BaseSettings):
     # --- Postgres Infrastructure (New) ---
     postgres_user: str = Field("omega_user", validation_alias="POSTGRES_USER")
     postgres_server: str = Field("127.0.0.1", validation_alias="POSTGRES_SERVER")
-    postgres_port: int = Field(5433, validation_alias="POSTGRES_PORT")
-    postgres_db: str = Field("omega_kg", validation_alias="POSTGRES_DB")
+    postgres_port: int = Field(6000, validation_alias="POSTGRES_PORT")
+    postgres_db: str = Field("omegakg", validation_alias="POSTGRES_DB")
     postgres_password: str = Field(
         "omega_dev_password", validation_alias="POSTGRES_PASSWORD"
     )
@@ -226,7 +226,7 @@ class Settings(BaseSettings):
         '"documentation": "2ab9b46e-21a3-47f4-8660-ab68093a99b4", '
         '"question": "72d2560d-6de4-49f4-bde7-9a58e0849293"}',
         validation_alias="LINEAR_LABEL_MAP_JSON",
-        description="JSON mapping of Linear label names to label IDs. Example: {\"bug\": \"uuid\", \"feature\": \"uuid\"}",
+        description='JSON mapping of Linear label names to label IDs. Example: {"bug": "uuid", "feature": "uuid"}',
     )
 
     # --- Secrets & Keys ---
@@ -285,6 +285,9 @@ class Settings(BaseSettings):
         "ollama-server-01", validation_alias="QUIPU_SERVICE_NAME"
     )
     omega_pg_conn: Optional[str] = Field(None, validation_alias="OMEGA_PG_CONN")
+    ingest_llm_url: str = Field(
+        "http://localhost:8766", validation_alias="INGEST_LLM_URL"
+    )
 
     # --- Percolation Engine Configuration ---
     percolation_similarity_threshold: float = Field(
@@ -337,13 +340,23 @@ class Settings(BaseSettings):
         validation_alias="TERMINAL_NOISE_PATTERNS",
         description="Comma-separated list of regex patterns to ignore in terminal capture",
     )
-    
+
     # --- Ingest Database Configuration ---
-    ingest_postgres_user: Optional[str] = Field(None, validation_alias="INGEST_POSTGRES_USER")
-    ingest_postgres_password: Optional[str] = Field(None, validation_alias="INGEST_POSTGRES_PASSWORD")
-    ingest_postgres_server: Optional[str] = Field(None, validation_alias="INGEST_POSTGRES_SERVER")
-    ingest_postgres_port: Optional[int] = Field(None, validation_alias="INGEST_POSTGRES_PORT")
-    ingest_postgres_db: Optional[str] = Field(None, validation_alias="INGEST_POSTGRES_DB")
+    ingest_postgres_user: Optional[str] = Field(
+        None, validation_alias="INGEST_POSTGRES_USER"
+    )
+    ingest_postgres_password: Optional[str] = Field(
+        None, validation_alias="INGEST_POSTGRES_PASSWORD"
+    )
+    ingest_postgres_server: Optional[str] = Field(
+        None, validation_alias="INGEST_POSTGRES_SERVER"
+    )
+    ingest_postgres_port: Optional[int] = Field(
+        None, validation_alias="INGEST_POSTGRES_PORT"
+    )
+    ingest_postgres_db: Optional[str] = Field(
+        None, validation_alias="INGEST_POSTGRES_DB"
+    )
 
     model_config = SettingsConfigDict(
         env_file=".env",

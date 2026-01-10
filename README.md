@@ -76,9 +76,12 @@ poetry run python -m omega_kg.lifecycle --dry-run
 # Start capture server (entry point)
 poetry run capture-server
 
-# Reorganized Scripts (db-ops, maintenance, troubleshooting, testing, startup)
+# Reorganized Scripts (categorized by function)
 # Example: Run smoke test
 poetry run python scripts/testing/test-smoke.py
+
+# Example: Verify database connectivity
+poetry run python scripts/database/verify-phase2-readiness.py
 
 # Run all tests
 poetry run pytest
@@ -150,10 +153,16 @@ poetry run mkdocs serve
 # View at http://localhost:8000
 ```
 
+## Documentation References
+
+- **Comprehensive Guides**: `OmegaVault/ApexSigma/development/projects/OmegaKG/` - Consolidated project documentation
+- **Script Reference**: `scripts/SCRIPTS_REFERENCE.md` - Complete guide to categorized scripts
+- **Governance Docs**: `docs/GOVERNANCE/` - Active development patterns
+
 ## Contributing
 
 1. Create a feature branch: `git checkout -b feature/my-feature`
-2. Make changes and commit: `git commit -am "Add my feature"`
+2. Make changes and commit: `git commit -m "Add my feature"`
 3. Push to remote: `git push origin feature/my-feature`
 4. Open a pull request
 
@@ -165,5 +174,6 @@ MIT License - see LICENSE file for details
 
 For issues, feature requests, or questions:
 - Open an [issue](https://github.com/ApexSigma-Solutions/omega_kg/issues)
-- Centralized Documentation: [OmegaVault/ApexSigma/Development/Projects/OmegaKG](../OmegaVault/ApexSigma/Development/Projects/OmegaKG)
-- Review [IMPLEMENTATION_SUMMARY.md](../OmegaVault/ApexSigma/Development/Projects/OmegaKG/00_History/IMPLEMENTATION_SUMMARY.md)
+- **Comprehensive Documentation**: `OmegaVault/ApexSigma/development/projects/OmegaKG/` - Consolidated project guides
+- **Script Reference**: `scripts/SCRIPTS_REFERENCE.md` - Complete guide to categorized scripts
+- **Governance Docs**: `docs/GOVERNANCE/` - Active development patterns
