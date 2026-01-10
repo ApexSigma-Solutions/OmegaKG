@@ -725,8 +725,10 @@ app.include_router(linear_receiver.router, tags=["Linear Ingest"])
 app.include_router(github_receiver.router, tags=["GitHub Ingest"])
 
 from omega_kg.routers import telemetry
+from omega_kg.routers import auth
 
 app.include_router(telemetry.router)
+app.include_router(auth.router)
 
 # Service Control (Subprocess Management)
 from omega_kg.routers.service_control import router as service_control_router
@@ -751,6 +753,8 @@ cors_origins.extend(
         "http://127.0.0.1:5173",
         "http://localhost:4173",
         "http://127.0.0.1:4173",
+        "http://localhost:6001",
+        "http://127.0.0.1:6001",
     ]
 )
 
