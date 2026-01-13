@@ -9,7 +9,7 @@ from typing import Any, Dict, Optional, Tuple
 # This ensures environment variables override any shell/system values
 from dotenv import load_dotenv
 
-load_dotenv(override=True)
+load_dotenv(override=False)
 
 from bitwarden_sdk import BitwardenClient
 from bitwarden_sdk.schemas import ClientSettings, DeviceType
@@ -202,17 +202,17 @@ class Settings(BaseSettings):
         None,
         validation_alias=AliasChoices("EXTENSION_API_KEY_PRD", "EXTENSION_API_KEY"),
     )
-    
+
     # --- Validation API Authentication (TN-CORE-102) ---
     bws_access_token: Optional[str] = Field(
         None,
         validation_alias="BWS_ACCESS_TOKEN",
-        description="Bitwarden Secrets Manager access token for service authentication"
+        description="Bitwarden Secrets Manager access token for service authentication",
     )
     static_service_token: Optional[str] = Field(
         None,
         validation_alias="STATIC_SERVICE_TOKEN",
-        description="Static token for local development (fallback when BWS_ACCESS_TOKEN not available)"
+        description="Static token for local development (fallback when BWS_ACCESS_TOKEN not available)",
     )
 
     # --- Email/SMTP (Legacy Restored) ---
@@ -238,7 +238,7 @@ class Settings(BaseSettings):
         '"documentation": "2ab9b46e-21a3-47f4-8660-ab68093a99b4", '
         '"question": "72d2560d-6de4-49f4-bde7-9a58e0849293"}',
         validation_alias="LINEAR_LABEL_MAP_JSON",
-        description="JSON mapping of Linear label names to label IDs. Example: {\"bug\": \"uuid\", \"feature\": \"uuid\"}",
+        description='JSON mapping of Linear label names to label IDs. Example: {"bug": "uuid", "feature": "uuid"}',
     )
 
     # --- Secrets & Keys ---
@@ -349,13 +349,23 @@ class Settings(BaseSettings):
         validation_alias="TERMINAL_NOISE_PATTERNS",
         description="Comma-separated list of regex patterns to ignore in terminal capture",
     )
-    
+
     # --- Ingest Database Configuration ---
-    ingest_postgres_user: Optional[str] = Field(None, validation_alias="INGEST_POSTGRES_USER")
-    ingest_postgres_password: Optional[str] = Field(None, validation_alias="INGEST_POSTGRES_PASSWORD")
-    ingest_postgres_server: Optional[str] = Field(None, validation_alias="INGEST_POSTGRES_SERVER")
-    ingest_postgres_port: Optional[int] = Field(None, validation_alias="INGEST_POSTGRES_PORT")
-    ingest_postgres_db: Optional[str] = Field(None, validation_alias="INGEST_POSTGRES_DB")
+    ingest_postgres_user: Optional[str] = Field(
+        None, validation_alias="INGEST_POSTGRES_USER"
+    )
+    ingest_postgres_password: Optional[str] = Field(
+        None, validation_alias="INGEST_POSTGRES_PASSWORD"
+    )
+    ingest_postgres_server: Optional[str] = Field(
+        None, validation_alias="INGEST_POSTGRES_SERVER"
+    )
+    ingest_postgres_port: Optional[int] = Field(
+        None, validation_alias="INGEST_POSTGRES_PORT"
+    )
+    ingest_postgres_db: Optional[str] = Field(
+        None, validation_alias="INGEST_POSTGRES_DB"
+    )
 
     model_config = SettingsConfigDict(
         env_file=".env",
