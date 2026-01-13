@@ -732,6 +732,10 @@ app.include_router(terminal_router)
 app.include_router(linear_receiver.router, tags=["Linear Ingest"])
 app.include_router(github_receiver.router, tags=["GitHub Ingest"])
 
+# Validation API Gateway (TN-CORE-102)
+from omega_kg.routers.validation import router as validation_router
+app.include_router(validation_router, tags=["Validation API"])
+
 from omega_kg.routers import telemetry
 
 app.include_router(telemetry.router)
