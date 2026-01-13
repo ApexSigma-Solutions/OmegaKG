@@ -1,17 +1,17 @@
 # Dual-Write Saga Weaver
 import asyncio
 import logging
+from datetime import datetime
 import re
-import json
-from typing import List, Dict, Any, Optional
-from sqlalchemy import select, text
-from sqlalchemy.dialects.postgresql import JSONB
+from typing import List, Any, Optional
+from sqlalchemy import select
 
 # Internal Imports
-from omega_kg.database import get_ingest_session, get_vector_session
+from omega_kg.database import get_ingest_session
 from omega_kg.models.terminal import TerminalEvent
-from omega_kg.services.neo4j_adapter import Neo4jAdapter
 from omega_kg.services.openai_service import generate_embedding
+from omega_kg.services.omegakg_client import OmegaKGInternalClient
+from omega_kg.models.validation import KnowledgeDigest, DigestType
 
 # Setup Logger
 logger = logging.getLogger("omega.worker.embedding")
@@ -21,23 +21,25 @@ logger.setLevel(logging.INFO)
 # --- CONFIGURATION ---
 BATCH_SIZE = 10
 POLL_INTERVAL = 5  # Seconds
-AGENT_ID = "ghost-monitor" # The persona for these automated memories
+AGENT_ID = "ghost-monitor"  # The persona for these automated memories
 
 # --- REGEX FOR ENTITY EXTRACTION ---
 # Matches LIN-123 or #123
-ISSUE_PATTERN = re.compile(r'\b([A-Z]{2,5}-\d+)\b|\b#(\d+)\b')
+ISSUE_PATTERN = re.compile(r"\b([A-Z]{2,5}-\d+)\b|\b#(\d+)\b")
+
 
 class SagaWeaver:
     """
-    The Loom that stitches raw events into the Knowledge Graph (Neo4j) 
+    The Loom that stitches raw events into the Knowledge Graph (Neo4j)
     AND the Semantic Memory (PGVector).
     """
+
     def __init__(self):
-        self.neo4j = Neo4jAdapter()
+        self.omegakg_client = OmegaKGInternalClient()
         self.running = True
 
     async def start(self):
-        logger.info("🕸️  Saga Weaver (Dual-Write) Started.")
+        logger.info("🕸️  Saga Weaver (API-Based) Started.")
         while self.running:
             try:
                 await self.process_terminal_queue()
@@ -45,6 +47,7 @@ class SagaWeaver:
             except Exception as e:
                 logger.error(f"Worker Loop Error: {e}", exc_info=True)
                 await asyncio.sleep(POLL_INTERVAL)
+        await self.omegakg_client.close()
 
     async def process_terminal_queue(self):
         """
@@ -54,49 +57,83 @@ class SagaWeaver:
         # Utilizing async context manager for session
         async with get_ingest_session() as read_session:
             # 1. Fetch unprocessed events
-            statement = select(TerminalEvent).where(TerminalEvent.processed == False).limit(BATCH_SIZE)
+            statement = (
+                select(TerminalEvent)
+                .where(not TerminalEvent.processed)
+                .limit(BATCH_SIZE)
+            )
             result = await read_session.execute(statement)
             events = result.scalars().all()
 
             if not events:
                 return
 
-            logger.info(f"Processing {len(events)} terminal events...")
+            logger.info(f"Processing {len(events)} terminal events via API...")
 
-            # We use the Vector DB (Memos) to write memories
-            # Using a separate async session context for the write operation
-            async with get_vector_session() as write_session:
-                for event in events:
-                    try:
-                        # 2. Extract Entities (The "Saga" Link)
-                        linked_entities = self._extract_references(event.command)
-                        
-                        # 3. Compile Context String (The "Memory")
-                        context_text = self._compile_context(event)
-                        
-                        # 4. Generate Vector (1536d or 1024d)
-                        embedding = await generate_embedding(context_text)
+            for event in events:
+                try:
+                    # 2. Extract Entities (The "Saga" Link)
+                    linked_entities = self._extract_references(event.command)
 
-                        # 5. WRITE A: Neo4j (Structure)
-                        self._push_to_neo4j(event, context_text, embedding, linked_entities)
+                    # 3. Compile Context String (The "Memory")
+                    context_text = self._compile_context(event)
 
-                        # 6. WRITE B: PGVector (Recall)
-                        await self._push_to_pgvector(write_session, event, context_text, embedding, linked_entities)
+                    # 4. Generate Vector (1024d)
+                    embedding = await generate_embedding(context_text)
 
-                        # 7. Mark as Processed
+                    # 5. Construct Digest for Validation API
+                    digest = KnowledgeDigest(
+                        source_id=str(event.event_id),
+                        digest_type=DigestType.TERMINAL_EVENT,
+                        title=f"Terminal: {event.command[:50]}",
+                        content=context_text,
+                        embedding=embedding,
+                        metadata={
+                            "cwd": event.cwd,
+                            "session_id": event.session_id,
+                            "exit_code": event.exit_code,
+                            "user": event.user,
+                            "host": event.host,
+                        },
+                        tags=["terminal", "ghost", "auto-capture"],
+                        references={
+                            "session_id": [event.session_id]
+                            if event.session_id
+                            else [],
+                            "linear_issue": linked_entities,
+                        },
+                        captured_at=event.captured_at,
+                    )
+
+                    # 6. Submit to Validation API
+                    response = await self.omegakg_client.validate_and_store(digest)
+
+                    if response["status"] in ["accepted", "duplicate"]:
+                        logger.info(
+                            f"Accepted Event {event.event_id}: {response.get('message')}"
+                        )
                         event.processed = True
-                        # Commit is handled by the context manager or manual commit? 
-                        # In SQLAlchemy async, we usually commit on the session.
-                        # Committing both sessions.
-                        await read_session.commit() # Commit the 'processed' flag
-                        await write_session.commit() # Commit the new memory
-                        
-                        logger.info(f"Weaved Event {event.id} -> Neo4j & PGVector")
+                        event.processed_at = datetime.utcnow()
+                        event.last_error = None
+                    else:
+                        logger.warning(
+                            f"Rejected Event {event.event_id}: {response.get('message')}"
+                        )
+                        event.processed = (
+                            True  # Mark as processed even if rejected by policy
+                        )
+                        event.processed_at = datetime.utcnow()
+                        event.last_error = response.get("message")
 
-                    except Exception as e:
-                        logger.error(f"Failed to process event {event.id}: {e}", exc_info=True)
-                        await read_session.rollback()
-                        await write_session.rollback()
+                    await read_session.commit()
+
+                except Exception as e:
+                    logger.error(
+                        f"Failed to process event {event.id}: {e}", exc_info=True
+                    )
+                    event.processing_attempts += 1
+                    event.last_error = str(e)
+                    await read_session.commit()
 
     def _extract_references(self, text: str) -> List[str]:
         if not text:
@@ -109,8 +146,7 @@ class SagaWeaver:
 
     def _compile_context(self, event: TerminalEvent) -> str:
         status = "Success" if event.exit_code == 0 else "Failed"
-        # Handle cases where timestamps might be None (though schema implies not nullable)
-        ts = event.timestamp.isoformat() if event.timestamp else "UNKNOWN_TIME"
+        ts = event.captured_at.isoformat() if event.captured_at else "UNKNOWN_TIME"
         return (
             f"TERMINAL EXECUTION [{ts}]\n"
             f"Command: {event.command}\n"
@@ -119,95 +155,20 @@ class SagaWeaver:
             f"Host: {event.host}"
         )
 
-    def _push_to_neo4j(self, event, text: str, vector: List[float], references: List[str]):
-        """
-        Cypher logic to create nodes and link them to Issues/Projects.
-        This runs synchronously via the Neo4j driver adapter which abstracts the session.
-        """
-        cypher = """
-        MERGE (t:TerminalExecution {id: $id})
-        SET t.command = $command,
-            t.cwd = $cwd,
-            t.timestamp = $timestamp,
-            t.exit_code = $exit_code,
-            t.embedding = $vector,
-            t.full_text = $text
-        
-        MERGE (s:DevSession {id: $session_id})
-        MERGE (s)-[:CONTAINS]->(t)
-        
-        WITH t
-        UNWIND $refs as ref
-        MATCH (i:LinearIssue {identifier: ref})
-        MERGE (t)-[:RESOLVES_OR_RELATES]->(i)
-        """
-        
-        ts = event.timestamp.isoformat() if event.timestamp else None
-        
-        params = {
-            "id": str(event.id),
-            "command": event.command,
-            "cwd": event.cwd,
-            "timestamp": ts,
-            "exit_code": event.exit_code,
-            "vector": vector,
-            "text": text,
-            "session_id": event.session_id or "unknown_session",
-            "refs": references
-        }
-        self.neo4j.run(cypher, params)
+    async def process_single_event(self, event_id: Any) -> bool:
+        """Fetches and processes a single specific event by UUID."""
+        async with get_ingest_session() as session:
+            stmt = select(TerminalEvent).where(TerminalEvent.event_id == event_id)
+            result = await session.execute(stmt)
+            event = result.scalar_one_or_none()
+            if event and not event.processed:
+                await self.process_terminal_event(session, event)
+                return True
+        return False
 
-    async def _push_to_pgvector(self, session, event, text: str, vector: List[float], references: List[str]):
-        """
-        Raw SQL insertion into the memos.memories table.
-        We use raw SQL here to avoid tightly coupling the worker to the memos ORM models.
-        """
-        
-        # Metadata payload for filtering
-        metadata = {
-            "source": "ghost-terminal",
-            "cwd": event.cwd,
-            "session_id": event.session_id,
-            "exit_code": event.exit_code,
-            "references": references
-        }
+    # REMOVED: _push_to_neo4j - Now handled by KnowledgeStore via Validation API
+    # REMOVED: _push_to_pgvector - Now handled by KnowledgeStore via Validation API
 
-        # Tags for quick filtering in Memos
-        tags = ["#terminal", "#ghost", "#auto-capture"]
-        if event.exit_code != 0:
-            tags.append("#error")
-        if references:
-            tags.append("#saga")
-
-        sql = text("""
-            INSERT INTO memos.memories (
-                conversation_hash, 
-                agent_id, 
-                content, 
-                embedding, 
-                metadata, 
-                tags, 
-                created_at
-            ) VALUES (
-                :hash, 
-                :agent, 
-                :content, 
-                :vector, 
-                :metadata, 
-                :tags, 
-                :created_at
-            )
-        """)
-
-        await session.execute(sql, {
-            "hash": str(event.id), # Use Event UUID as the hash
-            "agent": AGENT_ID,
-            "content": text,
-            "vector": str(vector), # pgvector expects string representation often, or list depending on driver. asyncpg tends to handle lists if registered, but using str is safer for generic SQL execution unless type binding is confirmed.
-            "metadata": json.dumps(metadata),
-            "tags": tags, # SQLAlchemy handles list->array conversion typically using Postgres dialects
-            "created_at": event.timestamp
-        })
 
 if __name__ == "__main__":
     # Configure root logger to see output
@@ -223,10 +184,11 @@ if __name__ == "__main__":
 _weaver_instance: Any = None
 _weaver_task: Optional[asyncio.Task] = None
 
+
 async def start_worker() -> None:
     """Start the Saga Weaver as a background task."""
     global _weaver_instance, _weaver_task
-    
+
     if _weaver_instance is not None:
         logger.warning("Worker already running")
         return
@@ -235,14 +197,15 @@ async def start_worker() -> None:
     _weaver_task = asyncio.create_task(_weaver_instance.start())
     logger.info("Saga Weaver task created")
 
+
 async def stop_worker() -> None:
     """Stop the Saga Weaver."""
     global _weaver_instance, _weaver_task
-    
+
     if _weaver_instance:
         _weaver_instance.running = False
         logger.info("Stopping Saga Weaver...")
-    
+
     if _weaver_task:
         try:
             # Wait for graceful shutdown (poll interval is 5s, so this might take a bit)
@@ -256,6 +219,17 @@ async def stop_worker() -> None:
                 await _weaver_task
             except asyncio.CancelledError:
                 pass
-    
+
     _weaver_instance = None
     _weaver_task = None
+
+
+async def process_terminal_event_background(event_id: Any) -> None:
+    """Helper for FastAPI BackgroundTasks to process an event quickly."""
+    weaver = SagaWeaver()
+    try:
+        await weaver.process_single_event(event_id)
+    except Exception as e:
+        logger.error(f"Background processing failed for {event_id}: {e}")
+    finally:
+        await weaver.omegakg_client.close()

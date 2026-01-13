@@ -431,4 +431,4 @@ def performance_monitor(request):
 
     # Warn on general slow tests
     if duration > 1.0 and "container" not in request.node.name:
-        print(f"\n⚠️  Slow test: {request.node.name} ({duration:.2f}s)")
+        print(f"\nWARNING  Slow test: {request.node.name} ({duration:.2f}s)")
