@@ -6,7 +6,7 @@ from typing import Any, Dict, Optional, Set
 from fastapi import Depends, HTTPException, Request, Security, status
 from fastapi.security import APIKeyHeader, OAuth2PasswordBearer
 import jwt
-from passlib.context import CryptContext
+import bcrypt  # Replaced passlib
 from pydantic import BaseModel
 
 from omega_kg.rate_limiter import get_rate_limiter
@@ -42,7 +42,7 @@ if ALGORITHM not in SECURE_JWT_ALGORITHMS:
         f"INSECURE JWT algorithm configured: {ALGORITHM}. Must be one of: {SECURE_JWT_ALGORITHMS}"
     )
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# pwd_context removed, using bcrypt directly
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token")
 API_KEY_HEADER = APIKeyHeader(name="X-API-Key")
 
@@ -221,4 +221,133 @@ async def validate_access_token(token: str = Depends(oauth2_scheme)) -> TokenDat
         logger = logging.getLogger(__name__)
         logger.warning("JWT validation failed: %s", str(e))
         raise credentials_exception from e
-        raise credentials_exception from e
+
+
+# USER AUTHENTICATION FUNCTIONS
+
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """
+    Verify a plain password against a hashed password.
+
+    Args:
+        plain_password: The plain text password
+        hashed_password: The hashed password from database
+
+    Returns:
+        bool: True if password matches, False otherwise
+    """
+    try:
+        # Check against pure bcrypt
+        return bcrypt.checkpw(
+            plain_password.encode("utf-8"), hashed_password.encode("utf-8")
+        )
+    except Exception as e:
+        print(f"VERIFY CRASH: {e}")
+        # Fallback logging if needed, but return False safely
+        return False
+
+
+def get_password_hash(password: str) -> str:
+    """
+    Hash a password for storage.
+
+    Args:
+        password: Plain text password
+
+    Returns:
+        str: Hashed password
+    """
+    # Generate bcrypt hash
+    # Note: gensalt() handles salt generation automatically
+    return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+
+
+async def authenticate_user(
+    db_session: Any, email: str, password: str
+) -> Optional[Any]:
+    """
+    Authenticate a user by email and password.
+
+    Args:
+        db_session: Database session
+        email: User email
+        password: Plain text password
+
+    Returns:
+        User object if authentication successful, None otherwise
+    """
+    from sqlalchemy import select
+    from omega_kg.models.user import User
+
+    # Query user by email
+    result = await db_session.execute(select(User).where(User.email == email))
+    user = result.scalar_one_or_none()
+
+    if not user:
+        return None
+
+    if not verify_password(password, user.hashed_password):
+        return None
+
+    if not user.is_active:
+        return None
+
+    return user
+
+
+async def get_current_user(
+    token: str = Depends(oauth2_scheme), db_session: Any = None
+) -> Any:
+    """
+    Get the current authenticated user from JWT token.
+
+    Args:
+        token: JWT token
+        db_session: Database session (injected by FastAPI)
+
+    Returns:
+        User object
+
+    Raises:
+        HTTPException: If token is invalid or user not found
+    """
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id: str = payload.get("sub")
+        if user_id is None:
+            raise credentials_exception
+    except jwt.PyJWTError:
+        raise credentials_exception
+
+    # If no db_session provided, return token data only
+    if db_session is None:
+        return TokenData(username=user_id)
+
+    # Query user from database
+    from sqlalchemy import select
+    from omega_kg.models.user import User
+
+    try:
+        user_id_int = int(user_id)
+    except ValueError:
+        raise credentials_exception
+
+    result = await db_session.execute(select(User).where(User.id == user_id_int))
+    user = result.scalar_one_or_none()
+
+    if user is None:
+        raise credentials_exception
+
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="User account is inactive"
+        )
+
+    return user

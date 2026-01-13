@@ -169,8 +169,8 @@ class Settings(BaseSettings):
     # --- Postgres Infrastructure (New) ---
     postgres_user: str = Field("omega_user", validation_alias="POSTGRES_USER")
     postgres_server: str = Field("127.0.0.1", validation_alias="POSTGRES_SERVER")
-    postgres_port: int = Field(5433, validation_alias="POSTGRES_PORT")
-    postgres_db: str = Field("omega_kg", validation_alias="POSTGRES_DB")
+    postgres_port: int = Field(6000, validation_alias="POSTGRES_PORT")
+    postgres_db: str = Field("omegakg", validation_alias="POSTGRES_DB")
     postgres_password: str = Field(
         "omega_dev_password", validation_alias="POSTGRES_PASSWORD"
     )
@@ -297,6 +297,9 @@ class Settings(BaseSettings):
         "ollama-server-01", validation_alias="QUIPU_SERVICE_NAME"
     )
     omega_pg_conn: Optional[str] = Field(None, validation_alias="OMEGA_PG_CONN")
+    ingest_llm_url: str = Field(
+        "http://localhost:8766", validation_alias="INGEST_LLM_URL"
+    )
 
     # --- Percolation Engine Configuration ---
     percolation_similarity_threshold: float = Field(

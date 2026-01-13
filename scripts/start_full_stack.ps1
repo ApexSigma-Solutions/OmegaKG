@@ -84,10 +84,21 @@ $env:PORT = "8765"
 
 Write-Output "[$Time] Checking Capture Server status..."
 Write-Output "[$Time] Capture Server will bind to: $env:HOST`:$env:PORT"
-$PoetryPath = (Get-Command poetry -ErrorAction SilentlyContinue).Source
-if (-not $PoetryPath) { $PoetryPath = "poetry" }
+$PoetryCommand = Get-Command poetry -ErrorAction SilentlyContinue
+$SystemPython = "C:\Program Files\Python312\python.exe"
 
-$PoetryRunArgs = "run python -m omega_kg.capture_server --host $env:HOST"
+if ($PoetryCommand) {
+    $PoetryPath = $PoetryCommand.Source
+    $PoetryPrefix = ""
+} elseif (Test-Path $SystemPython) {
+    $PoetryPath = $SystemPython
+    $PoetryPrefix = "-m poetry "
+} else {
+    $PoetryPath = "python"
+    $PoetryPrefix = "-m poetry "
+}
+
+$PoetryRunArgs = "${PoetryPrefix}run python -m omega_kg.capture_server --host $env:HOST"
 
 # Check if Poetry process with capture_server is already running
 $ExistingPoetry = Get-Process -Name "poetry" -ErrorAction SilentlyContinue | Where-Object {
@@ -124,7 +135,7 @@ $WorkerProc = Get-Process -Name "python" -ErrorAction SilentlyContinue | Where-O
     $_.CommandLine -like "*omega_kg.workers.embedding_worker*"
 }
 
-$PoetryWorkerArgs = "run python -m omega_kg.workers.embedding_worker"
+$PoetryWorkerArgs = "${PoetryPrefix}run python -m omega_kg.workers.embedding_worker"
 
 if ($WorkerProc) {
     Write-Output "   [i] Embedding Worker already running (PID: $($WorkerProc.Id)). Skipping start."
@@ -144,7 +155,7 @@ $VectorWorkerProc = Get-Process -Name "python" -ErrorAction SilentlyContinue | W
     $_.CommandLine -like "*omega_kg.workers.vector_index_worker*"
 }
 
-$PoetryVectorWorkerArgs = "run python -m omega_kg.workers.vector_index_worker"
+$PoetryVectorWorkerArgs = "${PoetryPrefix}run python -m omega_kg.workers.vector_index_worker"
 
 if ($VectorWorkerProc) {
     Write-Output "   [i] Vector Index Worker already running (PID: $($VectorWorkerProc.Id)). Skipping start."

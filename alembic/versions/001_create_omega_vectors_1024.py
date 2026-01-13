@@ -26,7 +26,7 @@ import sqlalchemy as sa
 from pgvector.sqlalchemy import Vector
 
 revision = "001_create_omega_vectors_1024"
-down_revision = "b0222cbe34b1"
+down_revision = "000_create_base_tables"
 branch_labels = None
 depends_on = None
 
@@ -74,15 +74,15 @@ def upgrade() -> None:
             "created_at",
             sa.DateTime(timezone=True),
             nullable=False,
-            server_default=sa.func.now(),
+            server_default=sa.text("now()"),
             comment="Timestamp when record was created",
         ),
         sa.Column(
             "updated_at",
             sa.DateTime(timezone=True),
             nullable=False,
-            server_default=sa.func.now(),
-            onupdate=sa.func.now(),
+            server_default=sa.text("now()"),
+            onupdate=sa.text("now()"),
             comment="Timestamp of last status/retry update; used for TTL cleanup",
         ),
         sa.PrimaryKeyConstraint("id"),
@@ -101,7 +101,6 @@ def upgrade() -> None:
         "idx_omega_vectors_message_id",
         "omega_vectors_1024",
         ["message_id"],
-        comment="Fast lookup by source message_id",
     )
 
     # Index 2: status for worker polling (all status types)
@@ -109,7 +108,6 @@ def upgrade() -> None:
         "idx_omega_vectors_status",
         "omega_vectors_1024",
         ["status"],
-        comment="Worker polls for records by status",
     )
 
     # Index 3: Partial index for pending records (performance optimization)
@@ -119,7 +117,6 @@ def upgrade() -> None:
         "omega_vectors_1024",
         ["message_id"],
         postgresql_where=sa.text("status = 'pending_embedding'"),
-        comment="Partial index optimizes polling for pending embeddings",
     )
 
     # Index 4: Composite index for TTL cleanup queries
@@ -128,7 +125,6 @@ def upgrade() -> None:
         "omega_vectors_1024",
         ["updated_at"],
         postgresql_where=sa.text("status = 'pending_embedding'"),
-        comment="Partial index for TTL-based cleanup of stale pending records",
     )
 
     # Index 5: Retry tracking for failure analysis
@@ -137,7 +133,6 @@ def upgrade() -> None:
         "omega_vectors_1024",
         ["retry_count", "updated_at"],
         postgresql_where=sa.text("status = 'failed'"),
-        comment="Tracks failed records for alerting and manual retry",
     )
 
 

@@ -1,7 +1,7 @@
 """Create raw_webhook_events table for generic webhook ingestion
 
-Revision ID: 002_create_raw_webhook_events
-Revises: 001_create_omega_vectors_1024
+Revision ID: 003_create_raw_webhook_events
+Revises: 002_vector_id_to_string
 Create Date: 2025-12-25 00:00:00.000000
 
 Phase 1 (TN-101): RawIngestion Models
@@ -92,21 +92,18 @@ def upgrade() -> None:
         "ix_raw_webhook_events_source",
         "raw_webhook_events",
         ["source"],
-        comment="Filter events by source for routing",
     )
 
     op.create_index(
         "ix_raw_webhook_events_event_type",
         "raw_webhook_events",
         ["event_type"],
-        comment="Filter events by type for processor",
     )
 
     op.create_index(
         "ix_raw_webhook_events_processed_status",
         "raw_webhook_events",
         ["processed_status"],
-        comment="Poll for unprocessed events",
     )
 
 

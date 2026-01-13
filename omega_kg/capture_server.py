@@ -51,8 +51,9 @@ from omega_kg.settings import settings
 from omega_kg.smart_parser import SmartParser
 from omega_kg.utils.capture_utils import generate_conversation_hash
 from omega_kg.vector_store import VectorStore, get_vector_store
-from omega_kg.workers.embedding_worker import start_worker, stop_worker
 from omega_kg.pre_flight import pre_flight_checks
+from omega_kg.routers.guardian import router as guardian_router
+
 
 # Ngrok tunnel integration
 try:
@@ -627,13 +628,8 @@ async def lifespan(app: FastAPI):
         logger.error(f"Failed to initialize vector store: {e}")
         raise
 
-    # 3. Start embedding worker
-    try:
-        await start_worker()
-        logger.info("[OK] Embedding worker started (polling every 10s)")
-    except Exception as e:
-        logger.error(f"Failed to start embedding worker: {e}")
-        raise
+    # 3. Guardian Mode
+    logger.info("[GUARDIAN] Omega_KG is now in Guardian Mode (Passive Storage).")
 
     # 4. Start Quipu heartbeat as background task
     try:
@@ -684,12 +680,8 @@ async def lifespan(app: FastAPI):
         except Exception as e:
             logger.error(f"Error stopping heartbeat: {e}")
 
-    # Stop embedding worker gracefully
-    try:
-        await stop_worker()
-        logger.info("[OK] Embedding worker stopped")
-    except Exception as e:
-        logger.error(f"Error stopping embedding worker: {e}")
+    # Stop embedding worker gracefully (obsolete in guardian mode)
+    pass
 
     # Stop scheduler (only if it was started)
     if scheduler is not None:
@@ -737,13 +729,17 @@ from omega_kg.routers.validation import router as validation_router
 app.include_router(validation_router, tags=["Validation API"])
 
 from omega_kg.routers import telemetry
+from omega_kg.routers import auth
 
 app.include_router(telemetry.router)
+app.include_router(auth.router)
 
 # Service Control (Subprocess Management)
 from omega_kg.routers.service_control import router as service_control_router
 
 app.include_router(service_control_router)
+app.include_router(guardian_router)
+
 
 # CORS middleware
 cors_origins = []
@@ -761,6 +757,8 @@ cors_origins.extend(
         "http://127.0.0.1:5173",
         "http://localhost:4173",
         "http://127.0.0.1:4173",
+        "http://localhost:6001",
+        "http://127.0.0.1:6001",
     ]
 )
 
