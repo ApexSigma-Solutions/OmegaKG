@@ -3,7 +3,7 @@ import logging
 import asyncio
 from typing import Optional, Dict, Any
 from omega_kg.settings import settings
-from omega_kg.models.validation import KnowledgeDigest
+from omega_kg.models.validation_schemas import KnowledgeDigest
 
 logger = logging.getLogger("omega.omegakg_client")
 

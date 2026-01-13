@@ -11,7 +11,7 @@ from omega_kg.database import get_ingest_session
 from omega_kg.models.terminal import TerminalEvent
 from omega_kg.services.openai_service import generate_embedding
 from omega_kg.services.omegakg_client import OmegaKGInternalClient
-from omega_kg.models.validation import KnowledgeDigest, DigestType
+from omega_kg.models.validation_schemas import KnowledgeDigest, DigestType
 
 # Setup Logger
 logger = logging.getLogger("omega.worker.embedding")

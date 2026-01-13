@@ -87,6 +87,10 @@ def pytest_configure(config):
     except ImportError:
         pass
 
+    # CRITICAL: Create test_vault proactively because VaultUtils checks existence at import time
+    test_vault = Path("./test_vault")
+    test_vault.mkdir(parents=True, exist_ok=True)
+
 
 def pytest_collection_modifyitems(config, items):
     """Skip slow tests if requested."""
@@ -112,6 +116,11 @@ def setup_test_env():
     os.environ["ZERO_TRUST_REQUIRED"] = "false"
     os.environ["LINEAR_API_KEY"] = "mock_linear_key"
     os.environ["OPENROUTER_API_KEY"] = "mock_openrouter_key"
+    os.environ["STATIC_SERVICE_TOKEN"] = "test-token-12345"
+
+    # CRITICAL: Disable Bitwarden to prevent overwriting container creds
+    if "BWS_ACCESS_TOKEN" in os.environ:
+        del os.environ["BWS_ACCESS_TOKEN"]
 
     # Create test vault directory
     test_vault = Path("./test_vault")
