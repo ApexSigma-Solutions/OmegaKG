@@ -12,7 +12,7 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.12,<3.13"
+python = "3.12.10"
 python-frontmatter = ">=1.1.0,<2.0.0"
 pydantic-settings = ">=2.11.0,<3.0.0"
 tabulate = ">=0.9.0,<1.0.0"
@@ -40,6 +40,7 @@ redis = ">=5.0.0,<6.0.0"
 pyngrok = ">=7.5.0"
 openai = ">=1.10.0"
 sse-starlette = "^3.1.2"
+memos-mcp = "^0.1.0"
 
 [tool.poetry.scripts]
 omega = "omega_kg.cli:cli"

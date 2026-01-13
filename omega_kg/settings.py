@@ -202,6 +202,18 @@ class Settings(BaseSettings):
         None,
         validation_alias=AliasChoices("EXTENSION_API_KEY_PRD", "EXTENSION_API_KEY"),
     )
+    
+    # --- Validation API Authentication (TN-CORE-102) ---
+    bws_access_token: Optional[str] = Field(
+        None,
+        validation_alias="BWS_ACCESS_TOKEN",
+        description="Bitwarden Secrets Manager access token for service authentication"
+    )
+    static_service_token: Optional[str] = Field(
+        None,
+        validation_alias="STATIC_SERVICE_TOKEN",
+        description="Static token for local development (fallback when BWS_ACCESS_TOKEN not available)"
+    )
 
     # --- Email/SMTP (Legacy Restored) ---
     smtp_host: Optional[str] = Field(None, validation_alias="SMTP_HOST")

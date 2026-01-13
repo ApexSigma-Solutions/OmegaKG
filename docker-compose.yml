@@ -28,6 +28,11 @@ volumes:
   postgres_data_dev:
     name: apexsigma.postgres.data.dev
 
+  # --- REDIS VOLUMES ---
+  redis_db:
+    external: true
+    name: apexsigma.redis.db
+
 services:
   # --- NEO4J SERVICE (Dynamic) ---
   neo4j:
@@ -77,6 +82,24 @@ services:
       timeout: 5s
       retries: 5
 
+  # --- REDIS SERVICE ---
+  redis:
+    image: redis:7-alpine
+    container_name: apexsigma.redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    networks:
+      - apexsigma.net
+    volumes:
+      - redis_db:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   # --- CONSUMER SERVICES ---
 
   # Omega_KG Capture Service
@@ -117,10 +140,14 @@ services:
       - NEO4J_URI=${NEO4J_URI_DOCKER:-bolt://neo4j:7687}
       - POSTGRES_SERVER=${POSTGRES_SERVER_DOCKER:-postgres} # Points to dynamic service
       - POSTGRES_PORT=${POSTGRES_PORT_DOCKER:-5432}
+      - REDIS_HOST=${REDIS_HOST_DOCKER:-redis} # Points to dynamic service
+      - REDIS_PORT=${REDIS_PORT_DOCKER:-6379}
     depends_on:
       neo4j:
         condition: service_healthy
       postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     entrypoint: [""]
     command: ["python", "-c", "from omega_kg.capture_server import main; main()"]
@@ -147,10 +174,14 @@ services:
       - NEO4J_URI=${NEO4J_URI_DOCKER_DEV:-bolt://neo4j:7687}
       - POSTGRES_SERVER=${POSTGRES_SERVER_DOCKER_DEV:-postgres} # Points to dynamic service
       - POSTGRES_PORT=${POSTGRES_PORT_DOCKER_DEV:-5432}
+      - REDIS_HOST=${REDIS_HOST_DOCKER_DEV:-redis} # Points to dynamic service
+      - REDIS_PORT=${REDIS_PORT_DOCKER_DEV:-6379}
     depends_on:
       neo4j:
         condition: service_healthy
       postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     entrypoint: [""]
     command: ["python", "-c", "from omega_kg.capture_server import main; main()"]
@@ -178,8 +209,12 @@ services:
       - NEO4J_URI=${NEO4J_URI_DOCKER:-bolt://neo4j:7687}
       - POSTGRES_SERVER=${POSTGRES_SERVER_DOCKER:-postgres} # Points to dynamic service
       - POSTGRES_PORT=${POSTGRES_PORT_DOCKER:-5432}
+      - REDIS_HOST=${REDIS_HOST_DOCKER:-redis} # Points to dynamic service
+      - REDIS_PORT=${REDIS_PORT_DOCKER:-6379}
     depends_on:
       postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     entrypoint: [""]
     command: ["python", "-c", "import asyncio; from omega_kg.quipu_ollama_heartbeat import run_heartbeat_loop; asyncio.run(run_heartbeat_loop())"]
@@ -198,8 +233,12 @@ services:
       - NEO4J_URI=${NEO4J_URI_DOCKER_DEV:-bolt://neo4j:7687}
       - POSTGRES_SERVER=${POSTGRES_SERVER_DOCKER_DEV:-postgres} # Points to dynamic service
       - POSTGRES_PORT=${POSTGRES_PORT_DOCKER_DEV:-5432}
+      - REDIS_HOST=${REDIS_HOST_DOCKER_DEV:-redis} # Points to dynamic service
+      - REDIS_PORT=${REDIS_PORT_DOCKER_DEV:-6379}
     depends_on:
       postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     entrypoint: [""]
     command: ["python", "-c", "import asyncio; from omega_kg.quipu_ollama_heartbeat import run_heartbeat_loop; asyncio.run(run_heartbeat_loop())"]
