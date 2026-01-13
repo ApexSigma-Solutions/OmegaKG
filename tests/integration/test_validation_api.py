@@ -29,13 +29,26 @@ def client(graph_driver, db_engine):
     original_driver = omega_kg.database.graph.graph_driver._driver
     omega_kg.database.graph.graph_driver._driver = None
 
-    try:
-        with TestClient(app) as c:
-            yield c
-    finally:
-        # Restore global state
-        omega_kg.database.graph.graph_driver._driver = original_driver
-        omega_kg.settings.settings = original_settings
+    import os
+
+    print(f"DEBUG: os.environ['POSTGRES_USER'] = {os.environ.get('POSTGRES_USER')}")
+    print(f"DEBUG: settings.postgres_user = {new_settings.postgres_user}")
+
+    from unittest.mock import patch, AsyncMock
+
+    # PATCH: Prevent actual Ollama startup during tests to avoid hangs/timeouts
+    with patch(
+        "omega_kg.capture_server._start_ollama", new_callable=AsyncMock
+    ) as mock_ollama:
+        mock_ollama.return_value = True
+
+        try:
+            with TestClient(app) as c:
+                yield c
+        finally:
+            # Restore global state
+            omega_kg.database.graph.graph_driver._driver = original_driver
+            omega_kg.settings.settings = original_settings
 
 
 @pytest.fixture
