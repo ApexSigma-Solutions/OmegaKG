@@ -13,7 +13,7 @@ from neo4j import AsyncDriver, AsyncSession
 from neo4j.exceptions import Neo4jError
 import asyncpg
 
-from ..models.validation import KnowledgeDigest, DigestType
+from ..models.validation_schemas import KnowledgeDigest, DigestType
 from ..settings import Settings, get_settings
 
 
