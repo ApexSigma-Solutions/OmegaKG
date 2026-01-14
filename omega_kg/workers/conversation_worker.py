@@ -5,7 +5,8 @@ import json
 from datetime import datetime
 from sqlalchemy import select
 from omega_kg.database.ingest_session import AsyncIngestSessionLocal
-from omega_kg.models.raw_storage import RawConversation
+# Use RawIngestion from InGest-LLM for consolidated storage
+from omega_kg.models.raw_storage import RawIngestion
 from omega_kg.settings import settings
 from omega_kg.database.graph import graph_driver
 from omega_kg.vector_store import get_vector_store
@@ -222,7 +223,8 @@ created: {datetime.utcnow().isoformat()}
 
 async def conversation_worker_loop():
     """
-    Main loop for polling and processing raw conversations.
+    Main loop for polling and processing raw conversations from raw_ingestions table.
+    Filters for source_type starting with 'conversation-' to exclude other ingestion types.
     """
     logger.info("Conversation Synthesis Worker started.")
 
@@ -232,10 +234,11 @@ async def conversation_worker_loop():
     while True:
         try:
             async with AsyncIngestSessionLocal() as db:
-                # Fetch unprocessed records
+                # Fetch unprocessed conversation records
                 stmt = (
-                    select(RawConversation)
-                    .where(RawConversation.processed == False)
+                    select(RawIngestion)
+                    .where(RawIngestion.source_type.like("conversation-%"))
+                    .where(RawIngestion.processed == False)
                     .limit(5)
                 )
                 res = await db.execute(stmt)
@@ -245,20 +248,22 @@ async def conversation_worker_loop():
                     logger.info(f"Found {len(records)} conversations to synthesize.")
                     for rec in records:
                         try:
-                            logger.info(f"Processing Record {rec.id} ({rec.platform})")
+                            # Extract platform from source_type (e.g., "conversation-Perplexity" -> "Perplexity")
+                            platform = rec.source_type.replace("conversation-", "") if rec.source_type else "unknown"
+                            logger.info(f"Processing Record {rec.ingestion_id} ({platform})")
                             success = await process_one_conversation(
-                                rec.id, rec.raw_payload, rec.platform
+                                rec.ingestion_id, rec.raw_payload, platform
                             )
                             if success:
                                 rec.processed = True
                                 rec.processed_at = datetime.utcnow()
                                 await db.commit()
-                                logger.info(f"Record {rec.id} marked as PROCESSED.")
+                                logger.info(f"Record {rec.ingestion_id} marked as PROCESSED.")
                         except Exception as e:
                             logger.error(
-                                f"Error processing record {rec.id}: {e}", exc_info=True
+                                f"Error processing record {rec.ingestion_id}: {e}", exc_info=True
                             )
-                            rec.error = str(e)
+                            rec.last_error = str(e)
                             await db.commit()
 
         except Exception as e:

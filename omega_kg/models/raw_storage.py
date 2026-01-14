@@ -1,15 +1,34 @@
 from datetime import datetime
 from uuid import uuid4
+from pathlib import Path
 from sqlalchemy import Column, String, Integer, DateTime, Text, Boolean
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID, JSONB
 from pgvector.sqlalchemy import Vector
 from omega_kg.database.base import Base
 
+# Import RawIngestion from InGest-LLM service for consolidated storage
+import sys
+ingest_llm_path = Path(__file__).parent.parent.parent / "InGest-LLM.as" / "src"
+if str(ingest_llm_path) not in sys.path:
+    sys.path.insert(0, str(ingest_llm_path))
+
+try:
+    from ingest_llm_as.db_models.raw_ingestion import RawIngestion
+    _RAW_INGESTION_AVAILABLE = True
+except ImportError:
+    # Fallback if InGest-LLM is not available
+    _RAW_INGESTION_AVAILABLE = False
+    RawIngestion = None
+
 
 class RawConversation(Base):
     """
-    Stores raw conversation data received from the Chrome extension.
-    This serves as the 'raw lake' for AI conversations before processing.
+    DEPRECATED: Stores raw conversation data received from the Chrome extension.
+
+    This model is being replaced by RawIngestion from InGest-LLM service
+    to consolidate storage across all ingestion types.
+
+    Use RawIngestion instead with source_type='conversation-{platform}'.
     """
 
     __tablename__ = "raw_conversations"
@@ -31,3 +50,7 @@ class RawConversation(Base):
 
     def __repr__(self):
         return f"<RawConversation(id={self.id}, platform='{self.platform}', source_id='{self.source_id}')>"
+
+
+# Export RawIngestion for use in other modules
+__all__ = ["RawConversation", "RawIngestion", "_RAW_INGESTION_AVAILABLE"]

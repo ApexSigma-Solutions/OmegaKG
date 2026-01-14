@@ -21,9 +21,10 @@ from omega_kg.auth_utils import (create_access_token, get_static_api_key,
                                  validate_access_token)
 from omega_kg.database.session import get_db
 # Use Ingest Session for Raw Storage (same as Terminal)
-from omega_kg.database.ingest_session import get_ingest_db 
+from omega_kg.database.ingest_session import get_ingest_db
 from omega_kg.models.capture import CaptureResponse, ConversationData, Token
-from omega_kg.models.raw_storage import RawConversation
+# Use RawIngestion from InGest-LLM for consolidated storage
+from omega_kg.models.raw_storage import RawIngestion
 from omega_kg.parsers import parse_html_content
 from omega_kg.settings import settings
 from omega_kg.utils.capture_utils import generate_conversation_hash
@@ -89,9 +90,9 @@ async def capture_conversation(
 ) -> CaptureResponse:
     """
     Capture a conversation from the Chrome extension.
-    
-    NEW: Writes raw JSON to 'raw_conversations' table in Ingest Database.
-    Does NOT write to filesystem or Neo4j directly anymore.
+
+    Writes raw JSON to 'raw_ingestions' table in Ingest Database using
+    the consolidated RawIngestion model from InGest-LLM service.
     """
     # --- Security Hardening ---
     # 1. Check Content-Length Header (Fail Fast)
@@ -127,23 +128,27 @@ async def capture_conversation(
             status_code=422, detail="No messages provided and HTML parsing failed."
         )
 
-    # 5. STORAGE (Raw SQL)
+    # 5. STORAGE to raw_ingestions table
     try:
         conv_hash = generate_conversation_hash(data)
-        
-        # Create Raw Record
-        raw_record = RawConversation(
-            source_id=conv_hash,
-            platform=data.platform,
+
+        # Map platform to source_type with prefix for filtering
+        source_type = f"conversation-{data.platform}" if data.platform else "conversation-unknown"
+
+        # Create Raw Record using RawIngestion model
+        raw_record = RawIngestion(
+            ingestion_id=conv_hash,
+            source_type=source_type,
             raw_payload=data.model_dump(mode="json"),
             captured_at=datetime.utcnow(),
-            processed=False
+            processed=False,
+            processing_attempts=0,
         )
-        
+
         db_session.add(raw_record)
         await db_session.commit()
-        
-        logger.info(f"Raw conversation captured: {conv_hash} to DB.")
+
+        logger.info(f"Raw conversation captured: {conv_hash} to raw_ingestions table.")
 
         return CaptureResponse(
             success=True,
@@ -176,23 +181,31 @@ async def get_recent_captures(
     _token_payload: Dict[str, Any] = Security(validate_access_token),
 ) -> List[CaptureResponse]:
     """
-    Get the most recent captured conversations.
+    Get the most recent captured conversations from raw_ingestions table.
+    Filters for source_type starting with 'conversation-' to exclude other ingestion types.
     """
     try:
-        stmt = select(RawConversation).order_by(desc(RawConversation.captured_at)).limit(limit)
+        stmt = (
+            select(RawIngestion)
+            .where(RawIngestion.source_type.like("conversation-%"))
+            .order_by(desc(RawIngestion.captured_at))
+            .limit(limit)
+        )
         result = await db_session.execute(stmt)
-        raw_conversations = result.scalars().all()
-        
+        raw_ingestions = result.scalars().all()
+
         response = []
-        for conv in raw_conversations:
-             # Basic adaptation to CaptureResponse model for UI display
+        for rec in raw_ingestions:
+            # Extract platform from source_type (e.g., "conversation-Perplexity" -> "Perplexity")
+            platform = rec.source_type.replace("conversation-", "") if rec.source_type else "unknown"
+            # Basic adaptation to CaptureResponse model for UI display
             response.append(CaptureResponse(
                 success=True,
-                file_path=f"db://{conv.source_id}",
+                file_path=f"db://{rec.ingestion_id}",
                 nodes_created=0,
-                message=f"Captured via {conv.platform} at {conv.captured_at}",
+                message=f"Captured via {platform} at {rec.captured_at}",
             ))
-            
+
         return response
     except Exception as e:
         logger.error(f"Failed to fetch recent captures: {e}")
