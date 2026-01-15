@@ -1,0 +1,15 @@
+--- START DEBUG ---
+
+============================================================
+CRITICAL AUTH DEBUG
+============================================================
+BWS_ACCESS_TOKEN Present: False
+Settings.neo4j_password source: (masked)
+Effective NEO4J_PASSWORD: ne...rd (Len: 18)
+NEO4J_URI: bolt://localhost:7687
+NEO4J_USER: neo4j
+============================================================
+
+Settings imported.
+RawIngestion imported successfully: <class 'ingest_llm_as.db_models.raw_ingestion.RawIngestion'>
+--- END DEBUG ---

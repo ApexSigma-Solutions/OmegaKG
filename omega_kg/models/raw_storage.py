@@ -7,13 +7,25 @@ from pgvector.sqlalchemy import Vector
 from omega_kg.database.base import Base
 
 # Import RawIngestion from InGest-LLM service for consolidated storage
+# Import RawIngestion from InGest-LLM service for consolidated storage
 import sys
-ingest_llm_path = Path(__file__).parent.parent.parent / "InGest-LLM.as" / "src"
-if str(ingest_llm_path) not in sys.path:
-    sys.path.insert(0, str(ingest_llm_path))
+
+# Calculate path to InGest-LLM.as/src relative to this file
+# File: .../Omega_KG_stable/omega_kg/models/raw_storage.py
+# Root: .../Omega_KG_stable/
+# Project: .../
+# Target: .../InGest-LLM.as/src
+ingest_llm_src = Path(__file__).resolve().parents[3] / "InGest-LLM.as" / "src"
+
+if ingest_llm_src.exists():
+    if str(ingest_llm_src) not in sys.path:
+        sys.path.insert(0, str(ingest_llm_src))
+else:
+    print(f"WARNING: InGest-LLM path not found at {ingest_llm_src}")
 
 try:
     from ingest_llm_as.db_models.raw_ingestion import RawIngestion
+
     _RAW_INGESTION_AVAILABLE = True
 except ImportError:
     # Fallback if InGest-LLM is not available

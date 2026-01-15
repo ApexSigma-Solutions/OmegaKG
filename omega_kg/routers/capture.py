@@ -14,15 +14,18 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 from fastapi import APIRouter, HTTPException, Request, Security, Depends
-from neo4j import GraphDatabase
 from sqlalchemy import text, select, desc
 
-from omega_kg.auth_utils import (create_access_token, get_static_api_key,
-                                 validate_access_token)
-from omega_kg.database.session import get_db
+from omega_kg.auth_utils import (
+    create_access_token,
+    get_static_api_key,
+    validate_access_token,
+)
+
 # Use Ingest Session for Raw Storage (same as Terminal)
 from omega_kg.database.ingest_session import get_ingest_db
 from omega_kg.models.capture import CaptureResponse, ConversationData, Token
+
 # Use RawIngestion from InGest-LLM for consolidated storage
 from omega_kg.models.raw_storage import RawIngestion
 from omega_kg.parsers import parse_html_content
@@ -33,7 +36,9 @@ from omega_kg.vector_store import get_vector_store
 logger = logging.getLogger(__name__)
 
 # Security limits
-MAX_HTML_SIZE = 10 * 1024 * 1024  # 10MB - increased to accommodate larger conversation captures
+MAX_HTML_SIZE = (
+    10 * 1024 * 1024
+)  # 10MB - increased to accommodate larger conversation captures
 
 router = APIRouter(tags=["Capture"])
 
@@ -80,6 +85,7 @@ async def capture_options():
 
 
 from sqlalchemy.exc import IntegrityError
+
 
 @router.post("/capture", response_model=CaptureResponse)
 async def capture_conversation(
@@ -133,9 +139,20 @@ async def capture_conversation(
         conv_hash = generate_conversation_hash(data)
 
         # Map platform to source_type with prefix for filtering
-        source_type = f"conversation-{data.platform}" if data.platform else "conversation-unknown"
+        source_type = (
+            f"conversation-{data.platform}" if data.platform else "conversation-unknown"
+        )
 
         # Create Raw Record using RawIngestion model
+        if RawIngestion is None:
+            logger.error(
+                "RawIngestion model is not available. Check InGest-LLM.as imports."
+            )
+            raise HTTPException(
+                status_code=500,
+                detail="Internal Configuration Error: Storage model unavailable",
+            )
+
         raw_record = RawIngestion(
             ingestion_id=conv_hash,
             source_type=source_type,
@@ -170,7 +187,11 @@ async def capture_conversation(
         logger.exception(f"Critical Error {support_id} during capture: {e}")
         await db_session.rollback()
         raise HTTPException(
-            status_code=500, detail={"message": "Internal error storing raw conversation", "id": support_id}
+            status_code=500,
+            detail={
+                "message": "Internal error storing raw conversation",
+                "id": support_id,
+            },
         )
 
 
@@ -197,14 +218,20 @@ async def get_recent_captures(
         response = []
         for rec in raw_ingestions:
             # Extract platform from source_type (e.g., "conversation-Perplexity" -> "Perplexity")
-            platform = rec.source_type.replace("conversation-", "") if rec.source_type else "unknown"
+            platform = (
+                rec.source_type.replace("conversation-", "")
+                if rec.source_type
+                else "unknown"
+            )
             # Basic adaptation to CaptureResponse model for UI display
-            response.append(CaptureResponse(
-                success=True,
-                file_path=f"db://{rec.ingestion_id}",
-                nodes_created=0,
-                message=f"Captured via {platform} at {rec.captured_at}",
-            ))
+            response.append(
+                CaptureResponse(
+                    success=True,
+                    file_path=f"db://{rec.ingestion_id}",
+                    nodes_created=0,
+                    message=f"Captured via {platform} at {rec.captured_at}",
+                )
+            )
 
         return response
     except Exception as e:
@@ -256,10 +283,13 @@ async def health_check_vectors() -> Dict[str, Any]:
 @router.get("/health")
 async def health_check():
     """
-    Comprehensive health check endpoint.
+    Comprehensive health check endpoint with timeouts and graceful degradation.
 
     Checks connectivity to Obsidian vault, Neo4j, and PostgreSQL.
+    Uses singleton drivers where available to avoid connection pool exhaustion.
     """
+    import asyncio
+
     health_status = {
         "status": "healthy",
         "timestamp": datetime.now().isoformat(),
@@ -267,33 +297,55 @@ async def health_check():
         "neo4j_connected": False,
         "postgres_connected": False,
     }
+
+    # Vault check (fast, local filesystem)
     try:
         vault_path = Path(settings.obsidian_vault_path)
         health_status["vault_accessible"] = vault_path.exists()
         health_status["vault_path"] = str(vault_path)
     except Exception as e:
         logger.warning(f"Vault check failed: {e}")
+
+    # Neo4j check with timeout - uses singleton AsyncGraphDriver
     try:
-        driver = GraphDatabase.driver(
-            settings.neo4j_uri, auth=(settings.neo4j_user, settings.neo4j_password)
-        )
-        with driver.session() as session:
-            session.run("RETURN 1")
-        driver.close()
-        health_status["neo4j_connected"] = True
+        from omega_kg.database.graph import graph_driver
+
+        result = await asyncio.wait_for(graph_driver.verify_connectivity(), timeout=5.0)
+        health_status["neo4j_connected"] = result
+    except asyncio.TimeoutError:
+        health_status["neo4j_error"] = "Connection timeout"
+        logger.warning("Neo4j check timed out")
     except Exception as e:
         logger.warning(f"Neo4j check failed: {e}")
         health_status["neo4j_error"] = str(e)
 
-    # PostgreSQL Health Check (Async)
+    # PostgreSQL check with timeout - uses engine directly
     try:
-        async for session in get_db():
-            await session.execute(text("SELECT 1"))
-            health_status["postgres_connected"] = True
-            break
+        from omega_kg.database.session import engine
+
+        async with asyncio.timeout(5.0):
+            async with engine.connect() as conn:
+                await conn.execute(text("SELECT 1"))
+                health_status["postgres_connected"] = True
+    except asyncio.TimeoutError:
+        health_status["postgres_error"] = "Connection timeout"
+        logger.warning("PostgreSQL check timed out")
     except Exception as e:
         logger.warning(f"PostgreSQL check failed: {e}")
         health_status["postgres_error"] = str(e)
+
+    # Determine overall status
+    failed_checks = sum(
+        [
+            not health_status.get("vault_accessible", True),
+            not health_status.get("neo4j_connected", True),
+            not health_status.get("postgres_connected", True),
+        ]
+    )
+    if failed_checks >= 2:
+        health_status["status"] = "unhealthy"
+    elif failed_checks == 1:
+        health_status["status"] = "degraded"
 
     return health_status
 
@@ -308,6 +360,7 @@ async def get_installation_status() -> Dict[str, Any]:
     """
     try:
         import omega_kg
+
         version = getattr(omega_kg, "__version__", "unknown")
         installed = True
     except ImportError:
@@ -318,14 +371,14 @@ async def get_installation_status() -> Dict[str, Any]:
         "status": "healthy" if installed else "unhealthy",
         "omega_kg_installed": installed,
         "version": version,
-        "timestamp": datetime.now().isoformat()
+        "timestamp": datetime.now().isoformat(),
     }
 
     if not installed:
         status["details"] = {
             "error": "Package not installed",
             "troubleshooting": "Run scripts/setup_omega_kg.ps1 or pip install -e .",
-            "documentation": "docs/INSTALLATION_TROUBLESHOOTING.md"
+            "documentation": "docs/INSTALLATION_TROUBLESHOOTING.md",
         }
 
     return status

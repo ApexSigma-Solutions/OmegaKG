@@ -9,7 +9,7 @@ from typing import Any, Dict, Optional, Tuple
 # This ensures environment variables override any shell/system values
 from dotenv import load_dotenv
 
-load_dotenv(override=False)
+load_dotenv(override=True)
 
 from bitwarden_sdk import BitwardenClient
 from bitwarden_sdk.schemas import ClientSettings, DeviceType
