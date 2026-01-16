@@ -12,6 +12,7 @@ Extracted from capture_server.py for modularity.
 import hashlib
 import logging
 import re
+import uuid
 from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -35,6 +36,10 @@ def generate_conversation_hash(data: "ConversationData") -> str:
     Returns:
         str: An 8-character hash string.
     """
+
+
+def _generate_content_string(data: "ConversationData") -> str:
+    """Generate the canonical content string for hashing."""
     # Limit to first 5 messages and first 500 characters for scalability
     if not data.messages:
         limited_messages = []
@@ -46,9 +51,38 @@ def generate_conversation_hash(data: "ConversationData") -> str:
         for msg in limited_messages
     )
     msg_count = len(data.messages) if data.messages else 0
-    content = f"{data.platform}-{data.url}-{msg_count}-{messages_text}"
+    return f"{data.platform}-{data.url}-{msg_count}-{messages_text}"
+
+
+def generate_conversation_hash(data: "ConversationData") -> str:
+    """
+    Generate a short hash for a conversation using platform, URL, message count,
+    and a limited portion of message content.
+
+    Args:
+        data (ConversationData): The conversation data.
+
+    Returns:
+        str: An 8-character hash string.
+    """
+    content = _generate_content_string(data)
     hash_obj = hashlib.md5(content.encode())
     return hash_obj.hexdigest()[:8]
+
+
+def generate_conversation_uuid(data: "ConversationData") -> uuid.UUID:
+    """
+    Generate a deterministic UUID for a conversation based on its content.
+
+    Args:
+        data (ConversationData): The conversation data.
+
+    Returns:
+        uuid.UUID: A deterministic UUID derived from the content hash.
+    """
+    content = _generate_content_string(data)
+    hash_obj = hashlib.md5(content.encode())
+    return uuid.UUID(hex=hash_obj.hexdigest())
 
 
 def format_conversation_markdown(data: "ConversationData") -> str:
@@ -217,6 +251,7 @@ def write_to_obsidian(platform: str, content: str, conversation_hash: str) -> Pa
 
 __all__ = [
     "generate_conversation_hash",
+    "generate_conversation_uuid",
     "format_conversation_markdown",
     "write_to_obsidian",
 ]
