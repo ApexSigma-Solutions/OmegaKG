@@ -25,19 +25,6 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def generate_conversation_hash(data: "ConversationData") -> str:
-    """
-    Generate a short hash for a conversation using platform, URL, message count,
-    and a limited portion of message content.
-
-    Args:
-        data (ConversationData): The conversation data.
-
-    Returns:
-        str: An 8-character hash string.
-    """
-
-
 def _generate_content_string(data: "ConversationData") -> str:
     """Generate the canonical content string for hashing."""
     # Limit to first 5 messages and first 500 characters for scalability

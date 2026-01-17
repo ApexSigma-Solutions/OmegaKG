@@ -15,6 +15,7 @@ from typing import Any, Dict, List
 
 from fastapi import APIRouter, HTTPException, Request, Security, Depends
 from sqlalchemy import text, select, desc
+from sqlalchemy.exc import IntegrityError
 
 from omega_kg.auth_utils import (
     create_access_token,
@@ -25,12 +26,16 @@ from omega_kg.auth_utils import (
 # Use Ingest Session for Raw Storage (same as Terminal)
 from omega_kg.database.ingest_session import get_ingest_db
 from omega_kg.models.capture import CaptureResponse, ConversationData, Token
+from pydantic import BaseModel
 
 # Use RawIngestion from InGest-LLM for consolidated storage
 from omega_kg.models.raw_storage import RawIngestion
 from omega_kg.parsers import parse_html_content
 from omega_kg.settings import settings
-from omega_kg.utils.capture_utils import generate_conversation_hash
+from omega_kg.utils.capture_utils import (
+    generate_conversation_hash,
+    generate_conversation_uuid,
+)
 from omega_kg.vector_store import get_vector_store
 
 logger = logging.getLogger(__name__)
@@ -41,6 +46,14 @@ MAX_HTML_SIZE = (
 )  # 10MB - increased to accommodate larger conversation captures
 
 router = APIRouter(tags=["Capture"])
+
+
+class OmegaStats(BaseModel):
+    total_captures: int
+    recent_captures_24h: int
+    neo4j_status: str
+    postgres_status: str
+    active_sessions: int
 
 
 # Import percolate function from main module (to avoid circular import)
@@ -82,9 +95,6 @@ async def login_for_access_token(
 async def capture_options():
     """Handle CORS preflight requests for /capture endpoint"""
     return {"message": "CORS preflight OK"}
-
-
-from sqlalchemy.exc import IntegrityError
 
 
 @router.post("/capture", response_model=CaptureResponse)
@@ -154,7 +164,7 @@ async def capture_conversation(
             )
 
         raw_record = RawIngestion(
-            ingestion_id=conv_hash,
+            ingestion_id=generate_conversation_uuid(data),
             source_type=source_type,
             raw_payload=data.model_dump(mode="json"),
             captured_at=datetime.utcnow(),
@@ -195,7 +205,7 @@ async def capture_conversation(
         )
 
 
-@router.get("/capture/recent", response_model=List[CaptureResponse])
+@router.get("/recent", response_model=List[CaptureResponse])
 async def get_recent_captures(
     limit: int = 10,
     db_session: Any = Depends(get_ingest_db),
@@ -237,6 +247,60 @@ async def get_recent_captures(
     except Exception as e:
         logger.error(f"Failed to fetch recent captures: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/stats", response_model=OmegaStats)
+async def get_omega_stats(
+    db_session: Any = Depends(get_ingest_db),
+    _token_payload: Dict[str, Any] = Security(validate_access_token),
+):
+    """
+    Get statistics for the OmegaKG core service.
+    """
+    from omega_kg.database.graph import graph_driver
+
+    try:
+        # 1. Capture Counts (PostgreSQL)
+        total_q = select(text("COUNT(*)")).select_from(text("raw_ingestions"))
+        recent_q = (
+            select(text("COUNT(*)"))
+            .select_from(text("raw_ingestions"))
+            .where(text("captured_at > NOW() - INTERVAL '24 hours'"))
+        )
+
+        total_r = await db_session.execute(total_q)
+        recent_r = await db_session.execute(recent_q)
+
+        total_captures = total_r.scalar() or 0
+        recent_24h = recent_r.scalar() or 0
+
+        # 2. Session Count (PostgreSQL)
+        sessions_q = select(text("COUNT(DISTINCT ingestion_id)")).select_from(
+            text("raw_ingestions")
+        )
+        sessions_r = await db_session.execute(sessions_q)
+        active_sessions = sessions_r.scalar() or 0
+
+        # 3. Neo4j Status
+        neo4j_healthy = await graph_driver.verify_connectivity()
+        neo4j_status = "ONLINE" if neo4j_healthy else "OFFLINE"
+
+        return OmegaStats(
+            total_captures=total_captures,
+            recent_captures_24h=recent_24h,
+            neo4j_status=neo4j_status,
+            postgres_status="ONLINE",  # If we reached here, PG is up
+            active_sessions=active_sessions,
+        )
+    except Exception as e:
+        logger.error(f"Failed to fetch Omega stats: {e}")
+        return OmegaStats(
+            total_captures=0,
+            recent_captures_24h=0,
+            neo4j_status="UNKNOWN",
+            postgres_status="ERROR",
+            active_sessions=0,
+        )
 
 
 @router.get("/health/vectors")
