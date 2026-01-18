@@ -95,10 +95,12 @@ except ImportError as e:
     )
 
 
+from omega_kg.utils.logging import configure_logging
+
 # Configure logging
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
+# We assume the service runs from Omega_KG_stable/ directory, so logs are in ../logs
+log_dir = Path("d:/projects/OmegaKG/logs")
+configure_logging("omega_kg_capture", log_dir)
 logger = logging.getLogger(__name__)
 
 
@@ -726,6 +728,7 @@ app.include_router(github_receiver.router, tags=["GitHub Ingest"])
 
 # Validation API Gateway (TN-CORE-102)
 from omega_kg.routers.validation import router as validation_router
+
 app.include_router(validation_router, tags=["Validation API"])
 
 from omega_kg.routers import telemetry
@@ -739,6 +742,10 @@ from omega_kg.routers.service_control import router as service_control_router
 
 app.include_router(service_control_router)
 app.include_router(guardian_router)
+
+from omega_kg.routers.log_summary import router as log_summary_router
+
+app.include_router(log_summary_router)
 
 
 # CORS middleware

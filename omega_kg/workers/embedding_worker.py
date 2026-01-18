@@ -7,13 +7,18 @@ from typing import List, Any, Optional
 from sqlalchemy import select
 
 # Internal Imports
+# Internal Imports
 from omega_kg.database import get_ingest_session
 from omega_kg.models.terminal import TerminalEvent
 from omega_kg.services.openai_service import generate_embedding
 from omega_kg.services.omegakg_client import OmegaKGInternalClient
 from omega_kg.models.validation_schemas import KnowledgeDigest, DigestType
+from omega_kg.utils.logging import configure_logging
+from pathlib import Path
 
 # Setup Logger
+log_dir = Path("d:/projects/OmegaKG/logs")
+configure_logging("embedding_worker", log_dir)
 logger = logging.getLogger("omega.worker.embedding")
 # Ensuring level is set if not configured elsewhere
 logger.setLevel(logging.INFO)

@@ -1,10 +1,9 @@
 import logging
 import subprocess
 import os
-import signal
 import psutil
 from pathlib import Path
-from typing import Dict, Optional, Any
+from typing import Dict, Any
 
 from fastapi import APIRouter, HTTPException, Security
 from pydantic import BaseModel
@@ -26,17 +25,22 @@ BASE_DIR = Path.cwd().parent
 # D:\projects\OmegaKG\Omega_KG_stable -> parent is D:\projects\OmegaKG
 
 SERVICES_CONFIG = {
+    "omega": {
+        "name": "OmegaKG",
+        "cwd": BASE_DIR / "Omega_KG_stable",
+        "command": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts\\start_full_stack.ps1 -Persistent",
+        "port": 8765,
+    },
     "ingest": {
         "name": "InGest-LLM",
         "cwd": BASE_DIR / "InGest-LLM.as",
-        "command": "poetry run uvicorn ingest_llm_as.main:app --port 8766",
+        "command": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts\\start_ingest_llm.ps1 -Persistent",
         "port": 8766,
     },
     "memos": {
         "name": "memOS.MCP",
         "cwd": BASE_DIR / "memos.MCP",
-        # Use python -m to run as module with SSE flag for dashboard
-        "command": "poetry run python src/memos_mcp/server.py --sse",
+        "command": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts\\startup\\start-mcp.ps1 -Background",
         "port": 8768,
     },
 }
@@ -163,3 +167,90 @@ def _is_port_in_use(port: int) -> bool:
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         return s.connect_ex(("localhost", port)) == 0
+
+
+@router.post("/system/ecosystem/shutdown")
+async def shutdown_ecosystem(
+    full: bool = False, _token: Dict[str, Any] = Security(validate_access_token)
+) -> Dict[str, Any]:
+    """
+    Shut down the ecosystem. Defaults to stopping applications only.
+    Use full=true via query parameter to stop Docker databases as well.
+    """
+    try:
+        # Path to stop_ecosystem.ps1 (root of project)
+        stop_script = BASE_DIR / "stop_ecosystem.ps1"
+        if not stop_script.exists():
+            raise HTTPException(500, f"Shutdown script not found at {stop_script}")
+
+        mode = "Full" if full else "Apps-Only"
+        logger.info(f"Initiating Ecosystem Shutdown ({mode}) via stop_ecosystem.ps1...")
+
+        # We need to run this detached so the server can respond before it gets killed
+        flags = 0
+        if os.name == "nt":
+            flags = subprocess.CREATE_NO_WINDOW | subprocess.DETACHED_PROCESS
+
+        # Construct arguments
+        script_args = ["-AppsOnly"]
+        if full:
+            script_args = ["-Full"]
+
+        subprocess.Popen(
+            [
+                "powershell.exe",
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                str(stop_script),
+            ]
+            + script_args,
+            cwd=str(BASE_DIR),
+            creationflags=flags,
+            shell=True,
+        )
+
+        return {
+            "status": "shutdown_initiated",
+            "message": f"Ecosystem shutdown ({mode}) initiated",
+        }
+    except Exception as e:
+        logger.error(f"Shutdown trigger failed: {e}")
+        raise HTTPException(500, f"Shutdown trigger failed: {str(e)}")
+
+
+@router.post("/system/ecosystem/restart")
+async def restart_ecosystem(
+    _token: Dict[str, Any] = Security(validate_access_token),
+) -> Dict[str, Any]:
+    """
+    Restart the entire ecosystem.
+    """
+    try:
+        # We'll use a wrapper command that stops then starts
+        stop_script = BASE_DIR / "stop_ecosystem.ps1"
+        launch_script = (
+            BASE_DIR / "start_ecosystem.ps1"
+        )  # We use start_ecosystem directly with persistence
+
+        if not stop_script.exists() or not launch_script.exists():
+            raise HTTPException(500, "Required scripts (stop/start) not found")
+
+        logger.info("Initiating Ecosystem Restart...")
+
+        # Create a transient batch file or sequential command
+        restart_cmd = f'powershell -NoProfile -ExecutionPolicy Bypass -File "{stop_script}" -AppsOnly; Start-Sleep -Seconds 5; powershell -NoProfile -ExecutionPolicy Bypass -File "{launch_script}" -Persistent'
+
+        flags = 0
+        if os.name == "nt":
+            flags = subprocess.CREATE_NO_WINDOW | subprocess.DETACHED_PROCESS
+
+        subprocess.Popen(
+            restart_cmd, cwd=str(BASE_DIR), creationflags=flags, shell=True
+        )
+
+        return {"status": "restart_initiated", "message": "Ecosystem is restarting"}
+    except Exception as e:
+        logger.error(f"Restart trigger failed: {e}")
+        raise HTTPException(500, f"Restart trigger failed: {str(e)}")

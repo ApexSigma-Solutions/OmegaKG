@@ -42,6 +42,9 @@ openai = ">=1.10.0"
 sse-starlette = "^3.1.2"
 memos-mcp = "^0.1.0"
 email-validator = "^2.3.0"
+structlog = "^25.5.0"
+watchfiles = "^1.1.1"
+rich = "^14.2.0"
 
 [tool.poetry.scripts]
 omega = "omega_kg.cli:cli"

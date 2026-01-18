@@ -17,6 +17,7 @@ from omega_kg.auth_utils import (
     create_access_token,
     get_current_user,
     get_password_hash,
+    validate_access_token,
 )
 from omega_kg.database.session import get_db
 from omega_kg.models.user import User
@@ -261,4 +262,4 @@ async def change_password(
     return {"message": "Password changed successfully"}
 
 
-__all__ = ["router"]
+__all__ = ["router", "validate_access_token"]
